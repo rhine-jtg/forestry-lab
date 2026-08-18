@@ -154,12 +154,12 @@
           <section class="view-panel" id="view-explore">
             <div class="section-heading"><div><span class="mini-label">FIELD SURVEY</span><h3>选择探索区域</h3></div><span class="cost-note">探索消耗 5 能源</span></div>
             <div class="zone-grid">
-              <article class="zone-card panel-inset"><div class="zone-art forest-art"><span>♣</span><i>●</i><b>✦</b></div><div class="zone-info"><span class="tag tag-green">已开放</span><h3>森林边缘</h3><p>基础蜂巢、橡树苗、普通花朵</p><div class="zone-footer"><span>发现度 <strong data-zone-discovery="forest">62%</strong></span><small data-zone-visits="forest">0 次调查</small><button class="small-button explore-button" data-zone="forest">探索</button></div></div></article>
-              <article class="zone-card panel-inset"><div class="zone-art plains-art"><span>♧</span><i>✿</i><b>●</b></div><div class="zone-info"><span class="tag tag-green">已开放</span><h3>平原花地</h3><p>草原蜂、丰富花源、作物种子</p><div class="zone-footer"><span>发现度 <strong data-zone-discovery="plains">18%</strong></span><small data-zone-visits="plains">0 次调查</small><button class="small-button explore-button" data-zone="plains">探索</button></div></div></article>
-              <article class="zone-card panel-inset locked"><div class="zone-art swamp-art"><span>≈</span><i>♣</i><b>?</b><div class="lock-mark">⌑</div></div><div class="zone-info"><span class="tag tag-muted">需解锁</span><h3>静谧沼泽</h3><p>需要完成 2 次区域探索</p><div class="zone-footer"><span>发现度 <strong data-zone-discovery="swamp">0%</strong></span><small data-zone-visits="swamp">0 次调查</small><button class="small-button explore-button" data-zone="swamp" disabled>锁定</button></div></div></article>
-              <article class="zone-card panel-inset locked"><div class="zone-art tropic-art"><span>♨</span><i>♣</i><b>?</b><div class="lock-mark">⌑</div></div><div class="zone-info"><span class="tag tag-muted">需解锁</span><h3>热带林冠</h3><p>需要完成第一次离心加工</p><div class="zone-footer"><span>发现度 <strong data-zone-discovery="tropic">0%</strong></span><small data-zone-visits="tropic">0 次调查</small><button class="small-button explore-button" data-zone="tropic" disabled>锁定</button></div></div></article>
+              <article class="zone-card panel-inset"><div class="zone-art forest-art"><span>♣</span><i>●</i><b>✦</b></div><div class="zone-info"><span class="tag tag-green">已开放</span><h3>森林边缘</h3><p>基础蜂巢、橡树苗、春蓝蝶与普通花朵</p><div class="zone-footer"><span>发现度 <strong data-zone-discovery="forest">62%</strong></span><small data-zone-visits="forest">0 次调查</small><button class="small-button explore-button" data-zone="forest">探索</button></div></div></article>
+              <article class="zone-card panel-inset"><div class="zone-art plains-art"><span>♧</span><i>✿</i><b>●</b></div><div class="zone-info"><span class="tag tag-green">已开放</span><h3>平原花地</h3><p>草原蜂、硫磺蛾、丰富花源与作物种子</p><div class="zone-footer"><span>发现度 <strong data-zone-discovery="plains">18%</strong></span><small data-zone-visits="plains">0 次调查</small><button class="small-button explore-button" data-zone="plains">探索</button></div></article>
+              <article class="zone-card panel-inset locked"><div class="zone-art swamp-art"><span>≈</span><i>♣</i><b>?</b><div class="lock-mark">⌑</div></div><div class="zone-info"><span class="tag tag-muted">需解锁</span><h3>静谧沼泽</h3><p>需要完成 2 次区域探索，可发现燕尾蝶与丛林树苗</p><div class="zone-footer"><span>发现度 <strong data-zone-discovery="swamp">0%</strong></span><small data-zone-visits="swamp">0 次调查</small><button class="small-button explore-button" data-zone="swamp" disabled>锁定</button></div></div></article>
+              <article class="zone-card panel-inset locked"><div class="zone-art tropic-art"><span>♨</span><i>♣</i><b>?</b><div class="lock-mark">⌑</div></div><div class="zone-info"><span class="tag tag-muted">需解锁</span><h3>热带林冠</h3><p>需要完成第一次离心加工，可发现林冠蝶与柚木</p><div class="zone-footer"><span>发现度 <strong data-zone-discovery="tropic">0%</strong></span><small data-zone-visits="tropic">0 次调查</small><button class="small-button explore-button" data-zone="tropic" disabled>锁定</button></div></div></article>
             </div>
-            <div class="explore-tip panel-inset"><span class="tip-icon">i</span><div><strong>探索提示</strong><p>探索会带回随机材料、对应区域花源，也可能发现新的蜂种。能源会随时间缓慢恢复；蜂箱花源耗尽时，优先切换花源或回到对应区域补充。</p></div></div>
+            <div class="explore-tip panel-inset"><span class="tip-icon">i</span><div><strong>探索提示</strong><p>探索会带回随机材料、对应区域花源，也可能发现新的蜂种、蝴蝶或树苗。能源会随时间缓慢恢复；蜂箱花源耗尽时，优先切换花源或回到对应区域补充。</p></div></div>
           </section>
 
           <section class="view-panel" id="view-apiary">
@@ -216,8 +216,19 @@
           </section>
 
           <section class="view-panel" id="view-codex">
-            <div class="section-heading"><div><span class="mini-label">FIELD ARCHIVE</span><h3>生态图鉴</h3></div><span class="log-count" id="codex-count">BEE 02 / 06 · TREE 02 / 05</span></div>
+            <div class="section-heading"><div><span class="mini-label">FIELD ARCHIVE</span><h3>生态图鉴</h3></div><span class="log-count" id="codex-count">BEE 02 / 06 · BUTTERFLY 01 / 04 · TREE 02 / 05</span></div>
             <div class="codex-grid" id="codex-grid"></div>
+            <section class="material-shelf panel-inset" aria-label="框架与树果样本">
+              <div class="section-heading"><div><span class="mini-label">MATERIAL SAMPLE BANK</span><h3>框架与树果</h3></div><span class="log-count">VISUAL SET / 06</span></div>
+              <div class="material-grid">
+                <article class="material-card"><span class="pixel-sprite pixel-frame frame-untreated" role="img" aria-label="未处理框架"><i class="frame-core"></i><i class="frame-mark mark-a"></i><i class="frame-mark mark-b"></i></span><div><strong>未处理框架</strong><small>UNTREATED · 80 DURABILITY</small><p>基础蜂房的载体，适合前期采集。</p></div></article>
+                <article class="material-card"><span class="pixel-sprite pixel-frame frame-impregnated" role="img" aria-label="浸渍框架"><i class="frame-core"></i><i class="frame-mark mark-a"></i><i class="frame-mark mark-b"></i></span><div><strong>浸渍框架</strong><small>IMPREGNATED · 240 DURABILITY</small><p>耐久更高，适合连续生产。</p></div></article>
+                <article class="material-card"><span class="pixel-sprite pixel-frame frame-proven" role="img" aria-label="熟练框架"><i class="frame-core"></i><i class="frame-mark mark-a"></i><i class="frame-mark mark-b"></i></span><div><strong>熟练框架</strong><small>PROVEN · 720 DURABILITY</small><p>长期生产线的高级框架。</p></div></article>
+                <article class="material-card"><span class="pixel-sprite pixel-fruit fruit-cherry" role="img" aria-label="樱桃"><i class="fruit-stem stem-left"></i><i class="fruit-stem stem-right"></i><i class="fruit-leaf"></i><i class="fruit-body fruit-a"></i><i class="fruit-body fruit-b"></i></span><div><strong>樱桃</strong><small>CHERRY · TREE FRUIT</small><p>树种结果阶段的基础果实样本。</p></div></article>
+                <article class="material-card"><span class="pixel-sprite pixel-fruit fruit-lemon" role="img" aria-label="柠檬"><i class="fruit-body fruit-a"></i><i class="fruit-highlight"></i></span><div><strong>柠檬</strong><small>LEMON · TREE FRUIT</small><p>温暖环境下的黄色果实样本。</p></div></article>
+                <article class="material-card"><span class="pixel-sprite pixel-fruit fruit-walnut" role="img" aria-label="核桃"><i class="fruit-body fruit-a"></i><i class="fruit-highlight"></i></span><div><strong>核桃</strong><small>WALNUT · TREE FRUIT</small><p>可作为后续加工与配方的稀有材料。</p></div></article>
+              </div>
+            </section>
           </section>
         </main>
       </div>

@@ -41,6 +41,8 @@ const defaultState = {
   treeSaplings: { oak: 2, birch: 2 },
   treeDiscovered: ["oak", "birch"],
   treeAnalyzed: [],
+  butterflyDiscovered: ["azure"],
+  butterflyAnalyzed: [],
   treeProgress: 64,
   treeReady: 0,
   treeReadyYield: 0,
@@ -86,12 +88,23 @@ const treeSpecies = {
   teak: { name: "柚木", english: "Teak", type: "未知树种", desc: "需要在热带林冠中继续研究。", icon: "?", color: "teal", traits: { growth: 61, yield: 88, resin: 72 } }
 };
 
+const butterflySpecies = {
+  azure: { name: "春蓝蝶", english: "Spring Azure", type: "基础蝶种", desc: "森林边缘常见的小型蝶种，适合观察季节变化。", color: "blue", zone: "forest", traits: { rarity: 28, pollination: 52 } },
+  brimstone: { name: "硫磺蛾", english: "Brimstone", type: "基础蝶种", desc: "偏好开阔花地，翅色会随花源质量变亮。", color: "gold", zone: "plains", traits: { rarity: 42, pollination: 64 } },
+  swallow: { name: "燕尾蝶", english: "Swallowtail", type: "湿地蝶种", desc: "在湿地植物间活动，可作为生态恢复的指示物种。", color: "teal", zone: "swamp", traits: { rarity: 61, pollination: 76 } },
+  atlas: { name: "林冠蝶", english: "Canopy Atlas", type: "稀有蝶种", desc: "热带林冠中的稀有蝶种，出现时通常意味着生态值较高。", color: "purple", zone: "tropic", traits: { rarity: 82, pollination: 88 } }
+};
+
 function knownDiscoveredBees() {
   return state.discovered.filter((id) => species[id]);
 }
 
 function knownDiscoveredTrees() {
   return state.treeDiscovered.filter((id) => treeSpecies[id]);
+}
+
+function knownDiscoveredButterflies() {
+  return state.butterflyDiscovered.filter((id) => butterflySpecies[id]);
 }
 
 function getBreedingPairKey(princess, drone) {
@@ -250,6 +263,8 @@ function loadState() {
       discovered: Array.isArray(saved.discovered) ? saved.discovered : [...defaultState.discovered],
       treeDiscovered: Array.isArray(saved.treeDiscovered) ? saved.treeDiscovered : [...defaultState.treeDiscovered],
       treeAnalyzed: Array.isArray(saved.treeAnalyzed) ? saved.treeAnalyzed : [...defaultState.treeAnalyzed],
+      butterflyDiscovered: Array.isArray(saved.butterflyDiscovered) ? saved.butterflyDiscovered : [...defaultState.butterflyDiscovered],
+      butterflyAnalyzed: Array.isArray(saved.butterflyAnalyzed) ? saved.butterflyAnalyzed : [...defaultState.butterflyAnalyzed],
       logs: Array.isArray(saved.logs) ? saved.logs.slice(0, 6) : structuredClone(defaultState.logs)
     };
     Object.keys(defaultState.resources).forEach((resource) => {
@@ -804,7 +819,8 @@ function renderResources() {
   const speciesCount = knownDiscoveredBees().length;
   setText("#species-count", `${String(speciesCount).padStart(2, "0")} / ${Object.keys(species).length} SPECIES`);
   const treeCount = knownDiscoveredTrees().length;
-  setText("#codex-count", `BEE ${String(speciesCount).padStart(2, "0")} / ${String(Object.keys(species).length).padStart(2, "0")} · TREE ${String(treeCount).padStart(2, "0")} / ${String(Object.keys(treeSpecies).length).padStart(2, "0")}`);
+  const butterflyCount = knownDiscoveredButterflies().length;
+  setText("#codex-count", `BEE ${String(speciesCount).padStart(2, "0")} / ${String(Object.keys(species).length).padStart(2, "0")} · BUTTERFLY ${String(butterflyCount).padStart(2, "0")} / ${String(Object.keys(butterflySpecies).length).padStart(2, "0")} · TREE ${String(treeCount).padStart(2, "0")} / ${String(Object.keys(treeSpecies).length).padStart(2, "0")}`);
   const goalProgress = getGuideCompletionPercent();
   $("#goal-progress").style.width = `${goalProgress}%`;
   const guidePresentation = getGuidePresentation();
@@ -849,7 +865,7 @@ function renderParentSlot(slot, id) {
   const icon = $(`#${slot}-icon`);
   if (icon) {
     icon.className = `bee-glyph species-bee-${item.color}`;
-    icon.textContent = item.icon;
+    icon.innerHTML = beeSpriteMarkup(id);
   }
   setText(`#${slot}-name`, item.name);
   setText(`#${slot}-detail`, item.type);
@@ -1195,8 +1211,18 @@ function renderSpecies() {
   const row = $("#species-row");
   row.innerHTML = knownDiscoveredBees().map((id) => {
     const item = species[id];
-    return `<article class="species-card"><span class="species-icon ${item.color}">${item.icon}</span><div><strong>${item.name}</strong><small>${item.type}</small></div></article>`;
+    return `<article class="species-card"><span class="species-icon ${item.color}">${beeSpriteMarkup(id)}</span><div><strong>${item.name}</strong><small>${item.type}</small></div></article>`;
   }).join("");
+}
+
+function beeSpriteMarkup(id) {
+  const spriteClass = { forest: "bee-forest", meadows: "bee-meadow", cultivated: "bee-cultivated", common: "bee-common", noble: "bee-noble", tropical: "bee-tropical" }[id] || "bee-common";
+  return `<span class="pixel-sprite pixel-bee ${spriteClass}" aria-hidden="true"><i class="bee-wing wing-left"></i><i class="bee-wing wing-right"></i><i class="bee-body"></i><i class="bee-tail"></i></span>`;
+}
+
+function butterflySpriteMarkup(id) {
+  const spriteClass = { azure: "butterfly-azure", brimstone: "butterfly-brimstone", swallow: "butterfly-swallow", atlas: "butterfly-atlas" }[id] || "butterfly-azure";
+  return `<span class="pixel-sprite pixel-butterfly ${spriteClass}" aria-hidden="true"><i class="butterfly-wing wing-left"></i><i class="butterfly-wing wing-right"></i><i class="butterfly-body"></i><i class="butterfly-antenna antenna-left"></i><i class="butterfly-antenna antenna-right"></i></span>`;
 }
 
 function getBeeLineage(id) {
@@ -1220,10 +1246,15 @@ function getTreeLineage(id) {
   return `发现区域 · ${origins[id] || "生态调查"}`;
 }
 
+function getButterflyLineage(id) {
+  return `发现区域 · ${butterflySpecies[id]?.zone ? zones[butterflySpecies[id].zone].name : "生态调查"}`;
+}
+
 function getCodexUnlockText(id, kind) {
   if (kind === "bee") {
     return { cultivated: "完成森林蜂 × 草原蜂杂交", common: "调查静谧沼泽", noble: "养蜂箱 LV.02 后尝试稀有培育", tropical: "调查热带林冠" }[id] || "继续探索和杂交";
   }
+  if (kind === "butterfly") return butterflySpecies[id] ? `调查${zones[butterflySpecies[id].zone].name}` : "继续探索生态区域";
   return { larch: "完成橡树 × 白桦培育", jungle: "调查静谧沼泽", teak: "调查热带林冠" }[id] || "继续探索和培育";
 }
 
@@ -1357,7 +1388,7 @@ function renderCodex() {
     const found = state.discovered.includes(id);
     const analyzed = found && state.analyzed.includes(id);
     const traitMarkup = analyzed ? `<div class="codex-traits"><span>速度 <b>${item.traits.speed}</b></span><span>寿命 <b>${item.traits.lifespan}</b></span><span>繁殖 <b>${item.traits.fertility}</b></span></div>` : `<div class="codex-traits codex-traits-hidden">分析后读取基因参数</div>`;
-    return `<article class="codex-entry ${found ? "" : "locked"} ${analyzed ? "analyzed" : ""}"><span class="species-icon ${item.color}">${found ? item.icon : "?"}</span><div class="codex-body"><div class="codex-entry-top"><small>${found ? `蜂种 · ${item.type}` : "蜂种 · 未发现"}</small><span class="codex-status">${found ? analyzed ? "已分析" : "待分析" : "LOCKED"}</span></div><h3>${found ? item.name : "未知品种"}</h3><p>${found ? item.desc : getCodexUnlockText(id, "bee")}</p>${found ? `<small class="codex-lineage">${getBeeLineage(id)}</small>${traitMarkup}` : ""}</div></article>`;
+    return `<article class="codex-entry ${found ? "" : "locked"} ${analyzed ? "analyzed" : ""}"><span class="species-icon ${item.color}">${found ? beeSpriteMarkup(id) : "?"}</span><div class="codex-body"><div class="codex-entry-top"><small>${found ? `蜂种 · ${item.type}` : "蜂种 · 未发现"}</small><span class="codex-status">${found ? analyzed ? "已分析" : "待分析" : "LOCKED"}</span></div><h3>${found ? item.name : "未知品种"}</h3><p>${found ? item.desc : getCodexUnlockText(id, "bee")}</p>${found ? `<small class="codex-lineage">${getBeeLineage(id)}</small>${traitMarkup}` : ""}</div></article>`;
   }).join("");
   const treeEntries = Object.entries(treeSpecies).map(([id, item]) => {
     const found = state.treeDiscovered.includes(id);
@@ -1365,7 +1396,13 @@ function renderCodex() {
     const traitMarkup = analyzed ? `<div class="codex-traits"><span>生长 <b>${item.traits.growth}</b></span><span>木材 <b>${item.traits.yield}</b></span><span>树脂 <b>${item.traits.resin}</b></span></div>` : `<div class="codex-traits codex-traits-hidden">分析后读取基因参数</div>`;
     return `<article class="codex-entry ${found ? "" : "locked"} ${analyzed ? "analyzed" : ""}"><span class="species-icon ${item.color}">${found ? item.icon : "?"}</span><div class="codex-body"><div class="codex-entry-top"><small>${found ? `树木 · ${item.type}` : "树木 · 未发现"}</small><span class="codex-status">${found ? analyzed ? "已分析" : "待分析" : "LOCKED"}</span></div><h3>${found ? item.name : "未知树种"}</h3><p>${found ? item.desc : getCodexUnlockText(id, "tree")}</p>${found ? `<small class="codex-lineage">${getTreeLineage(id)}</small>${traitMarkup}` : ""}</div></article>`;
   }).join("");
-  grid.innerHTML = beeEntries + treeEntries;
+  const butterflyEntries = Object.entries(butterflySpecies).map(([id, item]) => {
+    const found = state.butterflyDiscovered.includes(id);
+    const analyzed = found && state.butterflyAnalyzed.includes(id);
+    const traitMarkup = analyzed ? `<div class="codex-traits"><span>稀有度 <b>${item.traits.rarity}</b></span><span>授粉 <b>${item.traits.pollination}</b></span></div>` : `<div class="codex-traits codex-traits-hidden">观察后记录生态参数</div>`;
+    return `<article class="codex-entry butterfly-entry ${found ? "" : "locked"} ${analyzed ? "analyzed" : ""}"><span class="species-icon ${item.color}">${found ? butterflySpriteMarkup(id) : "?"}</span><div class="codex-body"><div class="codex-entry-top"><small>${found ? `蝴蝶 · ${item.type}` : "蝴蝶 · 未发现"}</small><span class="codex-status">${found ? analyzed ? "已观察" : "待观察" : "LOCKED"}</span></div><h3>${found ? item.name : "未知蝶种"}</h3><p>${found ? item.desc : getCodexUnlockText(id, "butterfly")}</p>${found ? `<small class="codex-lineage">${getButterflyLineage(id)}</small>${traitMarkup}<button class="mini-action butterfly-observe-button" data-butterfly-observe="${id}">${analyzed ? "已记录" : "观察蝶种"}</button>` : ""}</div></article>`;
+  }).join("");
+  grid.innerHTML = `<div class="codex-section-divider"><span>01 / BEES · 蜂种</span><small>亲本、突变与基因</small></div>${beeEntries}<div class="codex-section-divider"><span>02 / BUTTERFLIES · 蝴蝶</span><small>观察、授粉与生态指标</small></div>${butterflyEntries}<div class="codex-section-divider"><span>03 / TREES · 树种</span><small>生长、木材与树脂</small></div>${treeEntries}`;
 }
 
 function renderZones() {
@@ -1889,8 +1926,8 @@ function renderAll() {
 function switchView(view) {
   $$(".nav-button").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
   $$(".view-panel").forEach((panel) => panel.classList.toggle("active", panel.id === `view-${view}`));
-  const codexFound = knownDiscoveredBees().length + knownDiscoveredTrees().length;
-  const codexTotal = Object.keys(species).length + Object.keys(treeSpecies).length;
+  const codexFound = knownDiscoveredBees().length + knownDiscoveredButterflies().length + knownDiscoveredTrees().length;
+  const codexTotal = Object.keys(species).length + Object.keys(butterflySpecies).length + Object.keys(treeSpecies).length;
   const labels = { overview: ["DAY 01 · FOREST EDGE", "林地总览"], explore: ["FIELD SURVEY · 01", "探索区域"], apiary: ["APICULTURE STATION · A-01", "养蜂工作台"], arbor: ["ARBORICULTURE STATION · T-01", "树木培育台"], machines: ["PROCESSING FLOOR · C-01", "机器台"], research: ["WORKSHOP RESEARCH · R-01", "研究升级"], codex: [`FIELD ARCHIVE · ${String(codexFound).padStart(2, "0")} / ${String(codexTotal).padStart(2, "0")}`, "生态图鉴"] };
   if (!labels[view]) return switchView("overview");
   setText("#view-eyebrow", labels[view][0]);
@@ -1945,6 +1982,12 @@ function explore(zone) {
   }
   if (zone === "swamp" && !state.discovered.includes("common") && (Math.random() > .3 || zoneVisits >= 2)) { state.discovered.push("common"); found.push("普通蜂"); }
   if (zone === "tropic" && !state.discovered.includes("tropical") && (Math.random() > .35 || zoneVisits >= 2)) { state.discovered.push("tropical"); found.push("热带蜂"); }
+  const butterflyByZone = { forest: "azure", plains: "brimstone", swamp: "swallow", tropic: "atlas" };
+  const butterflyId = butterflyByZone[zone];
+  if (butterflyId && !state.butterflyDiscovered.includes(butterflyId) && (Math.random() > .4 || zoneVisits >= 2)) {
+    state.butterflyDiscovered.push(butterflyId);
+    found.push(butterflySpecies[butterflyId].name);
+  }
   if (zone === "swamp" && !state.treeDiscovered.includes("jungle") && (Math.random() > .45 || zoneVisits >= 2)) { state.treeDiscovered.push("jungle"); state.treeSaplings.jungle = (state.treeSaplings.jungle || 0) + 1; found.push("丛林树苗"); }
   if (zone === "tropic" && !state.treeDiscovered.includes("teak") && (Math.random() > .35 || zoneVisits >= 2)) { state.treeDiscovered.push("teak"); state.treeSaplings.teak = (state.treeSaplings.teak || 0) + 1; found.push("柚木树苗"); }
   addLog(`探索${config.name}完成，获得木材 ${config.wood}${found.length ? `，发现 ${found.join("、")}` : "。"}${overflowed ? " 仓库空间不足，部分物资未能带回。" : ""}`, "teal");
@@ -1971,6 +2014,15 @@ function analyzeSpecies(id) {
   state.analyzed.push(id);
   addLog(`分析完成：${species[id].name} 的速度、寿命和花源属性已记录。`, "green");
   showToast(`已分析 ${species[id].name}`);
+  renderAll();
+}
+
+function analyzeButterfly(id) {
+  if (!state.butterflyDiscovered.includes(id)) return showToast("还没有发现这个蝶种。");
+  if (state.butterflyAnalyzed.includes(id)) return showToast(`${butterflySpecies[id].name} 已经观察完成。`);
+  state.butterflyAnalyzed.push(id);
+  addLog(`观察完成：${butterflySpecies[id].name} 的稀有度和授粉属性已记录。`, "teal");
+  showToast(`已记录 ${butterflySpecies[id].name}`);
   renderAll();
 }
 
@@ -2547,6 +2599,10 @@ function bindEvents() {
     event.stopPropagation();
     analyzeTree(button.dataset.treeAnalyze);
   }));
+  $("#codex-grid").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-butterfly-observe]");
+    if (button) analyzeButterfly(button.dataset.butterflyObserve);
+  });
   $("#collect-button").addEventListener("click", collectApiary);
   $("#breed-button").addEventListener("click", startBreeding);
   $("#flower-select").addEventListener("change", (event) => selectFlowerSource(event.target.value));
