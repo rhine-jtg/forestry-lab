@@ -1,0 +1,40 @@
+{
+  "name": "forestry-lab",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Forestry Lab · 林业模拟器",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "dist:win": "electron-builder --win portable --x64",
+    "build:launcher": "powershell -ExecutionPolicy Bypass -File desktop/build-launcher.ps1"
+  },
+  "build": {
+    "appId": "com.forestrylab.desktop",
+    "productName": "林业模拟器",
+    "artifactName": "Forestry-Lab.exe",
+    "asar": true,
+    "files": [
+      "desktop/**/*",
+      "index.html",
+      "styles.css",
+      "app.js"
+    ],
+    "directories": {
+      "output": "dist/desktop"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  },
+  "devDependencies": {
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3"
+  }
+}

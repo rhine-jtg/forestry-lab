@@ -1,0 +1,9 @@
+.android-build/
+android/.gradle/
+android/local.properties
+android/app/build/
+dist/
+node_modules/
+*.log
+microsoft-jdk17.msi
+microsoft-jdk17-install.log

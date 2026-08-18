@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#17231d" />
+    <title>Forestry Lab · 林业模拟器</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <div class="brand-mark">FL</div>
+          <div>
+            <p class="eyebrow">生态工坊 / WEB PROTOTYPE</p>
+            <h1>FORESTRY LAB</h1>
+          </div>
+        </div>
+
+          <div class="resource-strip" aria-label="资源">
+            <div class="resource-chip"><span class="resource-icon honey">H</span><span><small>蜂蜜</small><strong id="honey-value">24</strong></span></div>
+            <div class="resource-chip"><span class="resource-icon wax">W</span><span><small>蜂蜡</small><strong id="wax-value">10</strong></span></div>
+            <div class="resource-chip"><span class="resource-icon wood">L</span><span><small>木材</small><strong id="wood-value">32</strong></span></div>
+            <div class="resource-chip"><span class="resource-icon resin">R</span><span><small>树脂</small><strong id="resin-value">0</strong></span></div>
+            <div class="resource-chip"><span class="resource-icon oil">O</span><span><small>种子油</small><strong id="oil-value">6</strong></span></div>
+            <div class="resource-chip"><span class="resource-icon biomass">B</span><span><small>生物质</small><strong id="biomass-value">0</strong></span></div>
+            <div class="resource-chip"><span class="resource-icon biofuel">F</span><span><small>生物燃料</small><strong id="biofuel-value">0</strong></span></div>
+            <div class="resource-chip"><span class="resource-icon flower">✿</span><span><small id="flower-label">当前花源</small><strong id="flower-value">3</strong></span></div>
+          <div class="resource-chip storage-chip" id="warehouse-chip"><span class="resource-icon storage">▣</span><span><small>仓库</small><strong id="warehouse-value">72 / 100</strong></span></div>
+          <div class="resource-chip energy-chip"><span class="resource-icon energy">⚡</span><span><small>能源</small><strong><span id="energy-value">60</span>/100</strong></span></div>
+        </div>
+
+        <div class="topbar-actions">
+          <span class="save-status" id="save-status">已自动保存</span>
+          <button class="icon-button" id="reset-button" title="重置原型数据">↺</button>
+        </div>
+      </header>
+
+      <div class="layout-grid">
+        <aside class="sidebar panel">
+          <div class="sidebar-heading">
+            <span class="mini-label">WORKBENCH</span>
+            <span class="status-dot"></span>
+          </div>
+          <nav class="nav-stack" aria-label="主导航">
+            <button class="nav-button active" data-view="overview"><span class="nav-icon">⌂</span><span>总览</span><small>OVERVIEW</small></button>
+            <button class="nav-button" data-view="explore"><span class="nav-icon">⌖</span><span>探索</span><small>EXPLORE</small></button>
+            <button class="nav-button" data-view="apiary"><span class="nav-icon">⬡</span><span>养蜂</span><small>APIARY</small></button>
+            <button class="nav-button" data-view="arbor"><span class="nav-icon">♣</span><span>树木</span><small>ARBOR</small></button>
+            <button class="nav-button" data-view="machines"><span class="nav-icon">⚙</span><span>机器</span><small>MACHINES</small></button>
+            <button class="nav-button" data-view="research"><span class="nav-icon">⌘</span><span>研究</span><small>RESEARCH</small></button>
+            <button class="nav-button" data-view="codex"><span class="nav-icon">▤</span><span>图鉴</span><small>CODEX</small></button>
+          </nav>
+
+          <div class="sidebar-note">
+            <span class="mini-label">CURRENT GOAL</span>
+            <strong id="goal-title">完成第一次杂交</strong>
+            <div class="progress-track"><span id="goal-progress" style="width: 32%"></span></div>
+            <small id="goal-detail">收集 1 个蜂巢 · 分析 2 种蜜蜂</small>
+          </div>
+        </aside>
+
+        <main class="main-content">
+          <div class="view-header">
+            <div>
+              <p class="eyebrow" id="view-eyebrow">DAY 01 · FOREST EDGE</p>
+              <h2 id="view-title">林地总览</h2>
+            </div>
+            <div class="view-meta"><span class="live-indicator"></span><span id="last-action">生态系统运行中</span></div>
+          </div>
+
+          <section class="view-panel active" id="view-overview">
+            <div class="overview-grid">
+              <article class="hero-card panel-inset">
+                <div class="hero-copy">
+                  <span class="tag tag-amber">FOCUS AREA</span>
+                  <h3>森林蜂箱群</h3>
+                  <p id="hero-focus-detail">花源充足，适合进行第一次稳定杂交。</p>
+                  <div class="hero-stats">
+                    <div><small>蜂箱进度</small><strong id="hero-apiary-status">72%</strong></div>
+                    <div><small>花源</small><strong class="positive" id="hero-flower-status">稳定</strong></div>
+                    <div><small>生态值</small><strong id="hero-ecology-score">93</strong></div>
+                  </div>
+                  <button class="primary-button" data-jump="apiary">查看蜂箱 <span>→</span></button>
+                </div>
+                <div class="hero-diagram" aria-label="蜂箱示意图">
+                  <div class="sun-disc"></div>
+                  <div class="tree-shape tree-one"></div>
+                  <div class="tree-shape tree-two"></div>
+                  <div class="apiary-shape"><span>⬡</span></div>
+                  <div class="flower flower-a">✦</div><div class="flower flower-b">✿</div><div class="bee-float">●</div>
+                </div>
+              </article>
+
+              <article class="mission-card panel-inset">
+                <div class="section-heading"><div><span class="mini-label" id="mission-label">RESEARCH NOTE 01</span><h3 id="mission-title">第一次杂交</h3></div><span class="stamp" id="mission-stamp">NEW</span></div>
+                <p id="mission-detail">把森林蜂和草原蜂放入同一养蜂箱，观察子代属性。</p>
+                <div class="mission-list">
+                  <div class="mission-row done"><span class="check">✓</span><span>建造基础蜂箱</span><strong>1 / 1</strong></div>
+                  <div class="mission-row" id="mission-comb"><span class="check" id="comb-check"></span><span>收集蜂巢</span><strong id="comb-goal">0 / 1</strong></div>
+                  <div class="mission-row" id="mission-analysis"><span class="check" id="analysis-check"></span><span>分析两种亲本蜂</span><strong id="analysis-goal">0 / 2</strong></div>
+                  <div class="mission-row" id="mission-breed"><span class="check" id="breed-check"></span><span>完成森林 × 草原杂交</span><strong id="breed-goal">0 / 1</strong></div>
+                  <div class="mission-row mission-current" id="mission-current-row"><span class="check" id="current-check">→</span><span id="mission-current-label">当前行为</span><strong id="mission-current-goal">NOW</strong></div>
+                </div>
+                <button class="secondary-button" id="mission-action" data-jump="explore">去寻找蜂巢 <span>→</span></button>
+              </article>
+            </div>
+
+            <div class="section-heading section-heading-spaced"><div><span class="mini-label">SYSTEM STATUS</span><h3>生产概览</h3></div><button class="text-button" data-jump="machines">打开机器台 →</button></div>
+            <div class="status-grid">
+              <article class="status-card status-card-action panel-inset" id="overview-apiary-card" data-jump="apiary" data-target="#apiary-countdown" role="button" tabindex="0" aria-label="打开蜂箱 A-01"><div class="status-card-top"><span class="status-icon amber">⬡</span><span class="status-pill online" id="overview-apiary-status">运行中</span></div><h4>蜂箱 A-01</h4><p>蜂巢产出 · 还需 <strong id="overview-apiary-time">12s</strong></p><div class="progress-track"><span id="overview-apiary-progress" style="width: 72%"></span></div></article>
+              <article class="status-card status-card-action panel-inset" id="overview-machine-card" data-jump="machines" data-target="#machine-button" role="button" tabindex="0" aria-label="打开离心机 C-01"><div class="status-card-top"><span class="status-icon teal">⚙</span><span class="status-pill waiting" id="overview-machine-status">待命</span></div><h4>离心机 C-01</h4><p>等待输入 · 当前蜂巢 <strong id="overview-comb-count">0</strong></p><div class="progress-track teal-track"><span id="overview-machine-progress" style="width: 0%"></span></div></article>
+              <article class="status-card status-card-action panel-inset" id="overview-ecology-card" data-jump="apiary" data-target="#flower-select" role="button" tabindex="0" aria-label="打开林地生态设置"><div class="status-card-top"><span class="status-icon green">♧</span><span class="status-pill online" id="overview-ecology-status">健康</span></div><h4>林地生态</h4><p id="overview-ecology-effect">野花 · 授粉效率 +0%</p><div class="progress-track green-track"><span id="overview-ecology-progress" style="width: 86%"></span></div></article>
+              <article class="status-card status-card-action panel-inset" id="overview-tree-card" data-jump="arbor" data-target="#tree-countdown" role="button" tabindex="0" aria-label="打开树场 T-01"><div class="status-card-top"><span class="status-icon resin">♣</span><span class="status-pill online" id="overview-tree-status">运行中</span></div><h4>树场 T-01</h4><p id="overview-tree-detail">木材 / 树脂 · 还需 18s</p><div class="progress-track green-track"><span id="overview-tree-progress" style="width: 64%"></span></div></article>
+            </div>
+
+            <div class="section-heading section-heading-spaced"><div><span class="mini-label">PLAY LOOP</span><h3>分层目标</h3></div><span class="log-count">NOW / CYCLE / LONG-TERM</span></div>
+            <div class="horizon-grid">
+              <article class="horizon-card panel-inset horizon-short"><div class="horizon-top"><span class="horizon-kicker">短周期 · NOW</span><span class="horizon-status" id="short-status">进行中</span></div><h3 id="short-title">等待蜂箱产出</h3><p id="short-detail">观察生产进度，准备下一次收取。</p><div class="horizon-progress"><div class="progress-track"><span id="short-progress" style="width: 72%"></span></div><strong id="short-progress-label">72%</strong></div><button class="secondary-button horizon-action" id="short-action">查看蜂箱 <span>→</span></button></article>
+              <article class="horizon-card panel-inset horizon-mid"><div class="horizon-top"><span class="horizon-kicker">中周期 · CYCLE</span><span class="horizon-status" id="mid-status">研究中</span></div><h3 id="mid-title">分析亲本属性</h3><p id="mid-detail">分别分析森林蜂和草原蜂，解锁第一次杂交。</p><div class="horizon-progress"><div class="progress-track"><span id="mid-progress" style="width: 0%"></span></div><strong id="mid-progress-label">0%</strong></div><button class="secondary-button horizon-action" id="mid-action">打开养蜂台 <span>→</span></button></article>
+              <article class="horizon-card panel-inset horizon-long"><div class="horizon-top"><span class="horizon-kicker">长周期 · LONG</span><span class="horizon-status" id="long-status">规划中</span></div><h3 id="long-title">扩展生态区域</h3><p id="long-detail">完成加工并开放热带林冠，寻找稀有蜂种。</p><div class="horizon-progress"><div class="progress-track"><span id="long-progress" style="width: 0%"></span></div><strong id="long-progress-label">0%</strong></div><button class="secondary-button horizon-action" id="long-action">查看探索 <span>→</span></button></article>
+            </div>
+
+            <article class="milestone-card panel-inset"><div class="milestone-intro"><span class="tag tag-green" id="milestone-rank">ARCHIVE 0 / 3</span><h3 id="milestone-title">建立生态研究档案</h3><p id="milestone-detail">把一次次调查、成功培育和设施投入，沉淀为长期成长记录。</p></div><div class="milestone-grid" id="milestone-grid"></div></article>
+
+            <article class="contract-card panel-inset">
+              <div class="contract-intro">
+                <div class="section-heading"><div><span class="tag tag-teal">ECOLOGY CONTRACTS</span><h3 id="contract-title">林地调查补给</h3></div><span class="status-pill waiting" id="contract-status">筹备中</span></div>
+                <span class="mini-label" id="contract-label">FIELD SUPPLY 01</span>
+                <p id="contract-detail">前线调查站需要一批基础采集物，换取新的探索补给。</p>
+                <small class="contract-reward" id="contract-reward">奖励：种子油 2 · 能源 10 · 声望 +1</small>
+              </div>
+              <div class="contract-right">
+                <div class="contract-meta"><span>生态声望 <strong id="contract-reputation">0</strong></span><span id="contract-count">0 / 3</span></div>
+                <div class="contract-requirements" id="contract-requirements"></div>
+                <button class="secondary-button full-button" id="contract-button">资源未齐</button>
+              </div>
+            </article>
+
+            <div class="log-card panel-inset"><div class="section-heading"><div><span class="mini-label">FIELD LOG</span><h3>现场记录</h3></div><span class="log-count" id="log-count">03 EVENTS</span></div><div class="log-list" id="log-list"></div></div>
+
+            <article class="guide-card panel-inset">
+              <div class="guide-main">
+                <div class="section-heading"><div><span class="tag tag-amber">NEW PLAYER GUIDE</span><h3 id="guide-title">开始第一次调查</h3></div><span class="guide-step" id="guide-step">STEP 01 / 11</span></div>
+                <p id="guide-text">前往森林边缘寻找蜂巢和基础材料，探索会消耗 5 点能源。</p>
+                <div class="guide-progress-row"><div class="progress-track"><span id="guide-progress" style="width: 14%"></span></div><strong id="guide-progress-label">14%</strong></div>
+                <button class="primary-button" id="guide-action">前往探索 <span>→</span></button>
+              </div>
+              <div class="guide-steps" id="guide-steps"></div>
+            </article>
+          </section>
+
+          <section class="view-panel" id="view-explore">
+            <div class="section-heading"><div><span class="mini-label">FIELD SURVEY</span><h3>选择探索区域</h3></div><span class="cost-note">探索消耗 5 能源</span></div>
+            <div class="zone-grid">
+              <article class="zone-card panel-inset"><div class="zone-art forest-art"><span>♣</span><i>●</i><b>✦</b></div><div class="zone-info"><span class="tag tag-green">已开放</span><h3>森林边缘</h3><p>基础蜂巢、橡树苗、春蓝蝶与普通花朵</p><div class="zone-footer"><span>发现度 <strong data-zone-discovery="forest">62%</strong></span><small data-zone-visits="forest">0 次调查</small><button class="small-button explore-button" data-zone="forest">探索</button></div></div></article>
+              <article class="zone-card panel-inset"><div class="zone-art plains-art"><span>♧</span><i>✿</i><b>●</b></div><div class="zone-info"><span class="tag tag-green">已开放</span><h3>平原花地</h3><p>草原蜂、硫磺蛾、丰富花源与作物种子</p><div class="zone-footer"><span>发现度 <strong data-zone-discovery="plains">18%</strong></span><small data-zone-visits="plains">0 次调查</small><button class="small-button explore-button" data-zone="plains">探索</button></div></article>
+              <article class="zone-card panel-inset locked"><div class="zone-art swamp-art"><span>≈</span><i>♣</i><b>?</b><div class="lock-mark">⌑</div></div><div class="zone-info"><span class="tag tag-muted">需解锁</span><h3>静谧沼泽</h3><p>需要完成 2 次区域探索，可发现燕尾蝶与丛林树苗</p><div class="zone-footer"><span>发现度 <strong data-zone-discovery="swamp">0%</strong></span><small data-zone-visits="swamp">0 次调查</small><button class="small-button explore-button" data-zone="swamp" disabled>锁定</button></div></div></article>
+              <article class="zone-card panel-inset locked"><div class="zone-art tropic-art"><span>♨</span><i>♣</i><b>?</b><div class="lock-mark">⌑</div></div><div class="zone-info"><span class="tag tag-muted">需解锁</span><h3>热带林冠</h3><p>需要完成第一次离心加工，可发现林冠蝶与柚木</p><div class="zone-footer"><span>发现度 <strong data-zone-discovery="tropic">0%</strong></span><small data-zone-visits="tropic">0 次调查</small><button class="small-button explore-button" data-zone="tropic" disabled>锁定</button></div></div></article>
+            </div>
+            <div class="explore-tip panel-inset"><span class="tip-icon">i</span><div><strong>探索提示</strong><p>探索会带回随机材料、对应区域花源，也可能发现新的蜂种、蝴蝶或树苗。能源会随时间缓慢恢复；蜂箱花源耗尽时，优先切换花源或回到对应区域补充。</p></div></div>
+          </section>
+
+          <section class="view-panel" id="view-apiary">
+            <div class="section-heading"><div><span class="mini-label">APICULTURE STATION</span><h3>养蜂箱 A-01</h3></div><span class="status-pill online" id="apiary-view-status">运行中</span></div>
+            <div class="apiary-layout">
+              <article class="breeding-card panel-inset">
+                <div class="slot-head"><span>亲本配置</span><small id="breeding-slot-hint">放入两种蜂群开始杂交</small></div>
+                <div class="parent-slots"><div class="bee-slot" id="princess-slot" data-parent="forest"><select class="parent-select" id="princess-select" aria-label="选择公主蜂"></select><span class="slot-label">公主蜂</span><span class="bee-glyph species-bee-amber" id="princess-icon">●</span><strong id="princess-name">森林蜂</strong><small id="princess-detail">温和 · 普通</small><button class="mini-action analyze-button" id="princess-analyze" data-analyze="forest">分析亲本</button></div><span class="cross-symbol">×</span><div class="bee-slot" id="drone-slot" data-parent="meadows"><select class="parent-select" id="drone-select" aria-label="选择雄蜂"></select><span class="slot-label">雄蜂</span><span class="bee-glyph species-bee-gold" id="drone-icon">●</span><strong id="drone-name">草原蜂</strong><small id="drone-detail">花源 · 快速</small><button class="mini-action analyze-button" id="drone-analyze" data-analyze="meadows">分析亲本</button></div></div>
+                <div class="trait-preview"><div class="trait-title"><span>子代预览</span><strong id="mutation-chance">待分析 2 个亲本</strong></div><small class="mutation-path" id="breeding-path">选择亲本后查看已知突变路径。</small><div class="trait-bars"><div><span>速度</span><i><b id="bee-trait-speed" style="width: 50%"></b></i><em id="bee-speed-value">中</em></div><div><span>寿命</span><i><b id="bee-trait-lifespan" style="width: 50%"></b></i><em id="bee-lifespan-value">中</em></div><div><span>繁殖力</span><i><b id="bee-trait-fertility" style="width: 50%"></b></i><em id="bee-fertility-value">中</em></div></div></div>
+                <button class="primary-button full-button" id="breed-button">开始杂交 <span>→</span></button>
+              </article>
+              <article class="colony-card panel-inset"><div class="slot-head"><span>当前蜂群</span><small id="apiary-status-text">蜂群正在采集花粉</small></div><div class="colony-visual"><div class="colony-hex">⬡</div><div><strong>培育中的蜂后</strong><p>本轮产出倒计时</p><div class="big-countdown" id="apiary-countdown">12s</div></div></div><div class="flower-control"><div><span class="mini-label">FLOWER SOURCE</span><strong>当前花源</strong></div><select id="flower-select" aria-label="选择当前花源"></select><small id="flower-source-effect">稳定基础花源 · 库存 3</small><span class="status-pill online" id="flower-source-status">花源可用</span></div><div class="flower-control habitat-control"><div><span class="mini-label">HABITAT</span><strong>蜂箱环境</strong></div><select id="habitat-select" aria-label="选择蜂箱环境"></select><small id="habitat-effect">温和 · 均衡 · 适配度 100%</small><span class="status-pill online" id="habitat-status">环境适配</span></div><div class="production-meter"><div class="meter-label"><span>生产进度</span><strong id="apiary-progress-label">72%</strong></div><div class="progress-track"><span id="apiary-progress" style="width: 72%"></span></div></div><div class="output-row"><div><small>可收取蜂巢</small><strong id="comb-value">0</strong></div><div><small>工作效率</small><strong id="apiary-efficiency" class="positive">+0%</strong></div><div><small>花源状态</small><strong id="apiary-flower-output" class="positive">充足</strong></div></div><button class="secondary-button full-button" id="collect-button">收取蜂巢 <span>＋</span></button></article>
+            </div>
+            <div class="section-heading section-heading-spaced"><div><span class="mini-label">AVAILABLE SPECIES</span><h3>已发现蜂种</h3></div><span class="log-count" id="species-count">02 SPECIES</span></div>
+            <div class="species-row" id="species-row"></div>
+          </section>
+
+          <section class="view-panel" id="view-arbor">
+            <div class="section-heading"><div><span class="mini-label">ARBORICULTURE STATION</span><h3>树木培育台</h3></div><span class="status-pill online">生态联动</span></div>
+            <div class="apiary-layout arbor-layout">
+              <article class="breeding-card panel-inset"><div class="slot-head"><span>树苗亲本</span><small id="tree-slot-hint">分析两种树苗，培育新的木材属性</small></div>
+                <div class="parent-slots"><div class="bee-slot tree-slot" id="tree-parent-a-slot" data-tree-parent="oak"><select class="parent-select" id="tree-parent-a-select" aria-label="选择树木亲本 A"></select><span class="slot-label">亲本 A</span><span class="tree-glyph tree-species-green" id="tree-parent-a-icon">♣</span><strong id="tree-parent-a-name">橡树</strong><small id="tree-parent-a-detail">基础树种</small><button class="mini-action tree-analyze-button" id="tree-parent-a-analyze" data-tree-analyze="oak">分析树苗</button></div><span class="cross-symbol">×</span><div class="bee-slot tree-slot" id="tree-parent-b-slot" data-tree-parent="birch"><select class="parent-select" id="tree-parent-b-select" aria-label="选择树木亲本 B"></select><span class="slot-label">亲本 B</span><span class="tree-glyph tree-species-gold" id="tree-parent-b-icon">♧</span><strong id="tree-parent-b-name">白桦</strong><small id="tree-parent-b-detail">基础树种</small><button class="mini-action tree-analyze-button" id="tree-parent-b-analyze" data-tree-analyze="birch">分析树苗</button></div></div>
+                <div class="trait-preview"><div class="trait-title"><span>树木属性预览</span><strong id="tree-mutation-chance">待分析 2 个亲本</strong></div><small class="mutation-path" id="tree-breeding-path">选择树木亲本后查看已知培育路径。</small><div class="trait-bars"><div><span>生长</span><i><b id="tree-trait-growth" style="width: 50%"></b></i><em id="tree-growth-value">中</em></div><div><span>木材</span><i><b id="tree-trait-yield" style="width: 50%"></b></i><em id="tree-yield-value">中</em></div><div><span>树脂</span><i><b id="tree-trait-resin" style="width: 50%"></b></i><em id="tree-resin-value">中</em></div></div></div>
+                <button class="primary-button full-button" id="tree-breed-button">培育树苗 <span>→</span></button>
+              </article>
+              <article class="colony-card panel-inset tree-farm-card"><div class="slot-head"><span>基础树场 T-01</span><small id="tree-status-text">树苗正在生长</small></div><div class="colony-visual"><div class="tree-farm-visual">♣</div><div><strong>自动树场</strong><p>下一轮木材产出</p><div class="big-countdown" id="tree-countdown">18s</div></div></div><div class="pollination-status"><div><span class="mini-label">POLLINATION LINK</span><strong id="pollination-effect">授粉 +9%</strong></div><small id="pollination-detail">花源可用 · 蜂群正在授粉</small><span class="status-pill online" id="pollination-status">联动</span></div><div class="production-meter"><div class="meter-label"><span>生长进度</span><strong id="tree-progress-label">64%</strong></div><div class="progress-track green-track"><span id="tree-progress" style="width: 64%"></span></div></div><div class="output-row tree-output-row"><div><small>可收取木材</small><strong id="tree-ready-count">0</strong></div><div><small>可收取树脂</small><strong id="tree-ready-resin">0</strong></div><div><small>树场等级</small><strong id="tree-level">LV.01</strong></div><div><small>树苗库存</small><strong id="tree-sapling-total" class="positive">4</strong></div></div><button class="secondary-button full-button" id="tree-collect-button">收取产物 <span>＋</span></button></article>
+            </div>
+            <div class="section-heading section-heading-spaced"><div><span class="mini-label">TREE ARCHIVE</span><h3>已发现树种</h3></div><span class="log-count" id="tree-species-count">02 SPECIES</span></div>
+            <div class="species-row" id="tree-species-row"></div>
+          </section>
+
+          <section class="view-panel" id="view-machines">
+            <div class="section-heading"><div><span class="mini-label">PROCESSING FLOOR</span><h3>机器台</h3></div><span class="cost-note">加工会消耗能源</span></div>
+            <div class="machines-layout">
+              <article class="machine-card panel-inset active-machine"><div class="machine-header"><span class="machine-icon">◉</span><div><span class="tag tag-amber">PROCESSOR</span><h3>离心机 C-01</h3></div><span class="status-pill" id="machine-status">待命</span></div><div class="machine-flow"><div class="machine-slot"><small>INPUT</small><span class="item-icon comb-icon">⬡</span><strong id="machine-input">0</strong><em>蜂巢</em></div><span class="flow-arrow">→</span><div class="machine-slot output-slot"><small>OUTPUT</small><div class="machine-output-pair"><span class="item-icon honey-icon">H</span><span class="item-icon wax-icon">W</span></div><strong id="machine-output">0</strong><em>蜂蜜 + 蜂蜡</em></div></div><div class="machine-progress"><div class="meter-label"><span id="machine-progress-label">等待输入</span><strong id="machine-time">--</strong></div><div class="progress-track teal-track"><span id="machine-progress" style="width: 0%"></span></div></div><button class="primary-button full-button" id="machine-button">启动加工 <span>→</span></button></article>
+              <article class="machine-card panel-inset"><div class="machine-header"><span class="machine-icon green">♧</span><div><span class="tag tag-green">EXTRACTOR</span><h3>榨汁机 S-01</h3></div><span class="status-pill waiting" id="squeezer-status">锁定</span></div><div class="locked-machine" id="squeezer-locked-panel"><span>⌑</span><p id="squeezer-lock-text">完成 1 次离心加工后解锁</p></div><div class="machine-flow squeezer-flow" id="squeezer-flow" style="display: none"><div class="machine-slot"><small>INPUT</small><span class="item-icon wood-icon">L</span><strong id="squeezer-input">0</strong><em>木材 × 2</em></div><span class="flow-arrow">→</span><div class="machine-slot output-slot"><small>OUTPUT</small><span class="item-icon oil-icon">O</span><strong id="squeezer-output">0</strong><em>种子油 × 1</em></div></div><div class="machine-progress" id="squeezer-machine-progress" style="display: none"><div class="meter-label"><span id="squeezer-progress-label">等待木材</span><strong id="squeezer-time">--</strong></div><div class="progress-track green-track"><span id="squeezer-progress" style="width: 0%"></span></div></div><button class="secondary-button full-button" id="squeezer-button" disabled>完成离心加工后解锁</button></article>
+              <article class="machine-card panel-inset"><div class="machine-header"><span class="machine-icon teal">≈</span><div><span class="tag tag-teal">FERMENTER</span><h3>发酵机 F-01</h3></div><span class="status-pill waiting" id="fermenter-status">锁定</span></div><div class="locked-machine" id="fermenter-locked-panel"><span>⌑</span><p>拥有 3 个蜂种后解锁</p></div><div class="machine-flow fermenter-flow" id="fermenter-flow" style="display: none"><div class="machine-slot"><small>INPUT</small><span class="item-icon wood-icon">L</span><strong id="fermenter-input">0</strong><em>木材 × 3</em></div><span class="flow-arrow">→</span><div class="machine-slot output-slot"><small>OUTPUT</small><span class="item-icon biomass-icon">B</span><strong id="fermenter-output">0</strong><em>生物质 × 1</em></div></div><div class="machine-progress" id="fermenter-machine-progress" style="display: none"><div class="meter-label"><span id="fermenter-progress-label">等待木材</span><strong id="fermenter-time">--</strong></div><div class="progress-track teal-track"><span id="fermenter-progress" style="width: 0%"></span></div></div><button class="secondary-button full-button" id="fermenter-button" disabled>拥有 3 个蜂种后解锁</button></article>
+              <article class="machine-card panel-inset"><div class="machine-header"><span class="machine-icon biofuel">∿</span><div><span class="tag tag-amber">STILL</span><h3>蒸馏机 ST-01</h3></div><span class="status-pill waiting" id="distiller-status">锁定</span></div><div class="locked-machine" id="distiller-locked-panel"><span>⌑</span><p>完成 1 次发酵加工后解锁</p></div><div class="machine-flow distiller-flow" id="distiller-flow" style="display: none"><div class="machine-slot"><small>INPUT</small><span class="item-icon biomass-icon">B</span><strong id="distiller-input">0</strong><em>生物质 × 1</em></div><span class="flow-arrow">→</span><div class="machine-slot output-slot"><small>OUTPUT</small><span class="item-icon biofuel-icon">F</span><strong id="distiller-output">0</strong><em>生物燃料 × 1</em></div></div><div class="machine-progress" id="distiller-machine-progress" style="display: none"><div class="meter-label"><span id="distiller-progress-label">等待生物质</span><strong id="distiller-time">--</strong></div><div class="progress-track"><span id="distiller-progress" style="width: 0%"></span></div></div><button class="secondary-button full-button" id="distiller-button" disabled>完成发酵加工后解锁</button></article>
+            </div>
+            <div class="recipe-card panel-inset"><div><span class="mini-label">CURRENT RECIPE</span><h3 id="recipe-title">蜂巢基础分离</h3></div><div class="recipe-flow"><span id="recipe-input">1 蜂巢</span><b>→</b><span id="recipe-output">1 蜂蜜 + 1 蜂蜡</span></div><div class="recipe-ledger"><small>累计分离</small><strong id="processed-output">H 0 · W 0</strong></div><small>加工时间 <span id="recipe-duration">6</span> · 能源消耗 <span id="recipe-energy">2</span></small></div>
+            <article class="automation-card panel-inset" id="automation-card"><span class="automation-icon">⚙</span><div class="automation-copy"><span class="tag tag-green">MACHINE QUEUE</span><h3 id="automation-title">建立机器队列</h3><p id="automation-detail">完成 3 份生态委托后解锁，按离心机 → 榨汁机 → 发酵机 → 蒸馏机顺序自动处理已准备的输入。</p></div><div class="automation-state"><span class="status-pill waiting" id="automation-status">待解锁</span><label class="automation-reserve">保留探索能源 <select id="automation-reserve" aria-label="自动化保留探索能源"><option value="0">0 点</option><option value="5">5 点</option><option value="10" selected>10 点</option><option value="15">15 点</option><option value="20">20 点</option></select></label><button class="secondary-button" id="automation-button" disabled>完成委托后解锁</button></div></article>
+          </section>
+
+          <section class="view-panel" id="view-research">
+            <div class="section-heading"><div><span class="mini-label">WORKSHOP RESEARCH</span><h3>研究升级</h3></div><span class="log-count" id="research-count">0 次升级 · 0 项满级</span></div>
+            <article class="research-banner panel-inset"><div><span class="tag tag-amber">PROGRESSION BRIDGE</span><h3>把短周期产物变成长期效率</h3><p>每次升级都会直接影响生产计时。先收取蜂蜜、蜂蜡、木材和种子油，再选择最需要的设施。</p></div><div class="research-loop"><span>收集</span><b>→</b><span>投入</span><b>→</b><span>加速</span></div></article>
+            <div class="upgrade-grid">
+              <article class="upgrade-card panel-inset"><div class="upgrade-card-top"><span class="upgrade-icon amber">⬡</span><strong id="upgrade-apiary-level">LV.01</strong></div><span class="tag tag-amber">APIARY</span><h3 id="upgrade-apiary-name">养蜂箱 A-01</h3><p id="upgrade-apiary-effect">提高蜂箱生产速度 · 当前 0.80%/s</p><div class="upgrade-track"><span></span><span></span><span></span></div><small class="upgrade-cost" id="upgrade-apiary-cost">下一等级：蜂蜜 20 · 蜂蜡 8 · 木材 15</small><button class="primary-button full-button upgrade-button" id="upgrade-apiary-button" data-upgrade="apiary">升级设施  →</button></article>
+              <article class="upgrade-card panel-inset"><div class="upgrade-card-top"><span class="upgrade-icon green">♣</span><strong id="upgrade-treeFarm-level">LV.01</strong></div><span class="tag tag-green">ARBOR</span><h3 id="upgrade-treeFarm-name">树场 T-01</h3><p id="upgrade-treeFarm-effect">提高木材生长速度 · 当前 0.65%/s</p><div class="upgrade-track"><span></span><span></span><span></span></div><small class="upgrade-cost" id="upgrade-treeFarm-cost">下一等级：木材 25 · 种子油 4</small><button class="primary-button full-button upgrade-button" id="upgrade-treeFarm-button" data-upgrade="treeFarm">升级设施  →</button></article>
+              <article class="upgrade-card panel-inset"><div class="upgrade-card-top"><span class="upgrade-icon teal">◉</span><strong id="upgrade-centrifuge-level">LV.01</strong></div><span class="tag tag-teal">PROCESSOR</span><h3 id="upgrade-centrifuge-name">离心机 C-01</h3><p id="upgrade-centrifuge-effect">缩短蜂巢加工时间 · 当前 6s/轮</p><div class="upgrade-track"><span></span><span></span><span></span></div><small class="upgrade-cost" id="upgrade-centrifuge-cost">下一等级：蜂蜜 18 · 蜂蜡 6 · 种子油 3</small><button class="primary-button full-button upgrade-button" id="upgrade-centrifuge-button" data-upgrade="centrifuge">升级设施  →</button></article>
+              <article class="upgrade-card panel-inset"><div class="upgrade-card-top"><span class="upgrade-icon storage">▣</span><strong id="upgrade-warehouse-level">LV.01</strong></div><span class="tag tag-amber">STORAGE</span><h3 id="upgrade-warehouse-name">仓库 R-01</h3><p id="upgrade-warehouse-effect">提高仓库容量 · 当前 100 格</p><div class="upgrade-track"><span></span><span></span><span></span></div><small class="upgrade-cost" id="upgrade-warehouse-cost">下一等级：木材 25 · 种子油 4</small><button class="primary-button full-button upgrade-button" id="upgrade-warehouse-button" data-upgrade="warehouse">升级设施  →</button></article>
+            </div>
+            <article class="research-note panel-inset"><span class="tip-icon">i</span><div><strong>升级建议</strong><p>想缩短等待就升级蜂箱；木材紧张时升级树场；离心机升级适合已经建立稳定蜂巢来源后使用；仓库接近满载时优先扩容。养蜂箱 LV.02 还会解锁稀有杂交路径，每项设施最多 3 级。</p></div></article>
+          </section>
+
+          <section class="view-panel" id="view-codex">
+            <div class="section-heading"><div><span class="mini-label">FIELD ARCHIVE</span><h3>生态图鉴</h3></div><span class="log-count" id="codex-count">BEE 02 / 06 · BUTTERFLY 01 / 04 · TREE 02 / 05</span></div>
+            <div class="codex-grid" id="codex-grid"></div>
+            <section class="material-shelf panel-inset" aria-label="框架与树果样本">
+              <div class="section-heading"><div><span class="mini-label">MATERIAL SAMPLE BANK</span><h3>框架与树果</h3></div><span class="log-count">VISUAL SET / 06</span></div>
+              <div class="material-grid">
+                <article class="material-card"><span class="pixel-sprite pixel-frame frame-untreated" role="img" aria-label="未处理框架"><i class="frame-core"></i><i class="frame-mark mark-a"></i><i class="frame-mark mark-b"></i></span><div><strong>未处理框架</strong><small>UNTREATED · 80 DURABILITY</small><p>基础蜂房的载体，适合前期采集。</p></div></article>
+                <article class="material-card"><span class="pixel-sprite pixel-frame frame-impregnated" role="img" aria-label="浸渍框架"><i class="frame-core"></i><i class="frame-mark mark-a"></i><i class="frame-mark mark-b"></i></span><div><strong>浸渍框架</strong><small>IMPREGNATED · 240 DURABILITY</small><p>耐久更高，适合连续生产。</p></div></article>
+                <article class="material-card"><span class="pixel-sprite pixel-frame frame-proven" role="img" aria-label="熟练框架"><i class="frame-core"></i><i class="frame-mark mark-a"></i><i class="frame-mark mark-b"></i></span><div><strong>熟练框架</strong><small>PROVEN · 720 DURABILITY</small><p>长期生产线的高级框架。</p></div></article>
+                <article class="material-card"><span class="pixel-sprite pixel-fruit fruit-cherry" role="img" aria-label="樱桃"><i class="fruit-stem stem-left"></i><i class="fruit-stem stem-right"></i><i class="fruit-leaf"></i><i class="fruit-body fruit-a"></i><i class="fruit-body fruit-b"></i></span><div><strong>樱桃</strong><small>CHERRY · TREE FRUIT</small><p>树种结果阶段的基础果实样本。</p></div></article>
+                <article class="material-card"><span class="pixel-sprite pixel-fruit fruit-lemon" role="img" aria-label="柠檬"><i class="fruit-body fruit-a"></i><i class="fruit-highlight"></i></span><div><strong>柠檬</strong><small>LEMON · TREE FRUIT</small><p>温暖环境下的黄色果实样本。</p></div></article>
+                <article class="material-card"><span class="pixel-sprite pixel-fruit fruit-walnut" role="img" aria-label="核桃"><i class="fruit-body fruit-a"></i><i class="fruit-highlight"></i></span><div><strong>核桃</strong><small>WALNUT · TREE FRUIT</small><p>可作为后续加工与配方的稀有材料。</p></div></article>
+              </div>
+            </section>
+          </section>
+        </main>
+      </div>
+    </div>
+    <div class="toast" id="toast" role="status"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
