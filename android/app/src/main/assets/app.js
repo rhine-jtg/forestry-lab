@@ -1562,7 +1562,7 @@ function renderSpecies() {
   const row = $("#species-row");
   row.innerHTML = knownDiscoveredBees().map((id) => {
     const item = species[id];
-    return `<article class="species-card"><span class="species-icon ${item.color}">${beeSpriteMarkup(id)}</span><div><strong>${item.name}</strong><small>${item.type}</small></div></article>`;
+    return `<article class="species-card archive-species-card bee-species-card"><span class="species-icon archive-species-icon bee-species-icon ${item.color}">${beeSpriteMarkup(id)}</span><div class="archive-species-copy"><span>${item.type}</span><strong>${item.name}</strong><small>${item.english.toUpperCase()}</small></div></article>`;
   }).join("");
 }
 
@@ -1729,7 +1729,7 @@ function renderTree() {
   setText("#tree-species-count", `${String(discoveredTrees.length).padStart(2, "0")} / ${String(Object.keys(treeSpecies).length).padStart(2, "0")} SPECIES`);
   $("#tree-species-row").innerHTML = discoveredTrees.map((id) => {
     const item = treeSpecies[id];
-    return `<article class="species-card tree-species-card"><span class="species-icon tree-species-icon ${item.color}">${treeSpriteMarkup(id)}</span><div class="tree-species-copy"><span>${item.type}</span><strong>${item.name}</strong><small>${item.english.toUpperCase()}</small></div></article>`;
+    return `<article class="species-card archive-species-card tree-species-card"><span class="species-icon archive-species-icon tree-species-icon ${item.color}">${treeSpriteMarkup(id)}</span><div class="archive-species-copy tree-species-copy"><span>${item.type}</span><strong>${item.name}</strong><small>${item.english.toUpperCase()}</small></div></article>`;
   }).join("");
 }
 

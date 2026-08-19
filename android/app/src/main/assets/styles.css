@@ -716,10 +716,10 @@ main .panel-inset .section-heading { border-bottom-color: #778079; }
 .tree-species-icon .pixel-tree { transform: scale(.56); transform-origin: center; }
 .codex-entry .tree-species-icon .pixel-tree { transform: scale(.92); }
 .species-card .species-icon .pixel-bee { transform: scale(.56); transform-origin: center; }
-.tree-species-card { min-width: 0; }
-.tree-species-card > div { min-width: 0; }
-.tree-species-card .species-icon { flex: 0 0 40px; }
-.tree-species-card strong, .tree-species-card small { overflow-wrap: anywhere; }
+.archive-species-card { min-width: 0; }
+.archive-species-card > div { min-width: 0; }
+.archive-species-card .species-icon { flex: 0 0 40px; }
+.archive-species-card strong, .archive-species-card small { overflow-wrap: anywhere; }
 
 /* Environment console: biome-colored pixels replace the cramped neutral meter table. */
 .environment-panel {
@@ -896,13 +896,15 @@ main .panel-inset .section-heading { border-bottom-color: #778079; }
 .tree-glyph .pixel-tree, .tree-farm-visual .pixel-tree, .tree-species-icon .pixel-tree { position: absolute; left: 50%; top: 50%; transform-origin: center; filter: brightness(1.28) saturate(1.12); }
 .tree-glyph .pixel-tree { transform: translate(-50%, -50%) scale(.84); }
 .tree-farm-visual .pixel-tree { transform: translate(-50%, -50%) scale(1.2); }
-.tree-species-card { min-height: 84px; display: grid; grid-template-columns: 66px minmax(0, 1fr); gap: 11px; padding: 8px; }
-.tree-species-card .tree-species-icon { width: 66px; height: 66px; flex: none; border: 2px solid currentColor; background: #30473a; box-shadow: inset 2px 2px rgba(255,255,255,.08), inset -2px -2px rgba(0,0,0,.26); }
+.archive-species-card { min-height: 84px; display: grid; grid-template-columns: 66px minmax(0, 1fr); align-items: center; gap: 11px; padding: 8px; }
+.archive-species-card .archive-species-icon { width: 66px; height: 66px; flex: none; place-self: center; overflow: hidden; border: 2px solid currentColor; background: #30473a; box-shadow: inset 2px 2px rgba(255,255,255,.08), inset -2px -2px rgba(0,0,0,.26); }
 .tree-species-card .tree-species-icon .pixel-tree { transform: translate(-50%, -50%) scale(.92); }
-.tree-species-copy { min-width: 0; align-self: center; }
-.tree-species-copy > span { display: inline-block; margin-bottom: 5px; padding: 3px 5px; border: 1px solid #5f6b63; background: #a8aea7; color: #3e4b43; font-size: 8px; }
-.tree-species-copy strong { color: #f0efdc; font-size: 14px; }
-.tree-species-copy small { margin-top: 5px; color: #d4dbd0; font-size: 9px; letter-spacing: .06em; }
+.bee-species-card .bee-species-icon { background: #101914; }
+.bee-species-card .bee-species-icon .pixel-bee { overflow: visible; background: transparent !important; transform: scale(.92); transform-origin: center; }
+.archive-species-copy { min-width: 0; align-self: center; }
+.archive-species-copy > span { display: inline-block; margin-bottom: 5px; padding: 3px 5px; border: 1px solid #5f6b63; background: #a8aea7; color: #3e4b43; font-size: 8px; }
+.archive-species-copy strong { color: #f0efdc; font-size: 14px; }
+.archive-species-copy small { margin-top: 5px; color: #d4dbd0; font-size: 9px; letter-spacing: .06em; }
 .codex-entry .tree-species-icon .pixel-tree { transform: translate(-50%, -50%) scale(.92); }
 
 @media (max-width: 820px) {
@@ -919,7 +921,7 @@ main .panel-inset .section-heading { border-bottom-color: #778079; }
   .contract-card { padding: 13px; }
   .contract-requirements { grid-template-columns: 1fr 1fr; }
   .zone-info p { min-height: 0; }
-  .tree-species-card { min-height: 80px; }
+  .archive-species-card { min-height: 80px; }
 }
 
 @media (max-width: 360px) {
