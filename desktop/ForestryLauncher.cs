@@ -24,6 +24,21 @@ internal static class ForestryLauncher
             WriteResource("ForestryLab.index.html", Path.Combine(cacheRoot, "index.html"));
             WriteResource("ForestryLab.styles.css", Path.Combine(cacheRoot, "styles.css"));
             WriteResource("ForestryLab.app.js", Path.Combine(cacheRoot, "app.js"));
+            WriteResource(
+                "ForestryLab.font.woff2",
+                Path.Combine(cacheRoot, "assets", "fonts", "fusion-pixel-10px-proportional-zh_hans.otf.woff2"));
+            WriteResource(
+                "ForestryLab.font.OFL.txt",
+                Path.Combine(cacheRoot, "assets", "fonts", "OFL.txt"));
+            WriteResource(
+                "ForestryLab.font.ark.OFL.txt",
+                Path.Combine(cacheRoot, "assets", "fonts", "LICENSES", "ark-pixel", "OFL.txt"));
+            WriteResource(
+                "ForestryLab.font.boutique.OFL.txt",
+                Path.Combine(cacheRoot, "assets", "fonts", "LICENSES", "boutique-bitmap-9x9", "OFL.txt"));
+            WriteResource(
+                "ForestryLab.font.galmuri.LICENSE.txt",
+                Path.Combine(cacheRoot, "assets", "fonts", "LICENSES", "galmuri", "LICENSE.txt"));
 
             server = new TcpListener(IPAddress.Loopback, 0);
             server.Start();
@@ -152,12 +167,20 @@ internal static class ForestryLauncher
             case ".html": return "text/html; charset=utf-8";
             case ".css": return "text/css; charset=utf-8";
             case ".js": return "text/javascript; charset=utf-8";
+            case ".woff2": return "font/woff2";
+            case ".txt": return "text/plain; charset=utf-8";
             default: return "application/octet-stream";
         }
     }
 
     private static void WriteResource(string resourceName, string targetPath)
     {
+        string targetDirectory = Path.GetDirectoryName(targetPath);
+        if (!string.IsNullOrEmpty(targetDirectory))
+        {
+            Directory.CreateDirectory(targetDirectory);
+        }
+
         Assembly assembly = Assembly.GetExecutingAssembly();
         using (Stream source = assembly.GetManifestResourceStream(resourceName))
         {

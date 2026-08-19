@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Forestry UI Lab · CSS prototypes</title>
+    <link rel="stylesheet" href="ui-lab.css" />
+  </head>
+  <body>
+    <main class="lab-shell">
+      <header class="lab-header">
+        <div>
+          <p class="lab-kicker">FORESTRY UI LAB / CSS PROTOTYPES</p>
+          <h1>林业模组 UI 逻辑试验场</h1>
+        <p class="lab-lede">把设备状态、生态条件、基因培育和生产链压进同一套方形槽位系统。</p>
+      </div>
+        <div class="lab-stamp">BUILD<br /><strong>02</strong></div>
+      </header>
+
+      <section class="logic-strip" aria-label="Forestry UI 信息链">
+        <div class="logic-step"><span>01</span><strong>INPUT</strong><small>亲本 / 原料</small></div>
+        <i>→</i>
+        <div class="logic-step active"><span>02</span><strong>CONDITION</strong><small>气候 / 基因 / 能源</small></div>
+        <i>→</i>
+        <div class="logic-step"><span>03</span><strong>PROCESS</strong><small>进度 / 状态</small></div>
+        <i>→</i>
+        <div class="logic-step"><span>04</span><strong>OUTPUT</strong><small>产物 / 研究结果</small></div>
+      </section>
+
+      <section class="prototype-grid" aria-label="UI 样式原型">
+        <article class="prototype-card apiary-prototype">
+          <header class="prototype-heading">
+            <div><span class="prototype-index">A / 01</span><h2>蜂房 · Apiary</h2></div>
+            <span class="prototype-state state-running">RUNNING</span>
+          </header>
+          <div class="game-window apiary-window">
+            <div class="window-titlebar"><span class="window-title">养蜂箱 A-01</span><span class="window-tabs">[ APICULTURE ]</span></div>
+            <div class="apiary-layout">
+              <div class="parent-column">
+                <div class="slot-label"><span>QUEEN LINE</span><small>亲本槽</small></div>
+                <div class="bee-slot large-slot"><span class="bee-mark forest-mark">F</span><strong>森林蜂后</strong><small>寿命 68 · 温和</small></div>
+                <div class="bee-slot large-slot"><span class="bee-mark meadow-mark">M</span><strong>草原雄蜂</strong><small>速度 68 · 花源</small></div>
+                <button class="pixel-button mini-button">分析亲本</button>
+              </div>
+              <div class="hive-core">
+                <div class="slot-label"><span>FRAMES / PRODUCTS</span><small>框架与产出</small></div>
+                <div class="frame-rail">
+                  <div class="frame-slot"><span>Ⅰ</span><small>框架</small></div>
+                  <div class="frame-slot"><span>Ⅱ</span><small>框架</small></div>
+                  <div class="frame-slot"><span>Ⅲ</span><small>空槽</small></div>
+                </div>
+                <div class="honeycomb-grid" aria-label="蜂房工作区">
+                  <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                </div>
+                <div class="progress-line"><span style="width: 68%"></span></div>
+                <div class="progress-caption"><small>下一轮蜂巢</small><strong>68%</strong></div>
+              </div>
+              <aside class="condition-panel">
+                <div class="condition-heading"><span class="climate-icon">☼</span><strong>CLIMATE</strong></div>
+                <div class="condition-row"><span>温度</span><b>温和</b></div>
+                <div class="condition-row"><span>湿度</span><b>均衡</b></div>
+                <div class="condition-row"><span>花源</span><b class="good">野花 ×3</b></div>
+                <div class="condition-row"><span>天空</span><b class="good">可见</b></div>
+                <div class="status-box"><span class="status-dot"></span><strong>适配度 100%</strong><small>蜂群正在采集花粉</small></div>
+              </aside>
+            </div>
+            <div class="window-footer">
+              <div class="inventory-strip"><span class="inventory-cell filled">✿<b>3</b></span><span class="inventory-cell filled">⬡<b>1</b></span><span class="inventory-cell">·</span><span class="inventory-cell">·</span><span class="inventory-cell">·</span><span class="inventory-cell">·</span></div>
+              <button class="pixel-button primary-action">收取蜂巢 <span>＋</span></button>
+            </div>
+          </div>
+          <footer class="prototype-note"><strong>逻辑：</strong>亲本和框架是输入，气候/花源是运行条件，进度完成后才生成可收取蜂巢。</footer>
+        </article>
+
+        <article class="prototype-card centrifuge-prototype">
+          <header class="prototype-heading">
+            <div><span class="prototype-index">B / 02</span><h2>离心机 · Centrifuge</h2></div>
+            <span class="prototype-state state-idle">IDLE</span>
+          </header>
+          <div class="game-window centrifuge-window">
+            <div class="window-titlebar"><span class="window-title">离心机 C-01</span><span class="window-tabs">[ PROCESSING ]</span></div>
+            <div class="machine-layout">
+              <div class="machine-input">
+                <div class="slot-label"><span>INPUT</span><small>待处理</small></div>
+                <div class="item-slot comb-item">⬡</div>
+                <strong>蜂巢 ×1</strong>
+                <small class="muted">接受任意蜂巢</small>
+              </div>
+              <div class="machine-process">
+                <div class="machine-gauge"><span></span><b>WORK</b></div>
+                <div class="process-arrow">→</div>
+                <div class="process-text"><strong>分离中</strong><small>剩余 04s · 能源 2</small></div>
+              </div>
+              <div class="machine-output">
+                <div class="slot-label"><span>OUTPUT</span><small>9 slots</small></div>
+                <div class="output-grid"><span>H</span><span>W</span><span>·</span><span>·</span><span>·</span><span>·</span><span>·</span><span>·</span><span>·</span></div>
+                <strong>蜂蜜 + 蜂蜡</strong>
+                <small class="muted">完成后可收取</small>
+              </div>
+            </div>
+            <div class="machine-statusbar"><span class="status-dot amber-dot"></span><strong>等待输入或收取产物</strong><span class="machine-energy">ENERGY <b>78 / 100</b></span></div>
+            <div class="window-footer"><div class="recipe-label"><small>RECIPE 01</small><strong>1 蜂巢 → 1 蜂蜜 + 1 蜂蜡</strong></div><button class="pixel-button primary-action">启动加工 <span>→</span></button></div>
+          </div>
+          <footer class="prototype-note"><strong>逻辑：</strong>只显示一个输入槽，输出槽按产物数量扩展；运行中、输入不足、可收取是三种不同状态。</footer>
+        </article>
+
+        <article class="prototype-card almanac-prototype">
+          <header class="prototype-heading">
+            <div><span class="prototype-index">C / 03</span><h2>分析图鉴 · Analyzer</h2></div>
+            <span class="prototype-state state-research">RESEARCH</span>
+          </header>
+          <div class="game-window almanac-window">
+            <div class="window-titlebar"><span class="window-title">生态图鉴 / FORESTRY DATABASE</span><span class="window-tabs">[ SPECIMEN 02 ]</span></div>
+            <div class="almanac-tabs"><button class="tab-button selected">活动物种</button><button class="tab-button">产物</button><button class="tab-button">突变路径</button><span class="tab-count">02 / 06</span></div>
+            <div class="almanac-layout">
+              <div class="specimen-card">
+                <div class="specimen-mark">F</div>
+                <span class="specimen-type">BEE · ANALYZED</span>
+                <h3>森林蜂</h3>
+                <p>温和、稳定，适合森林环境。</p>
+                <div class="specimen-source">发现区域 · 森林边缘</div>
+                <button class="pixel-button mini-button">放入分析槽</button>
+              </div>
+              <div class="trait-panel">
+                <div class="panel-heading"><span>GENETIC READOUT</span><small>基因参数</small></div>
+                <div class="trait-row"><span>速度 <small>SPEED</small></span><i><b style="width:52%"></b></i><strong>52</strong></div>
+                <div class="trait-row"><span>寿命 <small>LIFESPAN</small></span><i><b style="width:68%"></b></i><strong>68</strong></div>
+                <div class="trait-row"><span>繁殖力 <small>FERTILITY</small></span><i><b style="width:54%"></b></i><strong>54</strong></div>
+                <div class="trait-row"><span>温度 <small>TEMP</small></span><i><b class="blue-bar" style="width:72%"></b></i><strong>WARM</strong></div>
+                <div class="trait-row"><span>湿度 <small>HUMID</small></span><i><b class="blue-bar" style="width:48%"></b></i><strong>DAMP</strong></div>
+              </div>
+              <div class="mutation-panel">
+                <div class="panel-heading"><span>MUTATION PATH</span><small>已知路径</small></div>
+                <div class="mutation-flow"><div class="gene-node active-node">F</div><span>＋</span><div class="gene-node gold-node">M</div><span>→</span><div class="gene-node unknown-node">?</div></div>
+                <div class="mutation-caption"><strong>森林蜂 × 草原蜂</strong><small>可能结果 · 培育蜂 · 32%</small></div>
+                <button class="pixel-button secondary-action">查看突变说明</button>
+              </div>
+            </div>
+            <div class="window-footer"><div class="discovery-summary"><span class="summary-mark">✓</span><span><small>ARCHIVE STATUS</small><strong>已分析 · 可用于亲本选择</strong></span></div><button class="pixel-button primary-action">保存研究笔记</button></div>
+          </div>
+          <footer class="prototype-note"><strong>逻辑：</strong>未分析条目只显示来源和解锁提示；完成分析后才展开基因参数与突变路径。</footer>
+        </article>
+      </section>
+
+      <section class="extended-grid" aria-label="扩展 UI 样式原型">
+        <article class="prototype-card breeding-prototype">
+          <header class="prototype-heading">
+            <div><span class="prototype-index">D / 04</span><h2>杂交实验室 · Breeding Lab</h2></div>
+            <span class="prototype-state state-breeding">BREEDING</span>
+          </header>
+          <div class="game-window breeding-window">
+            <div class="window-titlebar"><span class="window-title">遗传培育台 B-02</span><span class="window-tabs">[ BREEDING ]</span></div>
+            <div class="breeding-layout">
+              <div class="breeding-parents">
+                <div class="slot-label"><span>PARENTS</span><small>选择亲本</small></div>
+                <div class="parent-pair">
+                  <div class="parent-slot"><span class="bee-mark forest-mark">F</span><strong>森林蜂</strong><small>温和 · 速度 52</small></div>
+                  <span class="parent-plus">＋</span>
+                  <div class="parent-slot"><span class="bee-mark meadow-mark">M</span><strong>草原蜂</strong><small>耐旱 · 湿度 38</small></div>
+                </div>
+                <div class="compatibility-row"><span>基因兼容</span><b class="good">可培育</b></div>
+                <div class="compatibility-row"><span>突变池</span><b>培育蜂 · 32%</b></div>
+                <button class="pixel-button mini-button">更换亲本</button>
+              </div>
+              <div class="breeding-center">
+                <div class="slot-label"><span>GENETIC CROSS</span><small>预测结果</small></div>
+                <div class="breeding-flow"><div class="gene-node active-node">F</div><span>＋</span><div class="gene-node gold-node">M</div><span>→</span><div class="gene-node unknown-node">?</div></div>
+                <div class="breeding-meter"><div><span>突变判定</span><strong>32%</strong></div><div class="progress-line"><span style="width:32%"></span></div></div>
+                <div class="trait-preview-grid"><div><small>速度</small><b>标准</b></div><div><small>寿命</small><b>延长</b></div><div><small>气候</small><b>温和</b></div></div>
+              </div>
+              <aside class="breeding-output">
+                <div class="slot-label"><span>RESULT</span><small>孵化队列</small></div>
+                <div class="egg-slot"><span>?</span><strong>待孵化</strong><small>完成后揭示基因</small></div>
+                <div class="queue-line"><span>队列</span><b>01 / 03</b></div>
+                <div class="queue-line"><span>耗时</span><b>00:18</b></div>
+              </aside>
+            </div>
+            <div class="window-footer"><div class="recipe-label"><small>BREEDING RECIPE</small><strong>森林蜂 × 草原蜂 → 未知后代</strong></div><button class="pixel-button primary-action">开始培育 <span>→</span></button></div>
+          </div>
+          <footer class="prototype-note"><strong>逻辑：</strong>先选亲本，再预览兼容度和突变概率；结果进入孵化队列，完成前不公开后代基因。</footer>
+        </article>
+
+        <article class="prototype-card arboretum-prototype">
+          <header class="prototype-heading">
+            <div><span class="prototype-index">E / 05</span><h2>树苗培育 · Arboretum</h2></div>
+            <span class="prototype-state state-growing">GROWING</span>
+          </header>
+          <div class="game-window arboretum-window">
+            <div class="window-titlebar"><span class="window-title">树木培育室 T-01</span><span class="window-tabs">[ ARBORETUM ]</span></div>
+            <div class="arboretum-layout">
+              <div class="tree-stage-panel">
+                <div class="slot-label"><span>GROWTH STAGE</span><small>生长阶段</small></div>
+                <div class="tree-stage"><span class="tree-sprout">♣</span><b>幼树</b><small>阶段 02 / 04</small></div>
+                <div class="growth-ruler"><span class="done">种子</span><i class="done"></i><span class="active">幼树</span><i></i><span>成树</span><i></i><span>结果</span></div>
+                <div class="progress-line"><span style="width:46%"></span></div>
+                <div class="progress-caption"><small>下一阶段 · 02:41</small><strong>46%</strong></div>
+              </div>
+              <div class="arboretum-condition">
+                <div class="panel-heading"><span>GROWTH CONDITIONS</span><small>培育条件</small></div>
+                <div class="condition-row light-row"><span>土壤</span><b class="good">肥沃</b></div>
+                <div class="condition-row light-row"><span>水分</span><b>72%</b></div>
+                <div class="condition-row light-row"><span>光照</span><b class="good">充足</b></div>
+                <div class="condition-row light-row"><span>空间</span><b>5 × 5</b></div>
+                <div class="status-box soil-status"><span class="status-dot"></span><strong>环境适配 92%</strong><small>可继续生长，不需要额外处理</small></div>
+              </div>
+              <div class="tree-yield-panel">
+                <div class="slot-label"><span>EXPECTED YIELD</span><small>预计产出</small></div>
+                <div class="yield-slots"><span>木材<br /><b>×4</b></span><span>树苗<br /><b>×1</b></span><span>果实<br /><b>?</b></span></div>
+                <div class="yield-note">收获后可保留树种基因</div>
+                <button class="pixel-button secondary-action">查看树种详情</button>
+              </div>
+            </div>
+            <div class="window-footer"><div class="inventory-strip"><span class="inventory-cell filled">♣<b>1</b></span><span class="inventory-cell filled">◆<b>2</b></span><span class="inventory-cell">·</span><span class="inventory-cell">·</span><span class="inventory-cell">·</span></div><button class="pixel-button primary-action">补充水分 <span>＋</span></button></div>
+          </div>
+          <footer class="prototype-note"><strong>逻辑：</strong>树苗用阶段进度表达生命周期，土壤/水分/光照决定成长速度，预计产出提前告诉玩家培育价值。</footer>
+        </article>
+
+        <article class="prototype-card factory-prototype">
+          <header class="prototype-heading">
+            <div><span class="prototype-index">F / 06</span><h2>生产链 · Factory Line</h2></div>
+            <span class="prototype-state state-chain">CHAIN 03</span>
+          </header>
+          <div class="game-window factory-window">
+            <div class="window-titlebar"><span class="window-title">林业加工线 P-03</span><span class="window-tabs">[ AUTOMATION ]</span></div>
+            <div class="factory-layout">
+              <div class="factory-flow" aria-label="生产链流程">
+                <div class="factory-node factory-input"><span class="node-icon">▦</span><strong>木材</strong><small>输入 ×12</small></div>
+                <span class="flow-arrow">→</span>
+                <div class="factory-node"><span class="node-icon teal-icon">≋</span><strong>木工机</strong><small>加工中</small></div>
+                <span class="flow-arrow">→</span>
+                <div class="factory-node"><span class="node-icon amber-icon">◈</span><strong>胶黏剂</strong><small>等待输入</small></div>
+                <span class="flow-arrow">→</span>
+                <div class="factory-node factory-output"><span class="node-icon green-icon">▣</span><strong>生物燃料</strong><small>产出 ×4</small></div>
+              </div>
+              <div class="factory-queue">
+                <div class="panel-heading"><span>PROCESS QUEUE</span><small>加工队列</small></div>
+                <div class="queue-item"><span class="queue-icon">01</span><span><strong>木材 → 胶黏剂</strong><small>处理中 · 00:12</small></span><b>64%</b></div>
+                <div class="queue-item"><span class="queue-icon">02</span><span><strong>胶黏剂 → 生物燃料</strong><small>等待上游完成</small></span><b>--</b></div>
+                <div class="queue-item muted-queue"><span class="queue-icon">03</span><span><strong>空闲工位</strong><small>可加入新配方</small></span><b>+</b></div>
+              </div>
+            </div>
+            <div class="machine-statusbar"><span class="status-dot teal-dot"></span><strong>自动化运行中 · 1 个瓶颈</strong><span class="machine-energy">ENERGY <b>62 / 100</b></span></div>
+            <div class="window-footer"><div class="recipe-label"><small>ACTIVE RECIPE</small><strong>木材 ×3 → 胶黏剂 ×1 → 生物燃料 ×2</strong></div><button class="pixel-button primary-action">管理配方 <span>≡</span></button></div>
+          </div>
+          <footer class="prototype-note"><strong>逻辑：</strong>把单机配方升级成可读的生产链，节点显示上下游、队列和瓶颈，玩家能快速判断该补哪一种原料。</footer>
+        </article>
+
+        <article class="prototype-card habitat-prototype">
+          <header class="prototype-heading">
+            <div><span class="prototype-index">G / 07</span><h2>生态监测 · Habitat Monitor</h2></div>
+            <span class="prototype-state state-alert">1 ALERT</span>
+          </header>
+          <div class="game-window habitat-window">
+            <div class="window-titlebar"><span class="window-title">林地生态监测站 H-04</span><span class="window-tabs">[ HABITAT ]</span></div>
+            <div class="habitat-layout">
+              <div class="habitat-map-panel">
+                <div class="slot-label"><span>HABITAT GRID</span><small>区域扫描</small></div>
+                <div class="habitat-map" aria-label="林地生态网格"><span>♣</span><span>♣</span><span class="map-focus">⌂</span><span>·</span><span>✿</span><span>·</span><span>♣</span><span>·</span><span>♣</span></div>
+                <div class="map-legend"><span><i class="legend-tree"></i>树木</span><span><i class="legend-flower"></i>花源</span><span><i class="legend-focus"></i>设备</span></div>
+              </div>
+              <div class="habitat-metrics">
+                <div class="panel-heading"><span>ECOSYSTEM STATUS</span><small>生态指标</small></div>
+                <div class="metric-line"><span>花源密度</span><i><b style="width:76%"></b></i><strong>高</strong></div>
+                <div class="metric-line"><span>授粉覆盖</span><i><b class="blue-bar" style="width:61%"></b></i><strong>61%</strong></div>
+                <div class="metric-line"><span>生物多样性</span><i><b class="green-bar" style="width:84%"></b></i><strong>良好</strong></div>
+                <div class="alert-line"><span class="alert-icon">!</span><span><strong>湿度偏低</strong><small>北侧区域需要水源</small></span></div>
+              </div>
+              <div class="habitat-objectives">
+                <div class="panel-heading"><span>FIELD OBJECTIVES</span><small>巡护目标</small></div>
+                <div class="objective-item done-objective"><span>✓</span><strong>布置 3 个花源点</strong><small>已完成</small></div>
+                <div class="objective-item"><span>02</span><strong>恢复北侧湿度</strong><small>奖励：树种样本 ×1</small></div>
+                <div class="objective-item"><span>03</span><strong>发现新蜂种</strong><small>奖励：研究点 +20</small></div>
+              </div>
+            </div>
+            <div class="window-footer"><div class="discovery-summary"><span class="summary-mark amber-summary">!</span><span><small>NEXT ACTION</small><strong>放置水源或调整湿度模块</strong></span></div><button class="pixel-button primary-action">前往北侧 <span>→</span></button></div>
+          </div>
+          <footer class="prototype-note"><strong>逻辑：</strong>把环境条件从设备内部抽到区域层，玩家通过地图、指标和目标理解“为什么生产效率下降”。</footer>
+        </article>
+      </section>
+
+      <section class="icon-lab-section" aria-label="CSS 图标样式原型">
+        <header class="prototype-heading icon-lab-heading">
+          <div><span class="prototype-index">H / 08</span><h2>CSS 图标工坊 · Icon Forge</h2></div>
+          <span class="prototype-state state-css">CSS ONLY</span>
+        </header>
+        <div class="game-window icon-lab-window">
+          <div class="window-titlebar"><span class="window-title">Forestry 图标样式试验台</span><span class="window-tabs">[ NO PNG ]</span></div>
+          <div class="icon-family-grid">
+            <section class="icon-family bee-family">
+              <div class="family-heading"><span>BEES / 蜂种</span><small>身体、条纹与翅膀</small></div>
+                <div class="icon-sample-grid bee-choice-grid">
+                  <figure class="css-icon-card bee-choice-a"><div class="css-icon bee-icon bee-forest bee-queen bee-classic" role="img" aria-label="方案 A 森林蜂后"><i class="bee-wing wing-left"></i><i class="bee-wing wing-right"></i><i class="bee-body"><b></b><b></b><b></b></i><i class="bee-tail"></i></div><figcaption><strong>A · 经典侧身</strong><small>QUEEN · FOREST</small></figcaption></figure>
+                  <figure class="css-icon-card bee-choice-b"><div class="css-icon bee-icon bee-meadow bee-drone bee-compact" role="img" aria-label="方案 B 草原雄蜂"><i class="bee-wing wing-left"></i><i class="bee-wing wing-right"></i><i class="bee-body"><b></b><b></b><b></b></i><i class="bee-tail"></i></div><figcaption><strong>B · 短翅紧凑</strong><small>DRONE · MEADOW</small></figcaption></figure>
+                  <figure class="css-icon-card bee-choice-c"><div class="css-icon bee-icon bee-common bee-larva" role="img" aria-label="方案 C 普通蜂幼虫"><i class="bee-wing wing-left"></i><i class="bee-wing wing-right"></i><i class="bee-body"><b></b><b></b><b></b></i><i class="bee-tail"></i></div><figcaption><strong>C · 幼虫轮廓</strong><small>LARVA · COMMON</small></figcaption></figure>
+                  <figure class="css-icon-card bee-choice-d"><div class="css-icon bee-icon bee-royal bee-queen" role="img" aria-label="方案 D 皇家蜂"><i class="bee-wing wing-left"></i><i class="bee-wing wing-right"></i><i class="bee-body"><b></b><b></b><b></b></i><i class="bee-tail"></i></div><figcaption><strong>D · 皇家长体</strong><small>QUEEN · ROYAL</small></figcaption></figure>
+                  <figure class="css-icon-card bee-choice-e"><div class="css-icon bee-icon bee-frost bee-drone" role="img" aria-label="方案 E 冰晶蜂"><i class="bee-wing wing-left"></i><i class="bee-wing wing-right"></i><i class="bee-body"><b></b><b></b><b></b></i><i class="bee-tail"></i></div><figcaption><strong>E · 冰晶冷色</strong><small>DRONE · FROST</small></figcaption></figure>
+                  <figure class="css-icon-card bee-choice-f"><div class="css-icon bee-icon bee-shadow bee-queen" role="img" aria-label="方案 F 暗影蜂"><i class="bee-wing wing-left"></i><i class="bee-wing wing-right"></i><i class="bee-body"><b></b><b></b><b></b></i><i class="bee-tail"></i></div><figcaption><strong>F · 暗影警戒</strong><small>QUEEN · SHADOW</small></figcaption></figure>
+                </div>
+              <div class="icon-token-row"><span><i class="token-dot amber-token"></i>亲本</span><span><i class="token-dot blue-token"></i>翅膀</span><span><i class="token-dot dark-token"></i>体节</span></div>
+            </section>
+
+            <section class="icon-family butterfly-family">
+              <div class="family-heading"><span>BUTTERFLIES / 蝴蝶</span><small>翅形、斑纹与触角</small></div>
+              <div class="icon-sample-grid">
+                <figure class="css-icon-card"><div class="css-icon butterfly-icon butterfly-aurora" role="img" aria-label="极光蝴蝶"><i class="butterfly-wing wing-left"></i><i class="butterfly-wing wing-right"></i><i class="butterfly-body"></i><i class="butterfly-antenna antenna-left"></i><i class="butterfly-antenna antenna-right"></i></div><figcaption><strong>极光蝶</strong><small>AURORA</small></figcaption></figure>
+                <figure class="css-icon-card"><div class="css-icon butterfly-icon butterfly-brimstone" role="img" aria-label="硫磺蛾"><i class="butterfly-wing wing-left"></i><i class="butterfly-wing wing-right"></i><i class="butterfly-body"></i><i class="butterfly-antenna antenna-left"></i><i class="butterfly-antenna antenna-right"></i></div><figcaption><strong>硫磺蛾</strong><small>BRIMSTONE MOTH</small></figcaption></figure>
+                <figure class="css-icon-card"><div class="css-icon butterfly-icon butterfly-swallow" role="img" aria-label="燕尾蝶"><i class="butterfly-wing wing-left"></i><i class="butterfly-wing wing-right"></i><i class="butterfly-body"></i><i class="butterfly-antenna antenna-left"></i><i class="butterfly-antenna antenna-right"></i></div><figcaption><strong>燕尾蝶</strong><small>SWALLOWTAIL</small></figcaption></figure>
+              </div>
+              <div class="icon-token-row"><span><i class="token-dot purple-token"></i>稀有</span><span><i class="token-dot gold-token"></i>普通</span><span><i class="token-dot red-token"></i>警戒</span></div>
+            </section>
+
+            <section class="icon-family frame-family">
+              <div class="family-heading"><span>FRAMES / 框架</span><small>材质、磨损与耐久</small></div>
+              <div class="icon-sample-grid">
+                <figure class="css-icon-card"><div class="css-icon frame-icon frame-untreated" role="img" aria-label="未处理框架"><i class="frame-core"></i><i class="frame-mark mark-a"></i><i class="frame-mark mark-b"></i></div><figcaption><strong>未处理框架</strong><small>UNTREATED · 80</small></figcaption></figure>
+                <figure class="css-icon-card"><div class="css-icon frame-icon frame-impregnated" role="img" aria-label="浸渍框架"><i class="frame-core"></i><i class="frame-mark mark-a"></i><i class="frame-mark mark-b"></i></div><figcaption><strong>浸渍框架</strong><small>IMPREGNATED · 240</small></figcaption></figure>
+                <figure class="css-icon-card"><div class="css-icon frame-icon frame-proven" role="img" aria-label="熟练框架"><i class="frame-core"></i><i class="frame-mark mark-a"></i><i class="frame-mark mark-b"></i></div><figcaption><strong>熟练框架</strong><small>PROVEN · 720</small></figcaption></figure>
+              </div>
+              <div class="durability-strip"><span>耐久</span><i><b class="durability-high"></b></i><strong>720 / 720</strong></div>
+            </section>
+
+            <section class="icon-family fruit-family">
+              <div class="family-heading"><span>FRUITS / 树果</span><small>果形、果柄与叶片</small></div>
+              <div class="icon-sample-grid">
+                <figure class="css-icon-card"><div class="css-icon fruit-icon fruit-cherry" role="img" aria-label="樱桃"><i class="fruit-stem stem-left"></i><i class="fruit-stem stem-right"></i><i class="fruit-leaf"></i><i class="fruit-body fruit-a"></i><i class="fruit-body fruit-b"></i></div><figcaption><strong>樱桃</strong><small>CHERRY</small></figcaption></figure>
+                <figure class="css-icon-card"><div class="css-icon fruit-icon fruit-lemon" role="img" aria-label="柠檬"><i class="fruit-leaf"></i><i class="fruit-body fruit-a"></i><i class="fruit-highlight"></i></div><figcaption><strong>柠檬</strong><small>LEMON</small></figcaption></figure>
+                <figure class="css-icon-card"><div class="css-icon fruit-icon fruit-walnut" role="img" aria-label="核桃"><i class="fruit-body fruit-a"></i><i class="fruit-highlight"></i></div><figcaption><strong>核桃</strong><small>WALNUT</small></figcaption></figure>
+              </div>
+              <div class="maturity-strip"><span>成熟度</span><i><b></b></i><strong>READY</strong></div>
+            </section>
+          </div>
+          <div class="icon-lab-footer"><span><b>PIXEL RECIPE：</b>按 16×16 逻辑网格绘制，整数倍放大、硬边色块、深色描边，不加载原始 PNG。</span><span class="icon-lab-chip">16×16 CSS SPRITE</span></div>
+        </div>
+        <footer class="prototype-note"><strong>说明：</strong>这一组先验证图标语言和色彩层级；后续可把同一套 CSS 组件接到蜂房、图鉴、生产链的槽位中。</footer>
+      </section>
+    </main>
+  </body>
+</html>

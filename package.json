@@ -17,7 +17,8 @@
       "desktop/**/*",
       "index.html",
       "styles.css",
-      "app.js"
+      "app.js",
+      "assets/fonts/**/*"
     ],
     "directories": {
       "output": "dist/desktop"
