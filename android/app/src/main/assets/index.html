@@ -5,10 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#17231d" />
     <title>Forestry Lab · 林业模拟器</title>
-    <link rel="stylesheet" href="styles.css?v=20260819.2" />
+    <link rel="stylesheet" href="styles.css?v=20260820.1" />
   </head>
   <body>
-    <div class="app-shell">
+    <section class="start-screen" id="start-screen" aria-label="游戏开始界面">
+      <div class="start-screen-sky" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div class="start-screen-card">
+        <div class="start-logo"><span class="start-logo-mark">FL</span><div><small>FORESTRY SIMULATION</small><h1>FORESTRY LAB</h1><p>林业生态工坊</p></div></div>
+        <p class="start-intro">调查群系、培育物种、管理生态，并把一座小型林场发展成完整的生物工业工坊。</p>
+        <div class="start-actions">
+          <button class="start-primary" id="continue-game-button">继续游戏 <span>→</span></button>
+          <button id="new-game-button">新游戏</button>
+          <button id="load-game-button">加载存档</button>
+          <button id="about-game-button">关于</button>
+        </div>
+        <p class="start-slot-hint" id="start-slot-hint">还没有本地存档，请创建新游戏。</p>
+      </div>
+      <footer class="start-links" aria-label="相关网站">
+        <span>非 Minecraft 或 Forestry 官方产品</span>
+        <a href="https://www.minecraft.net/" target="_blank" rel="noopener noreferrer">MINECRAFT 官网 ↗</a>
+        <a href="https://www.curseforge.com/minecraft/mc-mods/forestry" target="_blank" rel="noopener noreferrer">FORESTRY MOD ↗</a>
+        <a href="https://ftbwiki.org/Forestry" target="_blank" rel="noopener noreferrer">模组 WIKI ↗</a>
+      </footer>
+    </section>
+
+    <div class="app-shell" id="game-shell">
       <header class="topbar">
         <div class="brand-block">
           <div class="brand-mark">FL</div>
@@ -163,14 +184,10 @@
           </section>
 
           <section class="view-panel" id="view-explore">
-            <div class="section-heading"><div><span class="mini-label">FIELD SURVEY</span><h3>选择探索区域</h3></div><span class="cost-note" id="explore-cost-label">探索消耗 4 能源 · 生态策略</span></div>
-            <div class="zone-grid">
-              <article class="zone-card panel-inset"><div class="zone-art forest-art" aria-hidden="true"><span class="biome-ground"></span><i class="biome-tree"></i><b class="biome-detail"></b><em class="biome-accent"></em></div><div class="zone-info"><span class="tag tag-green">已开放</span><h3>森林边缘</h3><p>基础蜂巢、橡树苗、春蓝蝶与普通花朵</p><div class="zone-footer"><span>发现度 <strong data-zone-discovery="forest">62%</strong></span><small data-zone-visits="forest">0 次调查</small><button class="small-button explore-button" data-zone="forest">探索</button></div></div></article>
-              <article class="zone-card panel-inset"><div class="zone-art plains-art" aria-hidden="true"><span class="biome-ground"></span><i class="biome-tree"></i><b class="biome-detail"></b><em class="biome-accent"></em></div><div class="zone-info"><span class="tag tag-green">已开放</span><h3>平原花地</h3><p>草原蜂、硫磺蛾、丰富花源与作物种子</p><div class="zone-footer"><span>发现度 <strong data-zone-discovery="plains">18%</strong></span><small data-zone-visits="plains">0 次调查</small><button class="small-button explore-button" data-zone="plains">探索</button></div></article>
-              <article class="zone-card panel-inset locked"><div class="zone-art swamp-art" aria-hidden="true"><span class="biome-ground"></span><i class="biome-tree"></i><b class="biome-detail"></b><em class="biome-accent"></em><div class="lock-mark">LOCKED</div></div><div class="zone-info"><span class="tag tag-muted">需解锁</span><h3>静谧沼泽</h3><p>需要完成 2 次区域探索，可发现燕尾蝶与丛林树苗</p><div class="zone-footer"><span>发现度 <strong data-zone-discovery="swamp">0%</strong></span><small data-zone-visits="swamp">0 次调查</small><button class="small-button explore-button" data-zone="swamp" disabled>锁定</button></div></div></article>
-              <article class="zone-card panel-inset locked"><div class="zone-art tropic-art" aria-hidden="true"><span class="biome-ground"></span><i class="biome-tree"></i><b class="biome-detail"></b><em class="biome-accent"></em><div class="lock-mark">LOCKED</div></div><div class="zone-info"><span class="tag tag-muted">需解锁</span><h3>热带林冠</h3><p>需要完成第一次离心加工，可发现林冠蝶与柚木</p><div class="zone-footer"><span>发现度 <strong data-zone-discovery="tropic">0%</strong></span><small data-zone-visits="tropic">0 次调查</small><button class="small-button explore-button" data-zone="tropic" disabled>锁定</button></div></div></article>
-            </div>
-            <div class="explore-tip panel-inset"><span class="tip-icon">i</span><div><strong>探索提示</strong><p>探索会带回随机材料、对应区域花源，也可能发现新的蜂种、蝴蝶或树苗。能源会随时间缓慢恢复；蜂箱花源耗尽时，优先切换花源或回到对应区域补充。</p></div></div>
+            <div class="section-heading"><div><span class="mini-label">FIELD SURVEY</span><h3>选择探索区域</h3></div><span class="cost-note" id="explore-cost-label">手动 6–18 能源 · 自动 8–24</span></div>
+            <div class="survey-queue-card panel-inset" id="survey-queue-card" hidden></div>
+            <div class="zone-grid" id="zone-grid"></div>
+            <div class="explore-tip panel-inset"><span class="tip-icon">i</span><div><strong>探索提示</strong><p>手动调查消耗较低、稀有节点权重更高；自动调查适合离线推进，但需要更多能源。物资会先进入调查袋，确认后才转入仓库，不会因空间不足静默丢失。</p></div></div>
           </section>
 
           <section class="view-panel" id="view-apiary">
@@ -267,7 +284,15 @@
     <nav class="mobile-bottom-nav" aria-label="移动端主导航"><button class="nav-button active" data-view="overview"><span>⌂</span><small>总览</small></button><button class="nav-button" data-view="explore"><span>⌖</span><small>调查</small></button><button class="nav-button" data-view="apiary"><span>⬡</span><small>蜜蜂</small></button><button class="nav-button" data-view="arbor"><span>♣</span><small>树木</small></button><button class="nav-button" data-view="machines"><span>⚙</span><small>加工</small></button><button class="mobile-more-button" id="mobile-more-button" aria-expanded="false"><span>▦</span><small>更多</small></button></nav>
     <button class="mobile-sheet-scrim" id="mobile-sheet-scrim" aria-label="关闭更多菜单"></button>
     <aside class="mobile-more-sheet" id="mobile-more-sheet" aria-hidden="true"><div class="mobile-sheet-handle"></div><div class="mobile-sheet-heading"><div><span class="mini-label">MORE WORKBENCHES</span><strong>更多工作台</strong></div><button id="mobile-more-close" aria-label="关闭">×</button></div><button class="nav-button mobile-sheet-link" data-view="research"><span class="nav-icon">⌘</span><span><strong>研究升级</strong><small>投入产物，提高设施效率</small></span><b>→</b></button><button class="nav-button mobile-sheet-link" data-view="codex"><span class="nav-icon">▤</span><span><strong>生态档案</strong><small>查看物种、属性和培育路径</small></span><b>→</b></button></aside>
+
+    <div class="p0-modal" id="start-dialog" aria-hidden="true"><div class="p0-dialog start-dialog-card" role="dialog" aria-modal="true" aria-labelledby="start-dialog-title"><div class="p0-dialog-head"><div><span class="mini-label" id="start-dialog-label">LOCAL ARCHIVE</span><h2 id="start-dialog-title">本地存档</h2></div><button class="p0-close" id="start-dialog-close" aria-label="关闭">×</button></div><div id="start-dialog-content"></div></div></div>
+    <div class="p0-modal" id="survey-confirm-modal" aria-hidden="true"><div class="p0-dialog survey-confirm-card" role="dialog" aria-modal="true" aria-labelledby="survey-confirm-title"><div class="p0-dialog-head"><div><span class="mini-label">EXPEDITION BRIEF</span><h2 id="survey-confirm-title">调查简报</h2></div><button class="p0-close" id="survey-confirm-close" aria-label="关闭">×</button></div><div id="survey-confirm-content"></div></div></div>
+
+    <section class="survey-screen" id="manual-survey-screen" aria-hidden="true"><header><div><span class="mini-label" id="survey-zone-label">FIELD SURVEY</span><h2 id="survey-zone-title">森林边缘调查</h2></div><div class="survey-points"><small>调查点</small><strong id="survey-points-value">10</strong></div></header><div class="survey-layout"><div class="survey-map-wrap"><div class="survey-map" id="survey-map" role="grid" aria-label="5 乘 5 调查地图"></div><div class="survey-legend"><span><i class="path"></i>道路</span><span><i class="resource"></i>资源</span><span><i class="clue"></i>线索</span><span><i class="rough"></i>复杂地形</span><span><i class="blocked"></i>不可通行</span></div></div><aside class="survey-sidebar"><div class="survey-status panel-inset"><span class="mini-label">FIELD NOTES</span><h3 id="survey-status-title">从营地开始</h3><p id="survey-status-text">只能移动到上下左右相邻的已揭示地块。</p></div><div class="survey-bag panel-inset"><div><span class="mini-label">SURVEY BAG</span><strong>调查袋</strong></div><div id="survey-bag-list"></div></div><div class="survey-actions"><button id="survey-scan-button">观察 · 1 点</button><button id="survey-mark-button">标记地块</button><button id="survey-help-button">玩法帮助</button><button class="survey-evacuate" id="survey-evacuate-button">结束调查</button></div></aside></div></section>
+
+    <div class="p0-modal" id="survey-result-modal" aria-hidden="true"><div class="p0-dialog survey-result-card" role="dialog" aria-modal="true" aria-labelledby="survey-result-title"><div class="p0-dialog-head"><div><span class="mini-label">EXPEDITION RESULT</span><h2 id="survey-result-title">调查结算</h2></div></div><div id="survey-result-content"></div></div></div>
     <div class="toast" id="toast" role="status"></div>
-    <script src="app.js?v=20260819.2"></script>
+    <input id="save-import-input" type="file" accept="application/json,.json" hidden />
+    <script src="app.js?v=20260820.1"></script>
   </body>
 </html>

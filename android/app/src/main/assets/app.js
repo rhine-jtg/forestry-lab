@@ -1,4 +1,15 @@
-const STORAGE_KEY = "forestry-lab-prototype-v1";
+const LEGACY_STORAGE_KEY = "forestry-lab-prototype-v1";
+const SAVE_INDEX_KEY = "forestry-lab-save-index-v2";
+const SAVE_SLOT_PREFIX = "forestry-lab-save-slot-v2-";
+const SETTINGS_KEY = "forestry-lab-settings-v1";
+const SAVE_VERSION = 2;
+const SAVE_SLOT_COUNT = 3;
+const ALLOWED_EXTERNAL_LINKS = new Set([
+  "https://www.minecraft.net/",
+  "https://www.curseforge.com/minecraft/mc-mods/forestry",
+  "https://ftbwiki.org/Forestry",
+  "https://github.com/ForestryMC/ForestryMC/tree/mc-1.12"
+].map((link) => new URL(link).href));
 
 const defaultState = {
   resources: { honey: 24, wax: 10, wood: 32, oil: 6, resin: 0, biomass: 0, biofuel: 0, energy: 60 },
@@ -11,7 +22,23 @@ const defaultState = {
   totalCombCollected: 0,
   apiaryCombCollected: 0,
   explorations: 0,
-  explorationCounts: { forest: 0, plains: 0, swamp: 0, tropic: 0 },
+  explorationCounts: { forest: 0, plains: 0, swamp: 0, desert: 0, tropic: 0, snow: 0, cave: 0, end: 0 },
+  zoneProgress: {
+    forest: { manualRuns: 0, autoRuns: 0, proficiency: 0, rareProgress: 0, bestYield: 0 },
+    plains: { manualRuns: 0, autoRuns: 0, proficiency: 0, rareProgress: 0, bestYield: 0 },
+    swamp: { manualRuns: 0, autoRuns: 0, proficiency: 0, rareProgress: 0, bestYield: 0 },
+    desert: { manualRuns: 0, autoRuns: 0, proficiency: 0, rareProgress: 0, bestYield: 0 },
+    tropic: { manualRuns: 0, autoRuns: 0, proficiency: 0, rareProgress: 0, bestYield: 0 },
+    snow: { manualRuns: 0, autoRuns: 0, proficiency: 0, rareProgress: 0, bestYield: 0 },
+    cave: { manualRuns: 0, autoRuns: 0, proficiency: 0, rareProgress: 0, bestYield: 0 },
+    end: { manualRuns: 0, autoRuns: 0, proficiency: 0, rareProgress: 0, bestYield: 0 }
+  },
+  expedition: null,
+  autoSurvey: null,
+  pendingSurvey: [],
+  surveyResult: null,
+  claimedResultIds: [],
+  tutorialSurveyCompleted: false,
   analyzed: [],
   discovered: ["forest", "meadows"],
   apiaryProgress: 72,
@@ -75,9 +102,14 @@ const defaultState = {
     forest: { temperature: 52, humidity: 58, light: 62, flowerDensity: 68, soil: 74, canopy: 46, leafPressure: 12, workshopLoad: 0 },
     plains: { temperature: 62, humidity: 42, light: 82, flowerDensity: 76, soil: 64, canopy: 22, leafPressure: 8, workshopLoad: 0 },
     swamp: { temperature: 48, humidity: 82, light: 42, flowerDensity: 54, soil: 70, canopy: 58, leafPressure: 18, workshopLoad: 0 },
-    tropic: { temperature: 82, humidity: 78, light: 64, flowerDensity: 72, soil: 76, canopy: 72, leafPressure: 24, workshopLoad: 0 }
+    desert: { temperature: 86, humidity: 18, light: 92, flowerDensity: 28, soil: 36, canopy: 8, leafPressure: 6, workshopLoad: 0 },
+    tropic: { temperature: 82, humidity: 78, light: 64, flowerDensity: 72, soil: 76, canopy: 72, leafPressure: 24, workshopLoad: 0 },
+    snow: { temperature: 18, humidity: 52, light: 48, flowerDensity: 32, soil: 54, canopy: 64, leafPressure: 10, workshopLoad: 0 },
+    cave: { temperature: 38, humidity: 88, light: 18, flowerDensity: 44, soil: 66, canopy: 92, leafPressure: 20, workshopLoad: 0 },
+    end: { temperature: 42, humidity: 12, light: 58, flowerDensity: 18, soil: 24, canopy: 4, leafPressure: 28, workshopLoad: 0 }
   },
   environmentEvent: { current: "clear", remaining: 2, next: "bloom" },
+  playTimeSeconds: 0,
   lastTickAt: Date.now(),
   logs: [
     { time: "08:10", text: "蜂箱 A-01 已进入稳定工作状态。", kind: "green" },
@@ -245,10 +277,14 @@ function getMissingTreeSaplings(cost) {
 }
 
 const zones = {
-  forest: { name: "森林边缘", wood: 5, oil: 1, combChance: .72, discoveryBase: 62, discoveryStep: 8, flowerSource: "wildflower", temperature: "温和", humidity: "均衡", baseline: { temperature: 52, humidity: 58, light: 62, flowerDensity: 68, soil: 74, canopy: 46, leafPressure: 12 } },
-  plains: { name: "平原花地", wood: 3, oil: 2, combChance: .48, discoveryBase: 18, discoveryStep: 10, flowerSource: "clover", temperature: "温暖", humidity: "干燥", baseline: { temperature: 62, humidity: 42, light: 82, flowerDensity: 76, soil: 64, canopy: 22, leafPressure: 8 } },
-  swamp: { name: "静谧沼泽", wood: 2, oil: 2, combChance: .62, discoveryBase: 0, discoveryStep: 25, flowerSource: "wildflower", temperature: "凉爽", humidity: "高湿", baseline: { temperature: 48, humidity: 82, light: 42, flowerDensity: 54, soil: 70, canopy: 58, leafPressure: 18 } },
-  tropic: { name: "热带林冠", wood: 4, oil: 3, combChance: .76, discoveryBase: 0, discoveryStep: 30, flowerSource: "tropical", temperature: "炎热", humidity: "高湿", baseline: { temperature: 82, humidity: 78, light: 64, flowerDensity: 72, soil: 76, canopy: 72, leafPressure: 24 } }
+  forest: { name: "森林边缘", difficulty: 1, manualEnergy: 6, autoEnergy: 8, autoDuration: 30, surveyPoints: 10, discoveryBase: 62, discoveryStep: 8, flowerSource: "wildflower", temperature: "温和", humidity: "均衡", art: "forest", desc: "木材、野花、基础蜂巢与树苗线索", unlockText: "初始开放", rewards: [{ kind: "resource", id: "wood", min: 8, max: 14 }, { kind: "flower", id: "wildflower", min: 3, max: 6 }, { kind: "resource", id: "rawComb", min: 0, max: 2 }, { kind: "sapling", id: "oak", min: 0, max: 2 }], baseline: { temperature: 52, humidity: 58, light: 62, flowerDensity: 68, soil: 74, canopy: 46, leafPressure: 12 } },
+  plains: { name: "平原花地", difficulty: 1, manualEnergy: 7, autoEnergy: 9, autoDuration: 35, surveyPoints: 10, discoveryBase: 18, discoveryStep: 10, flowerSource: "clover", temperature: "温暖", humidity: "干燥", art: "plains", desc: "三叶草、蜂巢、种子与蝴蝶线索", unlockText: "完成 1 次森林调查", rewards: [{ kind: "resource", id: "wood", min: 6, max: 10 }, { kind: "flower", id: "clover", min: 4, max: 8 }, { kind: "resource", id: "rawComb", min: 0, max: 2 }, { kind: "resource", id: "oil", min: 0, max: 2 }], baseline: { temperature: 62, humidity: 42, light: 82, flowerDensity: 76, soil: 64, canopy: 22, leafPressure: 8 } },
+  swamp: { name: "静谧沼泽", difficulty: 2, manualEnergy: 9, autoEnergy: 12, autoDuration: 45, surveyPoints: 9, discoveryBase: 0, discoveryStep: 14, flowerSource: "wildflower", temperature: "凉爽", humidity: "高湿", art: "swamp", desc: "湿地花源、树脂、丛林树苗与蜂种线索", unlockText: "累计 3 次调查并完成 1 次离心", rewards: [{ kind: "resource", id: "wood", min: 5, max: 9 }, { kind: "flower", id: "wildflower", min: 3, max: 6 }, { kind: "resource", id: "resin", min: 1, max: 3 }, { kind: "sapling", id: "jungle", min: 0, max: 1 }], baseline: { temperature: 48, humidity: 82, light: 42, flowerDensity: 54, soil: 70, canopy: 58, leafPressure: 18 } },
+  desert: { name: "荒芜沙丘", difficulty: 2, manualEnergy: 10, autoEnergy: 13, autoDuration: 50, surveyPoints: 9, discoveryBase: 0, discoveryStep: 13, flowerSource: "wildflower", temperature: "炎热", humidity: "极干", art: "desert", desc: "旱地花源、种子油与干燥蜂巢", unlockText: "获得种子油并收获 1 次树场", rewards: [{ kind: "resource", id: "wood", min: 2, max: 5 }, { kind: "flower", id: "wildflower", min: 4, max: 8 }, { kind: "resource", id: "oil", min: 2, max: 4 }, { kind: "resource", id: "rawComb", min: 0, max: 2 }], baseline: { temperature: 86, humidity: 18, light: 92, flowerDensity: 28, soil: 36, canopy: 8, leafPressure: 6 } },
+  tropic: { name: "热带林冠", difficulty: 3, manualEnergy: 11, autoEnergy: 15, autoDuration: 55, surveyPoints: 8, discoveryBase: 0, discoveryStep: 12, flowerSource: "tropical", temperature: "炎热", humidity: "高湿", art: "tropic", desc: "热带花、树脂、稀有蜂巢与柚木线索", unlockText: "手动调查沼泽并发现丛林树", rewards: [{ kind: "resource", id: "wood", min: 6, max: 12 }, { kind: "flower", id: "tropical", min: 3, max: 6 }, { kind: "resource", id: "resin", min: 2, max: 5 }, { kind: "sapling", id: "teak", min: 0, max: 2 }], baseline: { temperature: 82, humidity: 78, light: 64, flowerDensity: 72, soil: 76, canopy: 72, leafPressure: 24 } },
+  snow: { name: "寒带针叶林", difficulty: 3, manualEnergy: 12, autoEnergy: 16, autoDuration: 60, surveyPoints: 8, discoveryBase: 0, discoveryStep: 11, flowerSource: "wildflower", temperature: "寒冷", humidity: "中湿", art: "snow", desc: "高产木材、树脂与耐寒树种线索", unlockText: "发现落叶松并升级养蜂箱 LV.2", rewards: [{ kind: "resource", id: "wood", min: 8, max: 14 }, { kind: "flower", id: "wildflower", min: 2, max: 5 }, { kind: "resource", id: "resin", min: 1, max: 3 }, { kind: "sapling", id: "pine", min: 0, max: 2 }], baseline: { temperature: 18, humidity: 52, light: 48, flowerDensity: 32, soil: 54, canopy: 64, leafPressure: 10 } },
+  cave: { name: "荧光菌洞", difficulty: 4, manualEnergy: 14, autoEnergy: 18, autoDuration: 70, surveyPoints: 7, discoveryBase: 0, discoveryStep: 10, flowerSource: "wildflower", temperature: "阴凉", humidity: "极湿", art: "cave", desc: "菌类花源、树脂、种子与蝶种线索", unlockText: "观察 3 个蝶种并拥有 3 类花源", rewards: [{ kind: "flower", id: "wildflower", min: 5, max: 9 }, { kind: "resource", id: "resin", min: 2, max: 4 }, { kind: "resource", id: "oil", min: 1, max: 3 }, { kind: "resource", id: "rawComb", min: 0, max: 1 }], baseline: { temperature: 38, humidity: 88, light: 18, flowerDensity: 44, soil: 66, canopy: 92, leafPressure: 20 } },
+  end: { name: "末地边境", difficulty: 5, manualEnergy: 18, autoEnergy: 24, autoDuration: 90, surveyPoints: 7, discoveryBase: 0, discoveryStep: 8, flowerSource: "tropical", temperature: "异温", humidity: "干燥", art: "end", desc: "异域花源、神秘蜂巢与稀有物种线索", unlockText: "养蜂箱 LV.3、8 个蜂种并完成生物燃料链", rewards: [{ kind: "flower", id: "tropical", min: 2, max: 4 }, { kind: "resource", id: "biomass", min: 3, max: 6 }, { kind: "resource", id: "rawComb", min: 0, max: 2 }, { kind: "resource", id: "biofuel", min: 0, max: 1 }], baseline: { temperature: 42, humidity: 12, light: 58, flowerDensity: 18, soil: 24, canopy: 4, leafPressure: 28 } }
 };
 
 const breedingRecipes = {
@@ -321,7 +357,7 @@ const flowerSources = {
 };
 
 const strategyData = {
-  ecology: { name: "生态调查", short: "生态", icon: "♧", effect: "调查能源 -1 · 树场速度 +10%", exploreCost: 4, apiaryRate: 1, treeRate: 1.1, machineRate: 1.1, mutation: 0 },
+  ecology: { name: "生态调查", short: "生态", icon: "♧", effect: "调查优先 · 树场速度 +10%", exploreCost: 6, apiaryRate: 1, treeRate: 1.1, machineRate: 1.1, mutation: 0 },
   genetics: { name: "基因研究", short: "基因", icon: "⌘", effect: "突变概率 +6% · 生产速度 -10%", exploreCost: 5, apiaryRate: .9, treeRate: .9, machineRate: 1, mutation: 6 },
   industry: { name: "工业生产", short: "工业", icon: "⚙", effect: "机器耗时 -15% · 突变概率 -4%", exploreCost: 5, apiaryRate: 1, treeRate: 1, machineRate: .85, mutation: -4 }
 };
@@ -342,7 +378,7 @@ const upgradeData = {
 };
 
 const guideSteps = [
-  { title: "开始第一次调查", text: "前往森林边缘寻找蜂巢和基础材料；探索也会补充该区域的花源，按当前策略消耗 4～5 点能源。", action: "explore", actionLabel: "前往探索", target: '.explore-button[data-zone="forest"]' },
+  { title: "开始第一次调查", text: "前往森林边缘，确认后选择手动或自动调查。第一轮手动教学会稳定带回木材、野花与蜂巢。", action: "explore", actionLabel: "前往探索", target: '.explore-button[data-zone="forest"]' },
   { title: "收取第一份蜂巢", text: "等待蜂箱完成一个生产周期，再点击收取蜂巢；同时确认花源库存，避免蜂箱因缺花暂停。", action: "apiary", actionLabel: "查看蜂箱", target: "#collect-button" },
   { title: "分析两种亲本蜂", text: "在养蜂工作台分别分析森林蜂和草原蜂，确认它们的属性。", action: "apiary", actionLabel: "打开养蜂台", target: ".analyze-button:not(.done)" },
   { title: "完成第一次杂交", text: "确认两个亲本后，开始森林蜂 × 草原蜂的杂交实验。", action: "apiary", actionLabel: "进行杂交", target: "#breed-button" },
@@ -364,11 +400,43 @@ const contractData = [
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
-let state = loadState();
+function readJsonStorage(key) {
+  try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
+}
 
-function loadState() {
+function loadSaveIndex() {
+  const stored = readJsonStorage(SAVE_INDEX_KEY);
+  const index = stored?.version === SAVE_VERSION && Array.isArray(stored.slots)
+    ? { version: SAVE_VERSION, lastSlotId: stored.lastSlotId || null, slots: stored.slots.filter((slot) => slot && Number(slot.id) >= 1 && Number(slot.id) <= SAVE_SLOT_COUNT) }
+    : { version: SAVE_VERSION, lastSlotId: null, slots: [] };
+  if (!index.slots.length) {
+    const legacy = readJsonStorage(LEGACY_STORAGE_KEY);
+    if (legacy && typeof legacy === "object") {
+      const now = Date.now();
+      const record = { version: SAVE_VERSION, meta: { id: 1, name: "旧版工坊", updatedAt: now, playTime: 0, chapter: "迁移存档" }, state: legacy };
+      try {
+        localStorage.setItem(`${SAVE_SLOT_PREFIX}1`, JSON.stringify(record));
+        if (readJsonStorage(`${SAVE_SLOT_PREFIX}1`)?.version === SAVE_VERSION) {
+          index.slots.push(record.meta);
+          index.lastSlotId = 1;
+          localStorage.setItem(SAVE_INDEX_KEY, JSON.stringify(index));
+        }
+      } catch { /* 保留旧键；存储可用后再次迁移。 */ }
+    }
+  }
+  return index;
+}
+
+let saveIndex = loadSaveIndex();
+let appSettings = { simplifiedSurvey: readJsonStorage(SETTINGS_KEY)?.simplifiedSurvey === true };
+let activeSlotId = saveIndex.lastSlotId || saveIndex.slots[0]?.id || null;
+let gameStarted = false;
+let state = loadState(activeSlotId);
+
+function loadState(slotId = activeSlotId) {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const slotRecord = slotId ? readJsonStorage(`${SAVE_SLOT_PREFIX}${slotId}`) : null;
+    const saved = slotRecord?.version === SAVE_VERSION ? slotRecord.state : null;
     if (!saved) return structuredClone(defaultState);
     const merged = {
       ...structuredClone(defaultState),
@@ -376,6 +444,7 @@ function loadState() {
       resources: { ...defaultState.resources, ...saved.resources },
       flowerInventory: { ...defaultState.flowerInventory, ...saved.flowerInventory },
       explorationCounts: { ...defaultState.explorationCounts, ...saved.explorationCounts },
+      zoneProgress: Object.fromEntries(Object.keys(defaultState.zoneProgress).map((zone) => [zone, { ...defaultState.zoneProgress[zone], ...(saved.zoneProgress?.[zone] || {}) }])),
       treeSaplings: { ...defaultState.treeSaplings, ...saved.treeSaplings },
       treeBreedingParents: { ...defaultState.treeBreedingParents, ...saved.treeBreedingParents },
       breedingParents: { ...defaultState.breedingParents, ...saved.breedingParents },
@@ -394,7 +463,9 @@ function loadState() {
       treeAnalyzed: Array.isArray(saved.treeAnalyzed) ? saved.treeAnalyzed : [...defaultState.treeAnalyzed],
       butterflyDiscovered: Array.isArray(saved.butterflyDiscovered) ? saved.butterflyDiscovered : [...defaultState.butterflyDiscovered],
       butterflyAnalyzed: Array.isArray(saved.butterflyAnalyzed) ? saved.butterflyAnalyzed : [...defaultState.butterflyAnalyzed],
-      logs: Array.isArray(saved.logs) ? saved.logs.slice(0, 6) : structuredClone(defaultState.logs)
+      logs: Array.isArray(saved.logs) ? saved.logs.slice(0, 6) : structuredClone(defaultState.logs),
+      pendingSurvey: Array.isArray(saved.pendingSurvey) ? saved.pendingSurvey.slice(0, 40) : [],
+      claimedResultIds: Array.isArray(saved.claimedResultIds) ? saved.claimedResultIds.slice(-80) : []
     };
     Object.keys(defaultState.resources).forEach((resource) => {
       const value = Number(merged.resources[resource]);
@@ -422,6 +493,12 @@ function loadState() {
     Object.keys(defaultState.explorationCounts).forEach((zone) => {
       const value = Number(merged.explorationCounts[zone]);
       merged.explorationCounts[zone] = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : defaultState.explorationCounts[zone];
+      Object.keys(defaultState.zoneProgress[zone]).forEach((key) => {
+        const progressValue = Number(merged.zoneProgress[zone][key]);
+        merged.zoneProgress[zone][key] = Number.isFinite(progressValue) ? Math.max(0, Math.floor(progressValue)) : 0;
+      });
+      merged.zoneProgress[zone].rareProgress = clamp(merged.zoneProgress[zone].rareProgress, 0, 100);
+      merged.zoneProgress[zone].proficiency = clamp(merged.zoneProgress[zone].proficiency, 0, 100);
     });
     Object.keys(merged.treeSaplings).forEach((tree) => {
       const value = Number(merged.treeSaplings[tree]);
@@ -445,7 +522,7 @@ function loadState() {
     merged.automationEnabled = merged.automationEnabled === true;
     const automationReserveEnergy = Number(merged.automationReserveEnergy);
     merged.automationReserveEnergy = Number.isFinite(automationReserveEnergy) ? clamp(Math.floor(automationReserveEnergy), 0, 30) : defaultState.automationReserveEnergy;
-    ["rawComb", "processedHoney", "processedWax", "totalCombCollected", "apiaryCombCollected", "explorations", "apiaryReady", "apiaryCycles", "machineOutput", "machineCycles", "squeezerOutput", "squeezerCycles", "fermenterOutput", "fermenterCycles", "distillerOutput", "distillerCycles", "contractIndex", "contractsCompleted", "reputation", "treeReady", "treeReadyYield", "treeReadyResin", "treeCycles", "treeHarvests", "breedings", "breedingAttempts", "breedingFailures", "treeBreedingAttempts", "treeBreedingFailures", "butterflyBreedingAttempts", "butterflyBreedingFailures", "upgradesBought"].forEach((key) => {
+    ["rawComb", "processedHoney", "processedWax", "totalCombCollected", "apiaryCombCollected", "explorations", "apiaryReady", "apiaryCycles", "machineOutput", "machineCycles", "squeezerOutput", "squeezerCycles", "fermenterOutput", "fermenterCycles", "distillerOutput", "distillerCycles", "contractIndex", "contractsCompleted", "reputation", "treeReady", "treeReadyYield", "treeReadyResin", "treeCycles", "treeHarvests", "breedings", "breedingAttempts", "breedingFailures", "treeBreedingAttempts", "treeBreedingFailures", "butterflyBreedingAttempts", "butterflyBreedingFailures", "upgradesBought", "playTimeSeconds"].forEach((key) => {
       const value = Number(merged[key]);
       merged[key] = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : defaultState[key];
     });
@@ -512,13 +589,47 @@ function loadState() {
   }
 }
 
-function saveState() {
+function performSave() {
+  if (!activeSlotId) return false;
   state.lastTickAt = Date.now();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  const previous = saveIndex.slots.find((slot) => Number(slot.id) === Number(activeSlotId));
+  const meta = {
+    id: Number(activeSlotId),
+    name: previous?.name || `林业工坊 ${activeSlotId}`,
+    updatedAt: Date.now(),
+    playTime: Math.max(0, Math.floor(Number(state.playTimeSeconds) || 0)),
+    chapter: getGuideStep() >= guideSteps.length ? "自由生态工坊" : `引导 ${getGuideStep() + 1} / ${guideSteps.length}`
+  };
+  try {
+    localStorage.setItem(`${SAVE_SLOT_PREFIX}${activeSlotId}`, JSON.stringify({ version: SAVE_VERSION, meta, state }));
+    saveIndex.slots = [...saveIndex.slots.filter((slot) => Number(slot.id) !== Number(activeSlotId)), meta].sort((a, b) => Number(a.id) - Number(b.id));
+    saveIndex.lastSlotId = Number(activeSlotId);
+    localStorage.setItem(SAVE_INDEX_KEY, JSON.stringify(saveIndex));
+  } catch {
+    showToast("本地存档写入失败，请导出备份后检查浏览器存储空间。");
+    return false;
+  }
   const status = $("#save-status");
-  status.textContent = "已自动保存";
+  if (status) status.textContent = "已自动保存";
   window.clearTimeout(saveState.statusTimer);
-  saveState.statusTimer = window.setTimeout(() => { status.textContent = "实时同步"; }, 1600);
+  saveState.statusTimer = window.setTimeout(() => { if (status) status.textContent = "实时同步"; }, 1600);
+  return true;
+}
+
+function saveState(immediate = false) {
+  if (!gameStarted || !activeSlotId) return;
+  if (immediate) {
+    window.clearTimeout(saveState.writeTimer);
+    saveState.writeTimer = null;
+    performSave();
+    return;
+  }
+  const status = $("#save-status");
+  if (status) status.textContent = "等待写入";
+  if (!saveState.writeTimer) saveState.writeTimer = window.setTimeout(() => {
+    saveState.writeTimer = null;
+    performSave();
+  }, 15000);
 }
 
 function formatTime() {
@@ -548,8 +659,9 @@ function getStrategyConfig() {
   return strategyData[state.strategyFocus] || strategyData.ecology;
 }
 
-function getExploreEnergyCost() {
-  return getStrategyConfig().exploreCost;
+function getExploreEnergyCost(zone = "forest", mode = "manual") {
+  const config = zones[zone] || zones.forest;
+  return mode === "auto" ? config.autoEnergy : config.manualEnergy;
 }
 
 function getActiveEnvironment() {
@@ -1066,10 +1178,20 @@ function getMissionPanelData() {
 }
 
 function isZoneUnlocked(zone) {
-  if (zone === "forest" || zone === "plains") return true;
-  if (zone === "swamp") return state.explorations >= 2;
-  if (zone === "tropic") return state.machineCycles >= 1;
+  if (zone === "forest") return true;
+  if (zone === "plains") return getZoneVisits("forest") >= 1;
+  if (zone === "swamp") return state.explorations >= 3 && state.machineCycles >= 1;
+  if (zone === "desert") return (state.squeezerCycles >= 1 || state.resources.oil > 0) && state.treeHarvests >= 1;
+  if (zone === "tropic") return getZoneProgress("swamp").manualRuns >= 1 && state.treeDiscovered.includes("jungle");
+  if (zone === "snow") return state.treeDiscovered.includes("larch") && getUpgradeLevel("apiary") >= 2;
+  if (zone === "cave") return state.butterflyAnalyzed.length >= 3 && Object.values(state.flowerInventory).filter((amount) => amount > 0).length >= 3;
+  if (zone === "end") return getUpgradeLevel("apiary") >= 3 && knownDiscoveredBees().length >= 8 && (state.distillerCycles >= 1 || state.resources.biofuel > 0);
   return false;
+}
+
+function getZoneProgress(zone) {
+  if (!state.zoneProgress?.[zone]) state.zoneProgress[zone] = { ...defaultState.zoneProgress[zone] };
+  return state.zoneProgress[zone];
 }
 
 function getZoneVisits(zone) {
@@ -1079,8 +1201,8 @@ function getZoneVisits(zone) {
 function getZoneDiscoveryProgress(zone) {
   const config = zones[zone];
   if (!config) return 0;
-  const rareFound = (zone === "swamp" && state.discovered.includes("common")) || (zone === "tropic" && state.discovered.includes("tropical"));
-  return clamp(config.discoveryBase + getZoneVisits(zone) * config.discoveryStep + (rareFound ? 25 : 0), 0, 100);
+  const progress = getZoneProgress(zone);
+  return clamp(config.discoveryBase + getZoneVisits(zone) * config.discoveryStep + Math.floor(progress.rareProgress / 5), 0, 100);
 }
 
 function getGuideCompletionPercent() {
@@ -1819,27 +1941,42 @@ function renderButterflyBreeding() {
 }
 
 function renderZones() {
-  $$(".explore-button").forEach((button) => {
-    const zone = button.dataset.zone;
-    if (!zone) return;
+  const grid = $("#zone-grid");
+  if (!grid) return;
+  const numerals = ["I", "II", "III", "IV", "V"];
+  grid.innerHTML = Object.entries(zones).map(([zone, config]) => {
     const unlocked = isZoneUnlocked(zone);
-    const card = button.closest(".zone-card");
-    const discovery = card.querySelector("[data-zone-discovery]");
-    if (discovery) discovery.textContent = `${Math.round(getZoneDiscoveryProgress(zone))}%`;
-    const visits = card.querySelector("[data-zone-visits]");
-    if (visits) visits.textContent = `${getZoneVisits(zone)} 次调查`;
-    card.classList.toggle("locked", !unlocked);
-    button.disabled = !unlocked;
-    button.textContent = unlocked ? "探索" : "锁定";
-    const tag = card.querySelector(".tag");
-    if (tag) {
-      tag.textContent = unlocked ? "已开放" : "需解锁";
-      tag.classList.toggle("tag-muted", !unlocked);
-      tag.classList.toggle("tag-green", unlocked);
-    }
-    const lockMark = card.querySelector(".lock-mark");
-    if (lockMark) lockMark.style.display = unlocked ? "none" : "block";
-  });
+    const progress = getZoneProgress(zone);
+    return `<article class="zone-card panel-inset ${unlocked ? "" : "locked"}">
+      <div class="zone-art ${config.art}-art" aria-hidden="true"><span class="biome-ground"></span><i class="biome-tree"></i><b class="biome-detail"></b><em class="biome-accent"></em>${unlocked ? "" : '<div class="lock-mark">LOCKED</div>'}</div>
+      <div class="zone-info"><div class="zone-card-meta"><span class="tag ${unlocked ? "tag-green" : "tag-muted"}">${unlocked ? "已开放" : "需解锁"}</span><span class="zone-difficulty">难度 ${numerals[config.difficulty - 1]}</span></div><h3>${config.name}</h3><p>${unlocked ? config.desc : config.unlockText}</p>
+      <div class="zone-progress-line"><span>稀有进度 <strong>${progress.rareProgress}%</strong></span><span>熟练度 ${progress.proficiency}%</span></div>
+      <div class="zone-footer"><span>发现度 <strong>${Math.round(getZoneDiscoveryProgress(zone))}%</strong></span><small>${getZoneVisits(zone)} 次调查</small><button class="small-button explore-button" data-zone="${zone}" ${unlocked ? "" : "disabled"}>${unlocked ? "调查" : "锁定"}</button></div></div></article>`;
+  }).join("");
+  renderSurveyQueue();
+}
+
+function renderSurveyQueue() {
+  const card = $("#survey-queue-card");
+  if (!card) return;
+  const pendingCount = (state.pendingSurvey || []).reduce((sum, item) => sum + Math.max(0, Number(item.amount) || 0), 0);
+  const auto = state.autoSurvey;
+  const unclaimed = state.surveyResult;
+  card.hidden = !auto && pendingCount === 0 && !unclaimed;
+  if (card.hidden) return;
+  const autoAction = auto?.pauseType === "warehouse"
+    ? '<button class="small-button" data-survey-action="settle-auto">整理本轮</button>'
+    : `<button class="small-button" data-survey-action="pause-auto">${auto?.userPaused ? "继续" : "暂停"}</button>`;
+  const autoText = auto
+    ? `<div><span class="mini-label">AUTO SURVEY</span><strong>${zones[auto.zone]?.name || "区域"} · ${auto.completedRuns}/${auto.totalRuns}</strong><small>${auto.pausedReason || `本轮剩余 ${Math.max(0, Math.ceil(auto.remaining))} 秒`}</small></div>${autoAction}`
+    : "";
+  const pendingText = pendingCount > 0
+    ? `<div><span class="mini-label">PENDING SURVEY BOX</span><strong>暂存调查物资 ×${pendingCount}</strong><small>仓库空间不足的物资会继续保留</small></div><button class="small-button" data-survey-action="claim-pending">整理入库</button>`
+    : "";
+  const resultText = unclaimed
+    ? `<div><span class="mini-label">UNCLAIMED RESULT</span><strong>${zones[unclaimed.zone]?.name || "区域"}调查已完成</strong><small>打开结算后可将物资整理入库</small></div><button class="small-button" data-survey-action="open-result">查看结算</button>`
+    : "";
+  card.innerHTML = `${autoText}${resultText}${pendingText}`;
 }
 
 function renderGuide() {
@@ -2467,7 +2604,7 @@ function renderCommandCenter() {
     button.classList.toggle("locked", !state.strategyReady && button.dataset.strategy !== state.strategyFocus);
     button.disabled = !state.strategyReady && button.dataset.strategy !== state.strategyFocus;
   });
-  setText("#explore-cost-label", `调查消耗 ${getExploreEnergyCost()} 能源 · ${strategy.short}策略`);
+  setText("#explore-cost-label", `手动 6–18 能源 · 自动 8–24 · ${strategy.short}策略`);
 }
 
 function getEcologyRecommendation(factor) {
@@ -2534,6 +2671,154 @@ function navigateWithFocus(view, target = "") {
   if (target) window.setTimeout(() => focusGuideTarget(target), 120);
 }
 
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
+}
+
+function getSlotMeta(slotId) {
+  return saveIndex.slots.find((slot) => Number(slot.id) === Number(slotId)) || null;
+}
+
+function isSaveSlotValid(slotId) {
+  const record = readJsonStorage(`${SAVE_SLOT_PREFIX}${slotId}`);
+  return Boolean(record?.version === SAVE_VERSION && record.state && typeof record.state === "object" && record.state.resources && typeof record.state.resources === "object");
+}
+
+function renderStartScreen() {
+  const continueButton = $("#continue-game-button");
+  const lastSlot = [getSlotMeta(saveIndex.lastSlotId), ...saveIndex.slots].find((slot) => slot && isSaveSlotValid(slot.id)) || null;
+  if (continueButton) continueButton.disabled = !lastSlot;
+  const hint = $("#start-slot-hint");
+  if (hint) hint.textContent = lastSlot
+    ? `上次存档：${lastSlot.name} · ${new Date(lastSlot.updatedAt).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}`
+    : "还没有本地存档，请创建新游戏。";
+}
+
+function openStartDialog(mode = "load") {
+  const modal = $("#start-dialog");
+  const content = $("#start-dialog-content");
+  if (!modal || !content) return;
+  setText("#start-dialog-label", mode === "about" ? "PROJECT INFORMATION" : mode === "new" ? "NEW WORKSHOP" : "LOCAL ARCHIVE");
+  setText("#start-dialog-title", mode === "about" ? "关于 Forestry Lab" : mode === "new" ? "选择新游戏槽位" : "加载本地存档");
+  if (mode === "about") {
+    content.innerHTML = `<div class="about-copy"><p>Forestry Lab 是根据 Minecraft 林业模组玩法制作的非官方学习型模拟器原型，与 Mojang、Microsoft、ForestryMC 及 FTB Wiki 无隶属或授权关系。</p><p>当前版本包含养蜂、树木、蝴蝶、环境、生产加工和区域调查等简化系统。所有进度仅保存在当前设备浏览器中。</p><p>项目中的开源像素字体按其随附许可使用；Minecraft 与 Forestry 的名称、玩法概念及参考资料权利归各自权利方。本原型没有把已下载的模组纹理直接接入游戏界面。</p><label class="simplified-setting"><input type="checkbox" data-app-setting="simplifiedSurvey" ${appSettings.simplifiedSurvey ? "checked" : ""}><span><strong>简化调查</strong><small>把 5×5 地图改为连续 5 轮的三选一资源卡，能源、奖励倍率和稀有进度保持不变。</small></span></label><div class="about-links"><a href="https://www.minecraft.net/" target="_blank" rel="noopener noreferrer">Minecraft 官网 ↗</a><a href="https://www.curseforge.com/minecraft/mc-mods/forestry" target="_blank" rel="noopener noreferrer">Forestry 模组页 ↗</a><a href="https://ftbwiki.org/Forestry" target="_blank" rel="noopener noreferrer">Forestry Wiki ↗</a><a href="https://github.com/ForestryMC/ForestryMC/tree/mc-1.12" target="_blank" rel="noopener noreferrer">ForestryMC 源码 ↗</a></div></div>`;
+  } else {
+    content.innerHTML = `<div class="save-slot-list">${Array.from({ length: SAVE_SLOT_COUNT }, (_, index) => {
+      const id = index + 1;
+      const meta = getSlotMeta(id);
+      if (!meta) return `<article class="save-slot empty"><div><span>存档槽 ${String(id).padStart(2, "0")}</span><strong>空槽位</strong><small>创建一座新的生态工坊</small></div><button data-slot-action="new" data-slot-id="${id}">新建</button></article>`;
+      if (!isSaveSlotValid(id)) return `<article class="save-slot damaged"><div><span>存档槽 ${String(id).padStart(2, "0")}</span><strong>${escapeHtml(meta.name || "损坏存档")}</strong><small>存档数据无法读取，可删除后新建或导入备份。</small></div><div class="save-slot-actions"><button data-slot-action="import" data-slot-id="${id}">导入备份</button><button class="danger" data-slot-action="delete" data-slot-id="${id}">删除</button></div></article>`;
+      const playedMinutes = Math.floor((Number(meta.playTime) || 0) / 60);
+      return `<article class="save-slot"><div><span>存档槽 ${String(id).padStart(2, "0")}</span><strong>${escapeHtml(meta.name)}</strong><small>${escapeHtml(meta.chapter || "生态工坊")} · ${playedMinutes} 分钟 · ${new Date(meta.updatedAt).toLocaleString("zh-CN")}</small></div><div class="save-slot-actions">${mode === "new" ? `<button class="danger" data-slot-action="new" data-slot-id="${id}">覆盖新建</button>` : `<button data-slot-action="load" data-slot-id="${id}">加载</button>`}<button data-slot-action="export" data-slot-id="${id}">导出</button><button data-slot-action="rename" data-slot-id="${id}">改名</button><button class="danger" data-slot-action="delete" data-slot-id="${id}">删除</button></div></article>`;
+    }).join("")}</div><div class="save-dialog-footer"><button data-slot-action="import" data-slot-id="${saveIndex.slots.length < SAVE_SLOT_COUNT ? Array.from({ length: SAVE_SLOT_COUNT }, (_, i) => i + 1).find((id) => !getSlotMeta(id)) : 1}">导入存档文件</button><small>存档只保存在当前浏览器。建议在清理缓存前先导出备份。</small></div>`;
+  }
+  modal.classList.add("visible");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function closeStartDialog() {
+  const modal = $("#start-dialog");
+  if (!modal) return;
+  modal.classList.remove("visible");
+  modal.setAttribute("aria-hidden", "true");
+}
+
+function createNewGame(slotId) {
+  const existing = getSlotMeta(slotId);
+  if (existing && !window.confirm(`槽位中已有“${existing.name}”。建议先导出备份；仍要覆盖并开始新游戏吗？`)) return;
+  activeSlotId = Number(slotId);
+  state = structuredClone(defaultState);
+  gameStarted = true;
+  const current = getSlotMeta(activeSlotId);
+  const meta = { id: activeSlotId, name: current?.name || `林业工坊 ${activeSlotId}`, updatedAt: Date.now(), playTime: 0, chapter: "新的林地调查" };
+  saveIndex.slots = [...saveIndex.slots.filter((slot) => Number(slot.id) !== activeSlotId), meta].sort((a, b) => Number(a.id) - Number(b.id));
+  saveIndex.lastSlotId = activeSlotId;
+  enterGame();
+  addLog("新的生态工坊已经建立，第一次森林调查已加入引导。", "teal");
+  saveState(true);
+}
+
+function loadGameSlot(slotId) {
+  if (!getSlotMeta(slotId)) return showToast("这个存档槽还是空的。");
+  if (!isSaveSlotValid(slotId)) return showToast("这个存档已损坏，请导入备份或删除后新建。");
+  if (gameStarted) saveState(true);
+  activeSlotId = Number(slotId);
+  state = loadState(activeSlotId);
+  gameStarted = true;
+  saveIndex.lastSlotId = activeSlotId;
+  enterGame();
+  applyOfflineProgress();
+}
+
+function enterGame() {
+  gameStarted = true;
+  document.body.classList.add("game-active");
+  $("#start-screen")?.setAttribute("aria-hidden", "true");
+  closeStartDialog();
+  switchView(state.expedition ? "explore" : "overview");
+  renderAll();
+  if (state.expedition?.mode === "manual") openManualSurveyScreen();
+  else if (state.surveyResult) showSurveyResult();
+}
+
+function exportSaveSlot(slotId) {
+  const record = readJsonStorage(`${SAVE_SLOT_PREFIX}${slotId}`);
+  if (!record) return showToast("没有可导出的存档。");
+  const blob = new Blob([JSON.stringify(record, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `forestry-lab-slot-${slotId}.json`;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(link.href), 500);
+}
+
+function renameSaveSlot(slotId) {
+  const meta = getSlotMeta(slotId);
+  if (!meta) return;
+  const name = window.prompt("输入新的存档名称（最多 20 个字符）：", meta.name)?.trim().slice(0, 20);
+  if (!name) return;
+  meta.name = name;
+  const record = readJsonStorage(`${SAVE_SLOT_PREFIX}${slotId}`);
+  if (record) { record.meta = { ...record.meta, name }; localStorage.setItem(`${SAVE_SLOT_PREFIX}${slotId}`, JSON.stringify(record)); }
+  localStorage.setItem(SAVE_INDEX_KEY, JSON.stringify(saveIndex));
+  openStartDialog("load");
+  renderStartScreen();
+}
+
+function deleteSaveSlot(slotId) {
+  const meta = getSlotMeta(slotId);
+  if (!meta || !window.confirm(`确定删除“${meta.name}”吗？未导出的进度无法恢复。`)) return;
+  localStorage.removeItem(`${SAVE_SLOT_PREFIX}${slotId}`);
+  saveIndex.slots = saveIndex.slots.filter((slot) => Number(slot.id) !== Number(slotId));
+  if (Number(saveIndex.lastSlotId) === Number(slotId)) saveIndex.lastSlotId = saveIndex.slots[0]?.id || null;
+  localStorage.setItem(SAVE_INDEX_KEY, JSON.stringify(saveIndex));
+  openStartDialog("load");
+  renderStartScreen();
+}
+
+function importSaveFile(file, slotId) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(String(reader.result || ""));
+      const importedState = parsed?.version === SAVE_VERSION && parsed.state ? parsed.state : parsed;
+      if (!importedState || typeof importedState !== "object" || !importedState.resources) throw new Error("invalid");
+      const targetId = Number(slotId) || 1;
+      if (getSlotMeta(targetId) && !window.confirm(`导入会覆盖槽位 ${targetId}，是否继续？`)) return;
+      const meta = { id: targetId, name: parsed?.meta?.name ? `${String(parsed.meta.name).slice(0, 16)} · 导入` : `导入工坊 ${targetId}`, updatedAt: Date.now(), playTime: Number(parsed?.meta?.playTime) || 0, chapter: "导入存档" };
+      localStorage.setItem(`${SAVE_SLOT_PREFIX}${targetId}`, JSON.stringify({ version: SAVE_VERSION, meta, state: importedState }));
+      saveIndex.slots = [...saveIndex.slots.filter((slot) => Number(slot.id) !== targetId), meta].sort((a, b) => Number(a.id) - Number(b.id));
+      saveIndex.lastSlotId = targetId;
+      localStorage.setItem(SAVE_INDEX_KEY, JSON.stringify(saveIndex));
+      openStartDialog("load");
+      renderStartScreen();
+      showToast("存档导入成功");
+    } catch { showToast("无法识别这个存档文件。"); }
+  };
+  reader.readAsText(file);
+}
+
 function renderAll() {
   renderResources();
   renderApiary();
@@ -2589,52 +2874,460 @@ function handleGuideAction() {
   window.setTimeout(() => focusGuideTarget(target), 120);
 }
 
-function explore(zone) {
-  if (!isZoneUnlocked(zone)) return showToast("这个区域还没有开放，继续完成当前引导。");
-  const exploreCost = getExploreEnergyCost();
-  if (state.resources.energy < exploreCost) return showToast(`能源不足，本次调查需要 ${exploreCost} 点能源。`);
-  if (getWarehouseSpace("wood") < zones[zone].wood) return showToast(`木材分区空间不足，需要 ${zones[zone].wood}，当前剩余 ${getWarehouseSpace("wood")}。`);
-  state.resources.energy -= exploreCost;
+let surveyStartLocked = false;
+let selectedSurveyZone = "forest";
+let surveyMarkingMode = false;
+
+function hashSeed(value) {
+  let hash = 2166136261;
+  for (const character of String(value)) { hash ^= character.charCodeAt(0); hash = Math.imul(hash, 16777619); }
+  return hash >>> 0;
+}
+
+function seededRandom(seed) {
+  let value = seed >>> 0;
+  return () => {
+    value += 0x6D2B79F5;
+    let result = value;
+    result = Math.imul(result ^ (result >>> 15), result | 1);
+    result ^= result + Math.imul(result ^ (result >>> 7), result | 61);
+    return ((result ^ (result >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function surveyItemLabel(item) {
+  if (item.kind === "flower") return flowerSources[item.id]?.name || "花源";
+  if (item.kind === "sapling") return `${treeSpecies[item.id]?.name || "树木"}树苗`;
+  return resourceNames[item.id] || item.id;
+}
+
+function mergeSurveyItems(items) {
+  const merged = new Map();
+  (items || []).forEach((item) => {
+    const amount = Math.max(0, Math.floor(Number(item.amount) || 0));
+    if (!amount) return;
+    const key = `${item.kind}:${item.id}`;
+    if (merged.has(key)) merged.get(key).amount += amount;
+    else merged.set(key, { kind: item.kind, id: item.id, amount, label: item.label || surveyItemLabel(item) });
+  });
+  return [...merged.values()];
+}
+
+function getSurveyRewardItems(zone, mode, seed, completion = 1, rewardSnapshot = null) {
+  const config = zones[zone];
+  const random = seededRandom(hashSeed(`${seed}:rewards:${mode}`));
+  const proficiency = getZoneProgress(zone).proficiency;
+  const modeMultiplier = mode === "auto" ? .8 + Math.min(.1, proficiency / 1000) : clamp(completion, .35, 1);
+  let items = (Array.isArray(rewardSnapshot) ? rewardSnapshot : config.rewards).map((reward) => {
+    const base = reward.min + Math.floor(random() * (reward.max - reward.min + 1));
+    return { kind: reward.kind, id: reward.id, amount: Math.floor(base * modeMultiplier) };
+  });
+  if (!state.tutorialSurveyCompleted && zone === "forest" && mode === "manual") {
+    items = [...items, { kind: "resource", id: "wood", amount: 8 }, { kind: "flower", id: "wildflower", amount: 3 }, { kind: "resource", id: "rawComb", amount: 1 }];
+  }
+  return mergeSurveyItems(items);
+}
+
+function getRareCandidates(zone) {
+  const candidates = {
+    plains: [{ kind: "butterfly", id: "brimstone" }],
+    swamp: [{ kind: "bee", id: "common" }, { kind: "butterfly", id: "swallow" }, { kind: "tree", id: "jungle" }],
+    tropic: [{ kind: "bee", id: "tropical" }, { kind: "butterfly", id: "atlas" }, { kind: "tree", id: "teak" }],
+    snow: [{ kind: "tree", id: "pine" }],
+    cave: [{ kind: "butterfly", id: "morpho" }]
+  }[zone] || [];
+  return candidates.filter((candidate) => {
+    if (candidate.kind === "bee") return !state.discovered.includes(candidate.id);
+    if (candidate.kind === "tree") return !state.treeDiscovered.includes(candidate.id);
+    return !state.butterflyDiscovered.includes(candidate.id);
+  });
+}
+
+function discoverSurveyRare(zone, mode, seed, guaranteed = false) {
+  const candidates = getRareCandidates(zone);
+  if (!candidates.length) return [];
+  const random = seededRandom(hashSeed(`${seed}:rare:${getZoneVisits(zone)}`));
+  const chance = mode === "manual" ? .135 : .1;
+  if (!guaranteed && random() >= chance) return [];
+  const candidate = candidates[Math.floor(random() * candidates.length)];
+  if (candidate.kind === "bee") state.discovered.push(candidate.id);
+  if (candidate.kind === "butterfly") state.butterflyDiscovered.push(candidate.id);
+  if (candidate.kind === "tree") {
+    state.treeDiscovered.push(candidate.id);
+    state.treeSaplings[candidate.id] = (state.treeSaplings[candidate.id] || 0) + 1;
+  }
+  const source = candidate.kind === "bee" ? species : candidate.kind === "tree" ? treeSpecies : butterflySpecies;
+  return [source[candidate.id]?.name || candidate.id];
+}
+
+function completeSurveyProgress(zone, mode, seed, yieldCount, clues = 0) {
+  const progress = getZoneProgress(zone);
+  const rareDelta = mode === "manual" ? 16 + clues * 4 : 8;
+  const oldRare = progress.rareProgress;
+  progress[mode === "manual" ? "manualRuns" : "autoRuns"] += 1;
+  progress.proficiency = clamp(progress.proficiency + (mode === "manual" ? 8 : 5), 0, 100);
+  progress.rareProgress = clamp(progress.rareProgress + rareDelta, 0, 100);
+  progress.bestYield = Math.max(progress.bestYield, yieldCount);
   state.explorations += 1;
   state.explorationCounts[zone] = getZoneVisits(zone) + 1;
-  const zoneVisits = state.explorationCounts[zone];
-  const found = [];
-  let overflowed = false;
-  const config = zones[zone];
-  const exploredEnvironment = state.zoneEnvironments[zone] || (state.zoneEnvironments[zone] = { ...defaultState.zoneEnvironments[zone] });
-  exploredEnvironment.flowerDensity = clamp(exploredEnvironment.flowerDensity + 8, 0, 100);
-  exploredEnvironment.soil = clamp(exploredEnvironment.soil + 2, 0, 100);
-  addToWarehouse("wood", config.wood);
-  if (Math.random() < config.combChance) {
-    const comb = addToWarehouse("rawComb", 1);
-    if (comb.accepted > 0) { state.totalCombCollected += comb.accepted; found.push("蜂巢"); }
-    overflowed = overflowed || comb.overflow > 0;
-  }
-  if (Math.random() > .45) {
-    const oil = addToWarehouse("oil", config.oil);
-    if (oil.accepted > 0) found.push(`种子油 ×${oil.accepted}`);
-    overflowed = overflowed || oil.overflow > 0;
-  }
-  if (Math.random() > .25) {
-    const flowerId = config.flowerSource;
-    state.flowerInventory[flowerId] = getFlowerCount(flowerId) + 1;
-    found.push(`${flowerSources[flowerId].name} ×1`);
-  }
-  if (zone === "swamp" && !state.discovered.includes("common") && (Math.random() > .3 || zoneVisits >= 2)) { state.discovered.push("common"); found.push("普通蜂"); }
-  if (zone === "tropic" && !state.discovered.includes("tropical") && (Math.random() > .35 || zoneVisits >= 2)) { state.discovered.push("tropical"); found.push("热带蜂"); }
-  const butterflyByZone = { forest: "azure", plains: "brimstone", swamp: "swallow", tropic: "atlas" };
-  const butterflyId = butterflyByZone[zone];
-  if (butterflyId && !state.butterflyDiscovered.includes(butterflyId) && (Math.random() > .4 || zoneVisits >= 2)) {
-    state.butterflyDiscovered.push(butterflyId);
-    found.push(butterflySpecies[butterflyId].name);
-  }
-  if (zone === "swamp" && !state.treeDiscovered.includes("jungle") && (Math.random() > .45 || zoneVisits >= 2)) { state.treeDiscovered.push("jungle"); state.treeSaplings.jungle = (state.treeSaplings.jungle || 0) + 1; found.push("丛林树苗"); }
-  if (zone === "tropic" && !state.treeDiscovered.includes("teak") && (Math.random() > .35 || zoneVisits >= 2)) { state.treeDiscovered.push("teak"); state.treeSaplings.teak = (state.treeSaplings.teak || 0) + 1; found.push("柚木树苗"); }
-  consumeStrategyAction();
-  addLog(`探索${config.name}完成，获得木材 ${config.wood}${found.length ? `，发现 ${found.join("、")}` : "。"}${overflowed ? " 对应物资分区已满，部分物资未能带回。" : ""}`, "teal");
-  showToast(found.length ? `探索完成：${found.join("、")}${overflowed ? "；部分物资分区已满" : ""}` : overflowed ? "探索完成，但对应物资分区已满" : "探索完成，带回了一些木材。");
-  renderAll();
+  const guaranteed = progress.rareProgress >= 100;
+  const discoveries = discoverSurveyRare(zone, mode, seed, guaranteed);
+  if (guaranteed) progress.rareProgress = discoveries.length ? 0 : 100;
+  const environment = state.zoneEnvironments[zone] || (state.zoneEnvironments[zone] = { ...defaultState.zoneEnvironments[zone] });
+  environment.flowerDensity = clamp(environment.flowerDensity + 5, 0, 100);
+  environment.soil = clamp(environment.soil + 1, 0, 100);
+  return { rareDelta, discoveries, previousRare: oldRare };
 }
+
+function openSurveyConfirm(zone) {
+  if (!isZoneUnlocked(zone)) return showToast(`尚未开放：${zones[zone]?.unlockText || "继续推进工坊"}`);
+  if (state.expedition) return openManualSurveyScreen();
+  if (state.surveyResult) return showSurveyResult();
+  if (state.autoSurvey) return showToast(`自动调查队列正在${zones[state.autoSurvey.zone]?.name || "其他区域"}运行，请先完成当前队列。`);
+  selectedSurveyZone = zone;
+  const config = zones[zone];
+  const progress = getZoneProgress(zone);
+  setText("#survey-confirm-title", `${config.name} · 调查简报`);
+  const content = $("#survey-confirm-content");
+  content.innerHTML = `<div class="survey-brief-grid"><div><span>难度</span><strong>${["I", "II", "III", "IV", "V"][config.difficulty - 1]}</strong></div><div><span>环境</span><strong>${config.temperature} · ${config.humidity}</strong></div><div><span>调查次数</span><strong>${getZoneVisits(zone)}</strong></div><div><span>熟练 / 稀有</span><strong>${progress.proficiency}% / ${progress.rareProgress}%</strong></div></div><div class="survey-reward-preview"><span class="mini-label">POSSIBLE REWARDS</span><p>${config.rewards.map((item) => `${surveyItemLabel(item)} ${item.min}–${item.max}`).join(" · ")}</p><small>木材分区 ${getWarehouseLoad("wood")} / ${getWarehouseCapacity("wood")} · 调查暂存 ${state.pendingSurvey.length} 类</small></div><div class="survey-mode-grid"><label class="survey-mode active"><input type="radio" name="survey-mode" value="manual" checked><span><b>手动调查</b><small>能源 ${config.manualEnergy} · 5×5 回合地图 · 稀有权重 1.35</small></span></label><label class="survey-mode"><input type="radio" name="survey-mode" value="auto"><span><b>自动调查</b><small>每次能源 ${config.autoEnergy} · ${config.autoDuration}s · 常规产量约 80%</small></span></label></div><div class="auto-count-control" id="auto-count-control" hidden><span>连续调查</span><div>${[1, 3, 5].map((count) => `<label><input type="radio" name="auto-count" value="${count}" ${count === 1 ? "checked" : ""}>${count} 次</label>`).join("")}</div><small>每轮开始时扣除能源；能源达到保留线时自动暂停。</small></div><div class="survey-confirm-actions"><button id="survey-confirm-cancel">返回</button><button class="primary-button" id="survey-start-button">开始手动调查 <span>→</span></button></div>`;
+  const modal = $("#survey-confirm-modal");
+  modal.classList.add("visible");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function closeSurveyConfirm() {
+  const modal = $("#survey-confirm-modal");
+  modal?.classList.remove("visible");
+  modal?.setAttribute("aria-hidden", "true");
+}
+
+function generateManualExpedition(zone) {
+  const config = zones[zone];
+  const tutorial = !state.tutorialSurveyCompleted && zone === "forest";
+  const seed = tutorial ? hashSeed(`tutorial:${activeSlotId}`) : hashSeed(`${activeSlotId}:${zone}:${getZoneVisits(zone)}:${Date.now()}`);
+  const random = seededRandom(seed);
+  const guaranteedPath = new Set([22, 17, 12, 13]);
+  const resourcePositions = new Set([17, 12, 13]);
+  const cluePositions = new Set([8, 16]);
+  const blockedCount = 3 + config.difficulty;
+  const blocked = new Set();
+  while (blocked.size < blockedCount) {
+    const index = Math.floor(random() * 25);
+    if (index !== 22 && !guaranteedPath.has(index) && !cluePositions.has(index)) blocked.add(index);
+  }
+  const rough = new Set();
+  while (rough.size < 3 + config.difficulty) {
+    const index = Math.floor(random() * 25);
+    if (!blocked.has(index) && !resourcePositions.has(index) && index !== 22) rough.add(index);
+  }
+  const tiles = Array.from({ length: 25 }, (_, index) => ({
+    type: index === 22 ? "camp" : blocked.has(index) ? "blocked" : resourcePositions.has(index) ? "resource" : cluePositions.has(index) ? "clue" : rough.has(index) ? "rough" : "path",
+    cost: rough.has(index) ? 2 : index === 22 ? 0 : 1,
+    collected: false,
+    revealed: index === 22 || [17, 21, 23].includes(index),
+    marked: false
+  }));
+  return { id: `manual-${seed}`, zone, mode: "manual", status: "active", seed, energyPaid: config.manualEnergy, surveyPoints: config.surveyPoints, position: 22, revealed: tiles.map((tile, index) => tile.revealed ? index : null).filter((value) => value !== null), bag: [], foundNodes: 0, clues: 0, tiles, rewardSnapshot: structuredClone(config.rewards), unlockSnapshot: isZoneUnlocked(zone), simplified: appSettings.simplifiedSurvey, simpleRounds: 0, startedAt: Date.now() };
+}
+
+function startManualSurvey(zone) {
+  if (surveyStartLocked) return;
+  const cost = getExploreEnergyCost(zone, "manual");
+  if (state.resources.energy < cost) return showToast(`能源不足，需要 ${cost} 点。`);
+  surveyStartLocked = true;
+  state.resources.energy -= cost;
+  state.expedition = generateManualExpedition(zone);
+  state.tutorialSurveyCompleted = state.tutorialSurveyCompleted === true;
+  consumeStrategyAction();
+  closeSurveyConfirm();
+  saveState(true);
+  openManualSurveyScreen();
+  window.setTimeout(() => { surveyStartLocked = false; }, 350);
+}
+
+function openManualSurveyScreen() {
+  const expedition = state.expedition;
+  if (!expedition) return;
+  const screen = $("#manual-survey-screen");
+  screen.classList.add("visible");
+  screen.setAttribute("aria-hidden", "false");
+  document.body.classList.add("survey-open");
+  renderManualSurvey();
+}
+
+function revealSurveyNeighbors(position, limit = 4) {
+  const expedition = state.expedition;
+  const x = position % 5;
+  const y = Math.floor(position / 5);
+  const neighbors = [[x, y - 1], [x + 1, y], [x, y + 1], [x - 1, y]].filter(([nx, ny]) => nx >= 0 && nx < 5 && ny >= 0 && ny < 5).map(([nx, ny]) => ny * 5 + nx);
+  neighbors.slice(0, limit).forEach((index) => { expedition.tiles[index].revealed = true; });
+  expedition.revealed = expedition.tiles.map((tile, index) => tile.revealed ? index : null).filter((value) => value !== null);
+}
+
+function renderManualSurvey() {
+  const expedition = state.expedition;
+  if (!expedition) return;
+  const config = zones[expedition.zone];
+  setText("#survey-zone-label", `FIELD SURVEY · DIFFICULTY ${["I", "II", "III", "IV", "V"][config.difficulty - 1]}`);
+  setText("#survey-zone-title", `${config.name}调查`);
+  setText("#survey-points-value", expedition.surveyPoints);
+  const map = $("#survey-map");
+  if (expedition.simplified) {
+    const round = Math.max(0, Number(expedition.simpleRounds) || 0);
+    const choices = [
+      { id: "material", icon: "◆", title: "采集材料", detail: "稳定取得一组区域样本" },
+      { id: "flower", icon: "✿", title: "记录花源", detail: "偏向生态与花源样本" },
+      { id: "clue", icon: "?", title: "追踪线索", detail: "取得样本并追加稀有进度" }
+    ];
+    const shift = hashSeed(`${expedition.seed}:${round}`) % choices.length;
+    const ordered = [...choices.slice(shift), ...choices.slice(0, shift)];
+    map.classList.add("simplified-map");
+    map.innerHTML = ordered.map((choice) => `<button class="simple-survey-choice" data-simple-choice="${choice.id}"><i>${choice.icon}</i><strong>${choice.title}</strong><small>${choice.detail}</small></button>`).join("");
+    $(".survey-legend")?.classList.add("simplified-hidden");
+    $("#survey-bag-list").innerHTML = `<span>选择轮次 <strong>${round} / 5</strong></span><span>资源样本 <strong>${expedition.foundNodes}</strong></span><span>生态线索 <strong>${expedition.clues}</strong></span><small>每轮选择一张卡；完成 5 轮后自动结算。</small>`;
+    setText("#survey-status-title", `简化调查 · 第 ${Math.min(5, round + 1)} 轮`);
+    setText("#survey-status-text", "三种路线都能取得常规样本；追踪线索会额外增加本次稀有进度。选择结果会立即保存。");
+    $("#survey-scan-button").disabled = true;
+    $("#survey-mark-button").disabled = true;
+    return;
+  }
+  map.classList.remove("simplified-map");
+  $(".survey-legend")?.classList.remove("simplified-hidden");
+  $("#survey-mark-button").disabled = false;
+  const icons = { camp: "⌂", path: "·", resource: "◆", clue: "?", rough: "≋", blocked: "■" };
+  map.innerHTML = expedition.tiles.map((tile, index) => {
+    const current = index === expedition.position;
+    const hidden = !tile.revealed;
+    return `<button role="gridcell" data-tile-index="${index}" class="survey-tile ${hidden ? "hidden" : tile.type} ${current ? "current" : ""} ${tile.collected ? "collected" : ""} ${tile.marked ? "marked" : ""}" aria-label="${hidden ? "未调查地块" : tile.type}">${hidden ? "" : current ? "●" : icons[tile.type]}</button>`;
+  }).join("");
+  $("#survey-bag-list").innerHTML = `<span>资源节点 <strong>${expedition.foundNodes} / 3</strong></span><span>生态线索 <strong>${expedition.clues}</strong></span>${expedition.foundNodes >= 3 ? "<small>主要样本已收集，可以安全结束调查。</small>" : "<small>至少找到 3 个资源节点可取得完整基础产量。</small>"}`;
+  setText("#survey-status-title", surveyMarkingMode ? "选择要标记的地块" : expedition.surveyPoints > 0 ? "调查进行中" : "调查点已用尽");
+  setText("#survey-status-text", `移动到相邻地块会消耗其调查点；复杂地形消耗 2 点。当前已揭示 ${expedition.revealed.length} / 25。`);
+  $("#survey-scan-button").disabled = expedition.surveyPoints < 1;
+}
+
+function handleSimplifiedSurveyChoice(choice) {
+  const expedition = state.expedition;
+  if (!expedition?.simplified || expedition.simpleRounds >= 5) return;
+  expedition.simpleRounds += 1;
+  expedition.surveyPoints = Math.max(0, expedition.surveyPoints - 1);
+  expedition.foundNodes += 1;
+  if (choice === "clue") expedition.clues += 1;
+  expedition.bag.push({ choice, round: expedition.simpleRounds });
+  saveState(true);
+  if (expedition.simpleRounds >= 5) return window.setTimeout(() => finishManualSurvey(false), 120);
+  renderManualSurvey();
+}
+
+function handleSurveyTile(index) {
+  const expedition = state.expedition;
+  const tile = expedition?.tiles?.[index];
+  if (!tile) return;
+  if (surveyMarkingMode) {
+    tile.marked = !tile.marked;
+    surveyMarkingMode = false;
+    saveState();
+    return renderManualSurvey();
+  }
+  const currentX = expedition.position % 5;
+  const currentY = Math.floor(expedition.position / 5);
+  const nextX = index % 5;
+  const nextY = Math.floor(index / 5);
+  if (!tile.revealed || Math.abs(currentX - nextX) + Math.abs(currentY - nextY) !== 1) return showToast("只能移动到上下左右相邻的已揭示地块。");
+  if (tile.type === "blocked") return showToast("这块地形无法通行，请寻找其他路线。");
+  if (expedition.surveyPoints < tile.cost) return showToast("调查点不足，可以结束调查并带回已有样本。");
+  expedition.surveyPoints -= tile.cost;
+  expedition.position = index;
+  if (tile.type === "resource" && !tile.collected) { tile.collected = true; expedition.foundNodes += 1; showToast("发现一个资源节点"); }
+  if (tile.type === "clue" && !tile.collected) { tile.collected = true; expedition.clues += 1; showToast("记录生态线索：稀有进度额外 +4"); }
+  revealSurveyNeighbors(index);
+  saveState();
+  renderManualSurvey();
+  if (expedition.surveyPoints <= 0) window.setTimeout(() => finishManualSurvey(false), 250);
+}
+
+function scanSurveyArea() {
+  const expedition = state.expedition;
+  if (!expedition || expedition.surveyPoints < 1) return showToast("调查点不足。");
+  expedition.surveyPoints -= 1;
+  const hidden = expedition.tiles.map((tile, index) => !tile.revealed ? index : null).filter((value) => value !== null).sort((a, b) => Math.abs(a - expedition.position) - Math.abs(b - expedition.position)).slice(0, 3);
+  hidden.forEach((index) => { expedition.tiles[index].revealed = true; });
+  expedition.revealed = expedition.tiles.map((tile, index) => tile.revealed ? index : null).filter((value) => value !== null);
+  saveState();
+  renderManualSurvey();
+}
+
+function finishManualSurvey(requireConfirm = true) {
+  const expedition = state.expedition;
+  if (!expedition) return;
+  if (requireConfirm && !window.confirm(`${expedition.foundNodes < 3 ? "主要资源节点还没有全部找到，提前撤离会降低基础产量。\n" : ""}撤离并保留当前收获？选择取消可继续调查。`)) return;
+  const completion = expedition.foundNodes / 3;
+  const items = getSurveyRewardItems(expedition.zone, "manual", expedition.seed, completion, expedition.rewardSnapshot);
+  const yieldCount = items.reduce((sum, item) => sum + item.amount, 0);
+  const progress = completeSurveyProgress(expedition.zone, "manual", expedition.seed, yieldCount, expedition.clues);
+  state.tutorialSurveyCompleted = true;
+  state.surveyResult = { id: `result-${expedition.id}`, zone: expedition.zone, mode: "manual", energyPaid: expedition.energyPaid, items, discoveries: progress.discoveries, rareDelta: progress.rareDelta, claimed: false, createdAt: Date.now() };
+  state.expedition = null;
+  $("#manual-survey-screen")?.classList.remove("visible");
+  $("#manual-survey-screen")?.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("survey-open");
+  addLog(`完成${zones[state.surveyResult.zone].name}手动调查，带回 ${yieldCount} 份样本。`, "teal");
+  saveState(true);
+  renderAll();
+  showSurveyResult();
+}
+
+function startAutoSurvey(zone, count) {
+  if (surveyStartLocked || state.autoSurvey) return showToast("已有自动调查队列正在运行。");
+  const cost = getExploreEnergyCost(zone, "auto");
+  if (state.resources.energy < cost || state.resources.energy - cost < getAutomationReserveEnergy()) return showToast(`能源不足或将低于保留线；首轮需要 ${cost} 点。`);
+  surveyStartLocked = true;
+  state.resources.energy -= cost;
+  const seed = hashSeed(`${activeSlotId}:${zone}:auto:${getZoneVisits(zone)}:${Date.now()}`);
+  state.autoSurvey = { id: `auto-${seed}`, zone, mode: "auto", status: "active", seed, energyPerRun: cost, energyPaid: cost, totalRuns: count, completedRuns: 0, remaining: zones[zone].autoDuration, completedItems: [], discoveries: [], rewardSnapshot: structuredClone(zones[zone].rewards), unlockSnapshot: isZoneUnlocked(zone), paused: false, pausedReason: "", startedAt: Date.now() };
+  consumeStrategyAction();
+  closeSurveyConfirm();
+  saveState(true);
+  renderAll();
+  showToast(`已安排 ${count} 次${zones[zone].name}自动调查`);
+  window.setTimeout(() => { surveyStartLocked = false; }, 350);
+}
+
+function finishAutoSurveyRun() {
+  const auto = state.autoSurvey;
+  if (!auto) return;
+  const runSeed = hashSeed(`${auto.seed}:${auto.completedRuns}`);
+  const items = getSurveyRewardItems(auto.zone, "auto", runSeed, 1, auto.rewardSnapshot);
+  auto.completedItems = mergeSurveyItems([...auto.completedItems, ...items]);
+  const yieldCount = items.reduce((sum, item) => sum + item.amount, 0);
+  const progress = completeSurveyProgress(auto.zone, "auto", runSeed, yieldCount, 0);
+  auto.discoveries.push(...progress.discoveries);
+  auto.completedRuns += 1;
+  if (auto.completedRuns >= auto.totalRuns) {
+    state.surveyResult = { id: `result-${auto.id}`, zone: auto.zone, mode: "auto", energyPaid: auto.energyPaid, items: auto.completedItems, discoveries: [...new Set(auto.discoveries)], rareDelta: auto.completedRuns * 8, claimed: false, createdAt: Date.now() };
+    state.autoSurvey = null;
+    addLog(`自动调查队列完成：${zones[auto.zone].name} ${auto.completedRuns} 次。`, "teal");
+    saveState(true);
+    if (gameStarted && document.visibilityState !== "hidden") showSurveyResult();
+    return;
+  }
+  const warehouseBlocker = auto.completedItems.find((item) => item.kind === "resource" && item.id !== "energy" && item.amount > getWarehouseSpace(item.id));
+  if (warehouseBlocker) {
+    auto.paused = true;
+    auto.pauseType = "warehouse";
+    auto.pausedReason = `${surveyItemLabel(warehouseBlocker)}分区空间不足 · 请先整理本轮物资`;
+    return;
+  }
+  const cost = auto.energyPerRun;
+  if (state.resources.energy < cost || state.resources.energy - cost < getAutomationReserveEnergy()) {
+    auto.paused = true;
+    auto.pauseType = "energy";
+    auto.pausedReason = `能源保留线 ${getAutomationReserveEnergy()} · 等待恢复`;
+    return;
+  }
+  state.resources.energy -= cost;
+  auto.energyPaid += cost;
+  auto.remaining = zones[auto.zone].autoDuration;
+}
+
+function advanceAutoSurvey(seconds, offline = false) {
+  const auto = state.autoSurvey;
+  if (!auto) return;
+  if (auto.userPaused) return;
+  if (auto.paused) {
+    if (auto.pauseType === "warehouse") return;
+    if (state.resources.energy >= auto.energyPerRun && state.resources.energy - auto.energyPerRun >= getAutomationReserveEnergy()) {
+      auto.paused = false;
+      auto.pauseType = "";
+      auto.pausedReason = "";
+      state.resources.energy -= auto.energyPerRun;
+      auto.energyPaid += auto.energyPerRun;
+      auto.remaining = zones[auto.zone].autoDuration;
+    } else return;
+  }
+  let remainingSeconds = Math.max(0, Number(seconds) || 0);
+  let completedThisPass = 0;
+  while (state.autoSurvey && !state.autoSurvey.paused && !state.autoSurvey.userPaused && remainingSeconds > 0 && completedThisPass < (offline ? 5 : 1)) {
+    const step = Math.min(remainingSeconds, state.autoSurvey.remaining);
+    state.autoSurvey.remaining -= step;
+    remainingSeconds -= step;
+    if (state.autoSurvey.remaining <= 0) { completedThisPass += 1; finishAutoSurveyRun(); }
+    else break;
+  }
+}
+
+function applySurveyItem(item) {
+  if (item.kind === "flower") {
+    state.flowerInventory[item.id] = getFlowerCount(item.id) + item.amount;
+    return { accepted: item.amount, overflow: 0 };
+  }
+  if (item.kind === "sapling") {
+    if (treeSpecies[item.id] && !state.treeDiscovered.includes(item.id)) state.treeDiscovered.push(item.id);
+    state.treeSaplings[item.id] = getTreeSaplingCount(item.id) + item.amount;
+    return { accepted: item.amount, overflow: 0 };
+  }
+  const result = addToWarehouse(item.id, item.amount);
+  if (item.id === "rawComb") state.totalCombCollected += result.accepted;
+  return result;
+}
+
+function claimSurveyItems(items) {
+  const overflow = [];
+  let accepted = 0;
+  mergeSurveyItems(items).forEach((item) => {
+    const result = applySurveyItem(item);
+    accepted += result.accepted;
+    if (result.overflow > 0) overflow.push({ ...item, amount: result.overflow });
+  });
+  return { accepted, overflow: mergeSurveyItems(overflow) };
+}
+
+function claimSurveyResult() {
+  const result = state.surveyResult;
+  if (!result) return;
+  if (state.claimedResultIds.includes(result.id)) {
+    state.surveyResult = null;
+    closeSurveyResult();
+    return;
+  }
+  const claim = claimSurveyItems(result.items);
+  state.pendingSurvey = mergeSurveyItems([...(state.pendingSurvey || []), ...claim.overflow]);
+  state.claimedResultIds = [...state.claimedResultIds, result.id].slice(-80);
+  result.claimed = true;
+  state.surveyResult = null;
+  saveState(true);
+  closeSurveyResult();
+  renderAll();
+  showToast(claim.overflow.length ? `已入库 ${claim.accepted} 份；溢出物资保留在调查暂存箱。` : `全部 ${claim.accepted} 份调查物资已入库。`);
+}
+
+function claimPendingSurvey() {
+  if (!state.pendingSurvey?.length) return;
+  const claim = claimSurveyItems(state.pendingSurvey);
+  state.pendingSurvey = claim.overflow;
+  saveState(true);
+  renderAll();
+  showToast(claim.overflow.length ? `已整理 ${claim.accepted} 份，剩余物资仍在暂存箱。` : "调查暂存物资已全部入库。");
+}
+
+function showSurveyResult() {
+  const result = state.surveyResult;
+  if (!result) return;
+  const config = zones[result.zone];
+  setText("#survey-result-title", `${config.name} · 调查完成`);
+  $("#survey-result-content").innerHTML = `<div class="result-summary"><div><span>调查模式</span><strong>${result.mode === "manual" ? "手动调查" : "自动调查"}</strong></div><div><span>能源消耗</span><strong>${result.energyPaid}</strong></div><div><span>稀有进度</span><strong>+${Math.max(0, result.rareDelta)}%</strong></div></div><div class="result-items"><span class="mini-label">SURVEY BAG</span>${result.items.length ? result.items.map((item) => `<div><span>${escapeHtml(item.label || surveyItemLabel(item))}</span><strong>×${item.amount}</strong></div>`).join("") : "<p>本次没有采集到可带回的物资。</p>"}</div>${result.discoveries?.length ? `<div class="result-discovery"><span>NEW SPECIES</span><strong>${result.discoveries.map(escapeHtml).join(" · ")}</strong></div>` : ""}<p class="result-note">仓库已满的物资会自动转入调查暂存箱，不会丢失。</p><div class="result-actions"><button data-result-action="return">返回区域</button><button data-result-action="warehouse">打开仓库</button><button data-result-action="repeat">再次调查</button><button class="primary-button" data-result-action="claim">全部入库 <span>→</span></button></div>`;
+  const modal = $("#survey-result-modal");
+  modal.classList.add("visible");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function closeSurveyResult() {
+  const modal = $("#survey-result-modal");
+  modal?.classList.remove("visible");
+  modal?.setAttribute("aria-hidden", "true");
+}
+
+function explore(zone) { openSurveyConfirm(zone); }
 
 function collectApiary() {
   if (state.apiaryReady === 0) return showToast("蜂箱还没有准备好产物。");
@@ -3128,6 +3821,7 @@ function advanceSimulation(seconds) {
   advanceEnvironment(safeSeconds);
   const energyRate = state.strategyFocus === "industry" ? .22 : .2;
   if (state.resources.energy < 100) state.resources.energy = clamp(state.resources.energy + energyRate * safeSeconds, 0, 100);
+  advanceAutoSurvey(safeSeconds, safeSeconds > 2);
   const flowerId = getActiveFlowerId();
   if (state.apiaryReady === 0 && getFlowerCount(flowerId) > 0) {
     state.apiaryProgress += getApiaryEffectiveRate() * safeSeconds;
@@ -3293,6 +3987,8 @@ function applyOfflineProgress() {
 }
 
 function gameTick() {
+  if (!gameStarted) return;
+  state.playTimeSeconds = Math.max(0, Number(state.playTimeSeconds) || 0) + 1;
   runAutomation();
   advanceSimulation(1);
   runAutomation();
@@ -3308,10 +4004,19 @@ function gameTick() {
   renderChapterDeck();
   renderCommandCenter();
   renderEcologyNetwork();
+  renderZones();
   saveState();
 }
 
 function bindEvents() {
+  document.addEventListener("click", (event) => {
+    const link = event.target.closest("a[href^='http']");
+    if (!link) return;
+    if (!ALLOWED_EXTERNAL_LINKS.has(link.href)) { event.preventDefault(); return showToast("这个外部链接不在允许列表中。"); }
+    if (window.location.protocol !== "file:") return;
+    event.preventDefault();
+    window.location.href = link.href;
+  });
   $$(".nav-button").forEach((button) => button.addEventListener("click", () => button.dataset.view && switchView(button.dataset.view)));
   ["#command-action", "#mobile-command-action"].forEach((selector) => {
     const button = $(selector);
@@ -3330,7 +4035,23 @@ function bindEvents() {
   if (mobileMoreClose) mobileMoreClose.addEventListener("click", closeMobileMore);
   const mobileSheetScrim = $("#mobile-sheet-scrim");
   if (mobileSheetScrim) mobileSheetScrim.addEventListener("click", closeMobileMore);
-  document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeMobileMore(); });
+  document.addEventListener("keydown", (event) => {
+    if (state.expedition && !state.expedition.simplified && ["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"].includes(event.key)) {
+      event.preventDefault();
+      const offsets = { ArrowUp: -5, ArrowRight: 1, ArrowDown: 5, ArrowLeft: -1 };
+      const current = state.expedition.position;
+      const target = current + offsets[event.key];
+      const crossesRow = (event.key === "ArrowRight" || event.key === "ArrowLeft") && Math.floor(current / 5) !== Math.floor(target / 5);
+      if (target >= 0 && target < 25 && !crossesRow) handleSurveyTile(target);
+      return;
+    }
+    if (event.key !== "Escape") return;
+    if (state.expedition) { finishManualSurvey(true); return; }
+    if ($("#survey-result-modal")?.classList.contains("visible")) { closeSurveyResult(); switchView("explore"); return; }
+    closeMobileMore();
+    closeStartDialog();
+    closeSurveyConfirm();
+  });
   $$('[data-jump]').forEach((element) => {
     const navigate = () => {
       switchView(element.dataset.jump);
@@ -3345,7 +4066,32 @@ function bindEvents() {
       });
     }
   });
-  $$(".explore-button").forEach((button) => button.addEventListener("click", () => explore(button.dataset.zone)));
+  $("#zone-grid")?.addEventListener("click", (event) => {
+    const button = event.target.closest(".explore-button");
+    if (button?.dataset.zone) explore(button.dataset.zone);
+  });
+  $("#survey-queue-card")?.addEventListener("click", (event) => {
+    const action = event.target.closest("[data-survey-action]")?.dataset.surveyAction;
+    if (action === "claim-pending") claimPendingSurvey();
+    if (action === "open-result") showSurveyResult();
+    if (action === "settle-auto" && state.autoSurvey) {
+      const claim = claimSurveyItems(state.autoSurvey.completedItems);
+      state.pendingSurvey = mergeSurveyItems([...(state.pendingSurvey || []), ...claim.overflow]);
+      state.autoSurvey.completedItems = [];
+      state.autoSurvey.paused = true;
+      state.autoSurvey.pauseType = "energy";
+      state.autoSurvey.pausedReason = claim.overflow.length ? "溢出物资已转入暂存箱 · 等待下一轮能源" : "本轮物资已入库 · 等待下一轮能源";
+      saveState(true);
+      renderAll();
+      return;
+    }
+    if (action === "pause-auto" && state.autoSurvey) {
+      state.autoSurvey.userPaused = !state.autoSurvey.userPaused;
+      state.autoSurvey.pausedReason = state.autoSurvey.userPaused ? "已手动暂停" : "";
+      saveState(true);
+      renderZones();
+    }
+  });
   $$(".analyze-button").forEach((button) => button.addEventListener("click", (event) => {
     event.stopPropagation();
     analyzeSpecies(button.dataset.analyze);
@@ -3382,9 +4128,96 @@ function bindEvents() {
   $("#guide-action").addEventListener("click", handleGuideAction);
   $$(".horizon-action").forEach((button) => button.addEventListener("click", () => handleHorizonAction(button.dataset.action, button.dataset.target)));
   $("#reset-button").addEventListener("click", resetState);
+
+  $("#continue-game-button")?.addEventListener("click", () => {
+    const slot = [getSlotMeta(saveIndex.lastSlotId), ...saveIndex.slots].find((item) => item && isSaveSlotValid(item.id));
+    if (slot) loadGameSlot(slot.id);
+  });
+  $("#new-game-button")?.addEventListener("click", () => openStartDialog("new"));
+  $("#load-game-button")?.addEventListener("click", () => openStartDialog("load"));
+  $("#about-game-button")?.addEventListener("click", () => openStartDialog("about"));
+  $("#start-dialog-close")?.addEventListener("click", closeStartDialog);
+  $("#start-dialog")?.addEventListener("click", (event) => { if (event.target.id === "start-dialog") closeStartDialog(); });
+  $("#start-dialog-content")?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-slot-action]");
+    if (!button) return;
+    const slotId = Number(button.dataset.slotId);
+    if (button.dataset.slotAction === "new") createNewGame(slotId);
+    if (button.dataset.slotAction === "load") loadGameSlot(slotId);
+    if (button.dataset.slotAction === "export") exportSaveSlot(slotId);
+    if (button.dataset.slotAction === "rename") renameSaveSlot(slotId);
+    if (button.dataset.slotAction === "delete") deleteSaveSlot(slotId);
+    if (button.dataset.slotAction === "import") {
+      const input = $("#save-import-input");
+      input.dataset.slotId = String(slotId);
+      input.click();
+    }
+  });
+  $("#start-dialog-content")?.addEventListener("change", (event) => {
+    if (event.target.dataset.appSetting !== "simplifiedSurvey") return;
+    appSettings.simplifiedSurvey = event.target.checked === true;
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(appSettings));
+    showToast(appSettings.simplifiedSurvey ? "已开启简化调查" : "已使用 5×5 地图调查");
+  });
+  $("#save-import-input")?.addEventListener("change", (event) => {
+    importSaveFile(event.target.files?.[0], Number(event.target.dataset.slotId));
+    event.target.value = "";
+  });
+
+  $("#survey-confirm-close")?.addEventListener("click", closeSurveyConfirm);
+  $("#survey-confirm-modal")?.addEventListener("click", (event) => { if (event.target.id === "survey-confirm-modal") closeSurveyConfirm(); });
+  $("#survey-confirm-content")?.addEventListener("change", (event) => {
+    if (event.target.name !== "survey-mode") return;
+    const auto = event.target.value === "auto";
+    $("#auto-count-control").hidden = !auto;
+    $$(".survey-mode").forEach((label) => label.classList.toggle("active", label.contains(event.target)));
+    const button = $("#survey-start-button");
+    if (button) button.innerHTML = auto ? "安排自动调查 <span>→</span>" : "开始手动调查 <span>→</span>";
+  });
+  $("#survey-confirm-content")?.addEventListener("click", (event) => {
+    if (event.target.closest("#survey-confirm-cancel")) return closeSurveyConfirm();
+    if (!event.target.closest("#survey-start-button")) return;
+    const mode = $("input[name='survey-mode']:checked")?.value || "manual";
+    if (mode === "auto") startAutoSurvey(selectedSurveyZone, Number($("input[name='auto-count']:checked")?.value) || 1);
+    else startManualSurvey(selectedSurveyZone);
+  });
+
+  $("#survey-map")?.addEventListener("click", (event) => {
+    const simpleChoice = event.target.closest("[data-simple-choice]");
+    if (simpleChoice) return handleSimplifiedSurveyChoice(simpleChoice.dataset.simpleChoice);
+    const tile = event.target.closest("[data-tile-index]");
+    if (tile) handleSurveyTile(Number(tile.dataset.tileIndex));
+  });
+  $("#survey-scan-button")?.addEventListener("click", scanSurveyArea);
+  $("#survey-mark-button")?.addEventListener("click", () => { surveyMarkingMode = !surveyMarkingMode; renderManualSurvey(); });
+  $("#survey-help-button")?.addEventListener("click", () => {
+    setText("#survey-status-title", "调查规则");
+    setText("#survey-status-text", "从营地出发，只能上下左右移动。道路、资源和线索消耗 1 点，复杂地形消耗 2 点；观察消耗 1 点并揭示最多 3 格。没有即死或额外能源惩罚。");
+  });
+  $("#survey-evacuate-button")?.addEventListener("click", () => finishManualSurvey(true));
+  $("#survey-result-content")?.addEventListener("click", (event) => {
+    const action = event.target.closest("[data-result-action]")?.dataset.resultAction;
+    if (!action) return;
+    const zone = state.surveyResult?.zone;
+    if (action === "claim") claimSurveyResult();
+    if (action === "return") { closeSurveyResult(); switchView("explore"); }
+    if (action === "warehouse") { claimSurveyResult(); switchView("research"); window.setTimeout(() => focusGuideTarget("#upgrade-warehouse-button"), 100); }
+    if (action === "repeat") { claimSurveyResult(); if (zone) window.setTimeout(() => openSurveyConfirm(zone), 80); }
+  });
 }
+
+window.handleForestryBack = function handleForestryBack() {
+  if (state.expedition) { finishManualSurvey(true); return true; }
+  if ($("#survey-result-modal")?.classList.contains("visible")) { closeSurveyResult(); switchView("explore"); return true; }
+  if ($("#survey-confirm-modal")?.classList.contains("visible")) { closeSurveyConfirm(); return true; }
+  if ($("#start-dialog")?.classList.contains("visible")) { closeStartDialog(); return true; }
+  if (document.body.classList.contains("mobile-sheet-open")) { closeMobileMore(); return true; }
+  return false;
+};
 
 bindEvents();
 renderAll();
-applyOfflineProgress();
+renderStartScreen();
 window.setInterval(gameTick, 1000);
+window.addEventListener("pagehide", () => { if (gameStarted) saveState(true); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && gameStarted) saveState(true); });
