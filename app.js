@@ -12,11 +12,15 @@ const ALLOWED_EXTERNAL_LINKS = new Set([
 ].map((link) => new URL(link).href));
 
 const defaultState = {
-  resources: { honey: 24, wax: 10, wood: 32, oil: 6, resin: 0, biomass: 0, biofuel: 0, energy: 60 },
-  flowerInventory: { wildflower: 3, clover: 0, tropical: 0 },
+  resources: { emerald: 12, honey: 24, wax: 10, wood: 32, oil: 6, juice: 0, mulch: 0, fertilizer: 0, container: 0, resin: 0, biomass: 0, biofuel: 0, drippingComb: 0, stickyComb: 0, silkyComb: 0, royalJelly: 0, pollenCluster: 0, silkPropolis: 0, energy: 60 },
+  flowerInventory: { wildflower: 3, clover: 0, tropical: 0, wheat: 0, gourd: 0, cactus: 0, mushroom: 0, nether: 0, end: 0 },
   activeFlower: "wildflower",
   activeHabitat: "forest",
+  activeBee: "forest",
   rawComb: 0,
+  apiaryReadyBundle: {},
+  frameInventory: { untreated: 0, impregnated: 0, proven: 0 },
+  apiaryFrames: [null, null, null],
   processedHoney: 0,
   processedWax: 0,
   totalCombCollected: 0,
@@ -47,7 +51,12 @@ const defaultState = {
   machineProgress: 0,
   machineActive: false,
   machineOutput: 0,
+  machineRecipe: "rawComb",
+  machineJob: null,
+  machineOutputBundle: {},
   machineCycles: 0,
+  machineStarts: 0,
+  machineCollectedCycles: 0,
   squeezerProgress: 0,
   squeezerActive: false,
   squeezerOutput: 0,
@@ -60,14 +69,43 @@ const defaultState = {
   distillerActive: false,
   distillerOutput: 0,
   distillerCycles: 0,
+  distillerCollected: 0,
   automationEnabled: false,
+  automationCompletedBatches: 0,
   automationReserveEnergy: 10,
   contractIndex: 0,
   contractsCompleted: 0,
+  regionalContractsCompleted: 0,
+  regionalContractOffers: [],
+  regionalActionCounter: 0,
   reputation: 0,
+  progressionSchema: 2,
+  tutorialSurveyOpened: false,
+  tutorialSurveyClaimed: false,
+  guideRouteChosen: "",
+  visitedViews: { overview: true, explore: false, apiary: false, arbor: false, machines: false, research: false, shop: false, codex: false },
+  pageUnlocks: { overview: true, explore: true, apiary: false, arbor: false, machines: false, research: false, shop: false, codex: false, achievements: false, automation: false },
+  energyCore: { level: 1 },
+  achievements: {},
+  achievementPending: [],
+  rarePityTriggers: 0,
+  beePityTriggers: 0,
+  ecologyHighCycles: 0,
+  titles: [],
   treeSaplings: { oak: 2, birch: 2 },
+  woodInventory: { generic: 32 },
   treeDiscovered: ["oak", "birch"],
   treeAnalyzed: [],
+  activeTree: "oak",
+  treeReadySpecies: "",
+  fruitInventory: { cherry: 0, walnut: 0, chestnut: 0, lemon: 0, plum: 0, papaya: 0, date: 0 },
+  orchard: { treeId: "", progress: 0, readyFruit: 0, readyMulch: 0, cycles: 0 },
+  pollenInventory: {},
+  orchardPollen: { treeId: "", cycles: 0 },
+  tools: { butterflyNet: 0, graftingKnife: 0 },
+  butterflyHost: "wildflower",
+  lateFacilities: { alveary: 0, greenhouse: 0, automaticFarm: 0 },
+  greenhouseSeals: 0,
   butterflyDiscovered: ["azure"],
   butterflyAnalyzed: [],
   treeProgress: 64,
@@ -81,6 +119,12 @@ const defaultState = {
   breedingParents: { princess: "forest", drone: "meadows" },
   butterflyBreeding: null,
   butterflyBreedingParents: { parentA: "azure", parentB: "brimstone" },
+  squeezerRecipe: "wood",
+  squeezerJob: null,
+  squeezerOutputBundle: {},
+  fermenterRecipe: "wood",
+  fermenterJob: null,
+  fermenterOutputBundle: {},
   upgrades: { apiary: 1, treeFarm: 1, centrifuge: 1, warehouse: 1 },
   upgradesBought: 0,
   breeding: null,
@@ -98,6 +142,13 @@ const defaultState = {
   strategyActionsRemaining: 3,
   strategyReady: true,
   strategyCycles: 0,
+  productionCycles: 0,
+  shopOpenedBonus: false,
+  shopTab: "buy",
+  shopRotation: 0,
+  shopManualRefreshes: 0,
+  shopPurchases: {},
+  warehouseOverflow: [],
   zoneEnvironments: {
     forest: { temperature: 52, humidity: 58, light: 62, flowerDensity: 68, soil: 74, canopy: 46, leafPressure: 12, workshopLoad: 0 },
     plains: { temperature: 62, humidity: 42, light: 82, flowerDensity: 76, soil: 64, canopy: 22, leafPressure: 8, workshopLoad: 0 },
@@ -119,6 +170,7 @@ const defaultState = {
 };
 
 let toastTimer;
+let activeCodexTab = "archive";
 
 const species = {
   forest: { name: "森林蜂", english: "Forest Bee", type: "基础蜂种", desc: "温和、稳定，适合森林环境。", icon: "●", color: "amber", traits: { speed: 52, lifespan: 68, fertility: 54 }, habitat: { forest: 1, plains: .85, swamp: .65, tropic: .55 } },
@@ -135,16 +187,20 @@ const species = {
 };
 
 const treeSpecies = {
-  oak: { name: "橡树", english: "Oak", type: "基础树种", desc: "稳定、耐寒，适合建立第一座树场。", icon: "♣", color: "green", traits: { growth: 58, yield: 62, resin: 42 } },
-  birch: { name: "白桦", english: "Birch", type: "基础树种", desc: "生长较快，可作为杂交亲本。", icon: "♧", color: "gold", traits: { growth: 76, yield: 48, resin: 36 } },
-  larch: { name: "落叶松", english: "Larch", type: "进阶树种", desc: "橡树与白桦的培育后代，木材产量更高。", icon: "♠", color: "amber", traits: { growth: 68, yield: 78, resin: 55 } },
-  jungle: { name: "丛林树", english: "Jungle", type: "稀有树种", desc: "适应温暖环境，能提供更多树脂。", icon: "♨", color: "teal", traits: { growth: 72, yield: 64, resin: 82 } },
-  teak: { name: "柚木", english: "Teak", type: "二级培育", desc: "落叶松与丛林树的热带树脂支系。", icon: "♠", color: "teal", traits: { growth: 61, yield: 88, resin: 72 } },
-  cherry: { name: "樱桃树", english: "Cherry", type: "二级培育", desc: "橡树与丛林树的果木支系，木材和结果能力均衡。", icon: "♣", color: "amber", traits: { growth: 70, yield: 76, resin: 48 } },
-  walnut: { name: "核桃树", english: "Walnut", type: "二级培育", desc: "白桦与丛林树的坚果树支系，产量较高。", icon: "♣", color: "gold", traits: { growth: 60, yield: 84, resin: 62 } },
-  chestnut: { name: "栗树", english: "Chestnut", type: "三级培育", desc: "樱桃与核桃稳定结合后的三级果木。", icon: "♣", color: "purple", traits: { growth: 64, yield: 90, resin: 70 } },
-  pine: { name: "松树", english: "Pine", type: "二级培育", desc: "落叶松与核桃的耐寒高产支系。", icon: "♠", color: "green", traits: { growth: 82, yield: 70, resin: 58 } },
-  sequoia: { name: "红杉", english: "Sequoia", type: "三级培育", desc: "松树与柚木的高树脂三级巨木。", icon: "♠", color: "teal", traits: { growth: 54, yield: 98, resin: 86 } }
+  oak: { name: "橡树", english: "Oak", type: "基础树种", desc: "稳定、耐寒，适合建立第一座树场。", icon: "♣", color: "green", woodId: "wood_oak", traits: { growth: 58, yield: 62, resin: 42 } },
+  birch: { name: "白桦", english: "Birch", type: "基础树种", desc: "生长较快，可作为杂交亲本。", icon: "♧", color: "gold", woodId: "wood_birch", traits: { growth: 76, yield: 48, resin: 36 } },
+  larch: { name: "落叶松", english: "Larch", type: "进阶树种", desc: "橡树与白桦的培育后代，木材产量更高。", icon: "♠", color: "amber", woodId: "wood_larch", traits: { growth: 68, yield: 78, resin: 55 } },
+  jungle: { name: "丛林树", english: "Jungle", type: "稀有树种", desc: "适应温暖环境，能提供更多树脂。", icon: "♨", color: "teal", woodId: "wood_jungle", traits: { growth: 72, yield: 64, resin: 82 } },
+  teak: { name: "柚木", english: "Teak", type: "二级培育", desc: "落叶松与丛林树的热带树脂支系。", icon: "♠", color: "teal", woodId: "wood_teak", traits: { growth: 61, yield: 88, resin: 72 } },
+  cherry: { name: "樱桃树", english: "Cherry", type: "二级培育", desc: "橡树与丛林树的果木支系，木材和结果能力均衡。", icon: "♣", color: "amber", woodId: "wood_cherry", fruit: "cherry", orchardYield: 7, mulchYield: 2, climate: "temperate", traits: { growth: 70, yield: 76, resin: 48 } },
+  walnut: { name: "核桃树", english: "Walnut", type: "二级培育", desc: "白桦与丛林树的坚果树支系，产量较高。", icon: "♣", color: "gold", woodId: "wood_walnut", fruit: "walnut", orchardYield: 6, mulchYield: 2, climate: "temperate", traits: { growth: 60, yield: 84, resin: 62 } },
+  chestnut: { name: "栗树", english: "Chestnut", type: "三级培育", desc: "樱桃与核桃稳定结合后的三级果木。", icon: "♣", color: "purple", woodId: "wood_chestnut", fruit: "chestnut", orchardYield: 8, mulchYield: 3, climate: "temperate", traits: { growth: 64, yield: 90, resin: 70 } },
+  pine: { name: "松树", english: "Pine", type: "二级培育", desc: "落叶松与核桃的耐寒高产支系。", icon: "♠", color: "green", woodId: "wood_pine", traits: { growth: 82, yield: 70, resin: 58 } },
+  sequoia: { name: "红杉", english: "Sequoia", type: "三级培育", desc: "松树与柚木的高树脂三级巨木。", icon: "♠", color: "teal", woodId: "wood_sequoia", traits: { growth: 54, yield: 98, resin: 86 } },
+  lemon: { name: "柠檬树", english: "Lemon", type: "二级果树", desc: "温暖环境中的高效果汁果树。", icon: "♣", color: "gold", woodId: "wood_lemon", fruit: "lemon", orchardYield: 8, mulchYield: 2, climate: "warm", traits: { growth: 72, yield: 72, resin: 40 } },
+  plum: { name: "李树", english: "Plum", type: "二级果树", desc: "果汁较少，但能提供大量覆盖物。", icon: "♣", color: "purple", woodId: "wood_plum", fruit: "plum", orchardYield: 8, mulchYield: 5, climate: "temperate", traits: { growth: 68, yield: 74, resin: 38 } },
+  papaya: { name: "木瓜树", english: "Papaya", type: "三级果树", desc: "热带高产果树，可提供大量果汁。", icon: "♨", color: "teal", woodId: "wood_papaya", fruit: "papaya", orchardYield: 7, mulchYield: 1, climate: "tropical", traits: { growth: 78, yield: 88, resin: 34 } },
+  date: { name: "枣椰树", english: "Date Palm", type: "三级果树", desc: "适应干旱环境，稳定提供椰枣与覆盖物。", icon: "♨", color: "amber", woodId: "wood_date", fruit: "date", orchardYield: 9, mulchYield: 3, climate: "dry", traits: { growth: 62, yield: 82, resin: 30 } }
 };
 
 const butterflySpecies = {
@@ -213,23 +269,36 @@ function setBreedingFailureCount(kind, first, second, amount) {
   return value;
 }
 
+function isTutorialMutationBoostActive() {
+  return getGuideStep() < guideSteps.length;
+}
+
 function getMutationChance(recipe, kind = "bee", first = "", second = "") {
   if (!recipe) return 0;
+  if (isTutorialMutationBoostActive()) return 100;
   const failures = getBreedingFailureCount(kind, first, second);
   const strategyModifier = getStrategyConfig().mutation;
   const environmentModifier = getEnvironmentMutationModifier(kind);
-  return clamp(recipe.chance + Math.max(0, Number(failures) || 0) * 10 + strategyModifier + environmentModifier, 5, 95);
+  const pollenModifier = kind === "tree" && state.orchardPollen?.cycles > 0 ? 8 : 0;
+  return clamp(recipe.chance + Math.max(0, Number(failures) || 0) * 10 + strategyModifier + environmentModifier + pollenModifier, 5, 95);
+}
+
+function getResolvedMutationChance(storedChance, fallbackChance) {
+  return Number.isFinite(storedChance) ? clamp(storedChance, 0, 100) : fallbackChance;
 }
 
 function getMutationBreakdownText(recipe, kind, first, second) {
   if (!recipe) return "";
+  if (isTutorialMutationBoostActive()) return "新手教程保障 100%";
   const parts = [`基础 ${recipe.chance}%`];
   const strategyModifier = getStrategyConfig().mutation;
   const environmentModifier = getEnvironmentMutationModifier(kind);
   const pity = getBreedingFailureCount(kind, first, second) * 10;
+  const pollenModifier = kind === "tree" && state.orchardPollen?.cycles > 0 ? 8 : 0;
   if (strategyModifier) parts.push(`${getStrategyConfig().short} ${strategyModifier > 0 ? "+" : ""}${strategyModifier}%`);
   if (environmentModifier) parts.push(`生态 ${environmentModifier > 0 ? "+" : ""}${environmentModifier}%`);
   if (pity) parts.push(`保底 +${pity}%`);
+  if (pollenModifier) parts.push(`花粉窗口 +${pollenModifier}%`);
   return parts.join(" · ");
 }
 
@@ -277,14 +346,14 @@ function getMissingTreeSaplings(cost) {
 }
 
 const zones = {
-  forest: { name: "森林边缘", difficulty: 1, manualEnergy: 6, autoEnergy: 8, autoDuration: 30, surveyPoints: 10, discoveryBase: 62, discoveryStep: 8, flowerSource: "wildflower", temperature: "温和", humidity: "均衡", art: "forest", desc: "木材、野花、基础蜂巢与树苗线索", unlockText: "初始开放", rewards: [{ kind: "resource", id: "wood", min: 8, max: 14 }, { kind: "flower", id: "wildflower", min: 3, max: 6 }, { kind: "resource", id: "rawComb", min: 0, max: 2 }, { kind: "sapling", id: "oak", min: 0, max: 2 }], baseline: { temperature: 52, humidity: 58, light: 62, flowerDensity: 68, soil: 74, canopy: 46, leafPressure: 12 } },
-  plains: { name: "平原花地", difficulty: 1, manualEnergy: 7, autoEnergy: 9, autoDuration: 35, surveyPoints: 10, discoveryBase: 18, discoveryStep: 10, flowerSource: "clover", temperature: "温暖", humidity: "干燥", art: "plains", desc: "三叶草、蜂巢、种子与蝴蝶线索", unlockText: "完成 1 次森林调查", rewards: [{ kind: "resource", id: "wood", min: 6, max: 10 }, { kind: "flower", id: "clover", min: 4, max: 8 }, { kind: "resource", id: "rawComb", min: 0, max: 2 }, { kind: "resource", id: "oil", min: 0, max: 2 }], baseline: { temperature: 62, humidity: 42, light: 82, flowerDensity: 76, soil: 64, canopy: 22, leafPressure: 8 } },
-  swamp: { name: "静谧沼泽", difficulty: 2, manualEnergy: 9, autoEnergy: 12, autoDuration: 45, surveyPoints: 9, discoveryBase: 0, discoveryStep: 14, flowerSource: "wildflower", temperature: "凉爽", humidity: "高湿", art: "swamp", desc: "湿地花源、树脂、丛林树苗与蜂种线索", unlockText: "累计 3 次调查并完成 1 次离心", rewards: [{ kind: "resource", id: "wood", min: 5, max: 9 }, { kind: "flower", id: "wildflower", min: 3, max: 6 }, { kind: "resource", id: "resin", min: 1, max: 3 }, { kind: "sapling", id: "jungle", min: 0, max: 1 }], baseline: { temperature: 48, humidity: 82, light: 42, flowerDensity: 54, soil: 70, canopy: 58, leafPressure: 18 } },
-  desert: { name: "荒芜沙丘", difficulty: 2, manualEnergy: 10, autoEnergy: 13, autoDuration: 50, surveyPoints: 9, discoveryBase: 0, discoveryStep: 13, flowerSource: "wildflower", temperature: "炎热", humidity: "极干", art: "desert", desc: "旱地花源、种子油与干燥蜂巢", unlockText: "获得种子油并收获 1 次树场", rewards: [{ kind: "resource", id: "wood", min: 2, max: 5 }, { kind: "flower", id: "wildflower", min: 4, max: 8 }, { kind: "resource", id: "oil", min: 2, max: 4 }, { kind: "resource", id: "rawComb", min: 0, max: 2 }], baseline: { temperature: 86, humidity: 18, light: 92, flowerDensity: 28, soil: 36, canopy: 8, leafPressure: 6 } },
-  tropic: { name: "热带林冠", difficulty: 3, manualEnergy: 11, autoEnergy: 15, autoDuration: 55, surveyPoints: 8, discoveryBase: 0, discoveryStep: 12, flowerSource: "tropical", temperature: "炎热", humidity: "高湿", art: "tropic", desc: "热带花、树脂、稀有蜂巢与柚木线索", unlockText: "手动调查沼泽并发现丛林树", rewards: [{ kind: "resource", id: "wood", min: 6, max: 12 }, { kind: "flower", id: "tropical", min: 3, max: 6 }, { kind: "resource", id: "resin", min: 2, max: 5 }, { kind: "sapling", id: "teak", min: 0, max: 2 }], baseline: { temperature: 82, humidity: 78, light: 64, flowerDensity: 72, soil: 76, canopy: 72, leafPressure: 24 } },
-  snow: { name: "寒带针叶林", difficulty: 3, manualEnergy: 12, autoEnergy: 16, autoDuration: 60, surveyPoints: 8, discoveryBase: 0, discoveryStep: 11, flowerSource: "wildflower", temperature: "寒冷", humidity: "中湿", art: "snow", desc: "高产木材、树脂与耐寒树种线索", unlockText: "发现落叶松并升级养蜂箱 LV.2", rewards: [{ kind: "resource", id: "wood", min: 8, max: 14 }, { kind: "flower", id: "wildflower", min: 2, max: 5 }, { kind: "resource", id: "resin", min: 1, max: 3 }, { kind: "sapling", id: "pine", min: 0, max: 2 }], baseline: { temperature: 18, humidity: 52, light: 48, flowerDensity: 32, soil: 54, canopy: 64, leafPressure: 10 } },
-  cave: { name: "荧光菌洞", difficulty: 4, manualEnergy: 14, autoEnergy: 18, autoDuration: 70, surveyPoints: 7, discoveryBase: 0, discoveryStep: 10, flowerSource: "wildflower", temperature: "阴凉", humidity: "极湿", art: "cave", desc: "菌类花源、树脂、种子与蝶种线索", unlockText: "观察 3 个蝶种并拥有 3 类花源", rewards: [{ kind: "flower", id: "wildflower", min: 5, max: 9 }, { kind: "resource", id: "resin", min: 2, max: 4 }, { kind: "resource", id: "oil", min: 1, max: 3 }, { kind: "resource", id: "rawComb", min: 0, max: 1 }], baseline: { temperature: 38, humidity: 88, light: 18, flowerDensity: 44, soil: 66, canopy: 92, leafPressure: 20 } },
-  end: { name: "末地边境", difficulty: 5, manualEnergy: 18, autoEnergy: 24, autoDuration: 90, surveyPoints: 7, discoveryBase: 0, discoveryStep: 8, flowerSource: "tropical", temperature: "异温", humidity: "干燥", art: "end", desc: "异域花源、神秘蜂巢与稀有物种线索", unlockText: "养蜂箱 LV.3、8 个蜂种并完成生物燃料链", rewards: [{ kind: "flower", id: "tropical", min: 2, max: 4 }, { kind: "resource", id: "biomass", min: 3, max: 6 }, { kind: "resource", id: "rawComb", min: 0, max: 2 }, { kind: "resource", id: "biofuel", min: 0, max: 1 }], baseline: { temperature: 42, humidity: 12, light: 58, flowerDensity: 18, soil: 24, canopy: 4, leafPressure: 28 } }
+  forest: { name: "森林边缘", difficulty: 1, manualEnergy: 8, autoEnergy: 11, autoDuration: 30, surveyPoints: 10, discoveryBase: 62, discoveryStep: 8, flowerSource: "wildflower", temperature: "温和", humidity: "均衡", art: "forest", desc: "木材、野花、基础蜂巢与树苗线索", unlockText: "初始开放", rewards: [{ kind: "resource", id: "wood", min: 8, max: 14 }, { kind: "flower", id: "wildflower", min: 3, max: 6 }, { kind: "resource", id: "rawComb", min: 0, max: 2 }, { kind: "sapling", id: "oak", min: 0, max: 2 }], baseline: { temperature: 52, humidity: 58, light: 62, flowerDensity: 68, soil: 74, canopy: 46, leafPressure: 12 } },
+  plains: { name: "平原花地", difficulty: 1, manualEnergy: 9, autoEnergy: 12, autoDuration: 35, surveyPoints: 10, discoveryBase: 18, discoveryStep: 10, flowerSource: "clover", temperature: "温暖", humidity: "干燥", art: "plains", desc: "三叶草、蜂巢、种子与蝴蝶线索", unlockText: "完成 1 次森林调查", rewards: [{ kind: "resource", id: "wood", min: 6, max: 10 }, { kind: "flower", id: "clover", min: 4, max: 8 }, { kind: "resource", id: "rawComb", min: 0, max: 2 }, { kind: "resource", id: "oil", min: 0, max: 2 }], baseline: { temperature: 62, humidity: 42, light: 82, flowerDensity: 76, soil: 64, canopy: 22, leafPressure: 8 } },
+  swamp: { name: "静谧沼泽", difficulty: 2, manualEnergy: 12, autoEnergy: 16, autoDuration: 45, surveyPoints: 9, discoveryBase: 0, discoveryStep: 14, flowerSource: "wildflower", temperature: "凉爽", humidity: "高湿", art: "swamp", desc: "湿地花源、树脂、丛林树苗与蜂种线索", unlockText: "累计 3 次调查并完成 1 次离心", rewards: [{ kind: "resource", id: "wood", min: 5, max: 9 }, { kind: "flower", id: "wildflower", min: 3, max: 6 }, { kind: "resource", id: "resin", min: 1, max: 3 }, { kind: "sapling", id: "jungle", min: 0, max: 1 }], baseline: { temperature: 48, humidity: 82, light: 42, flowerDensity: 54, soil: 70, canopy: 58, leafPressure: 18 } },
+  desert: { name: "荒芜沙丘", difficulty: 2, manualEnergy: 13, autoEnergy: 18, autoDuration: 50, surveyPoints: 9, discoveryBase: 0, discoveryStep: 13, flowerSource: "wildflower", temperature: "炎热", humidity: "极干", art: "desert", desc: "旱地花源、种子油与干燥蜂巢", unlockText: "获得种子油并收获 1 次树场", rewards: [{ kind: "resource", id: "wood", min: 2, max: 5 }, { kind: "flower", id: "wildflower", min: 4, max: 8 }, { kind: "resource", id: "oil", min: 2, max: 4 }, { kind: "resource", id: "rawComb", min: 0, max: 2 }], baseline: { temperature: 86, humidity: 18, light: 92, flowerDensity: 28, soil: 36, canopy: 8, leafPressure: 6 } },
+  tropic: { name: "热带林冠", difficulty: 3, manualEnergy: 15, autoEnergy: 20, autoDuration: 55, surveyPoints: 8, discoveryBase: 0, discoveryStep: 12, flowerSource: "tropical", temperature: "炎热", humidity: "高湿", art: "tropic", desc: "热带花、树脂、稀有蜂巢与柚木线索", unlockText: "手动调查沼泽并发现丛林树", rewards: [{ kind: "resource", id: "wood", min: 6, max: 12 }, { kind: "flower", id: "tropical", min: 3, max: 6 }, { kind: "resource", id: "resin", min: 2, max: 5 }, { kind: "sapling", id: "teak", min: 0, max: 2 }], baseline: { temperature: 82, humidity: 78, light: 64, flowerDensity: 72, soil: 76, canopy: 72, leafPressure: 24 } },
+  snow: { name: "寒带针叶林", difficulty: 3, manualEnergy: 16, autoEnergy: 22, autoDuration: 60, surveyPoints: 8, discoveryBase: 0, discoveryStep: 11, flowerSource: "wildflower", temperature: "寒冷", humidity: "中湿", art: "snow", desc: "高产木材、树脂与耐寒树种线索", unlockText: "发现落叶松并升级养蜂箱 LV.2", rewards: [{ kind: "resource", id: "wood", min: 8, max: 14 }, { kind: "flower", id: "wildflower", min: 2, max: 5 }, { kind: "resource", id: "resin", min: 1, max: 3 }, { kind: "sapling", id: "pine", min: 0, max: 2 }], baseline: { temperature: 18, humidity: 52, light: 48, flowerDensity: 32, soil: 54, canopy: 64, leafPressure: 10 } },
+  cave: { name: "荧光菌洞", difficulty: 4, manualEnergy: 19, autoEnergy: 25, autoDuration: 70, surveyPoints: 7, discoveryBase: 0, discoveryStep: 10, flowerSource: "wildflower", temperature: "阴凉", humidity: "极湿", art: "cave", desc: "菌类花源、树脂、种子与蝶种线索", unlockText: "观察 3 个蝶种并拥有 3 类花源", rewards: [{ kind: "flower", id: "wildflower", min: 5, max: 9 }, { kind: "resource", id: "resin", min: 2, max: 4 }, { kind: "resource", id: "oil", min: 1, max: 3 }, { kind: "resource", id: "rawComb", min: 0, max: 1 }], baseline: { temperature: 38, humidity: 88, light: 18, flowerDensity: 44, soil: 66, canopy: 92, leafPressure: 20 } },
+  end: { name: "末地边境", difficulty: 5, manualEnergy: 24, autoEnergy: 32, autoDuration: 90, surveyPoints: 7, discoveryBase: 0, discoveryStep: 8, flowerSource: "tropical", temperature: "异温", humidity: "干燥", art: "end", desc: "异域花源、神秘蜂巢与稀有物种线索", unlockText: "养蜂箱 LV.3、8 个蜂种并完成生物燃料链", rewards: [{ kind: "flower", id: "tropical", min: 2, max: 4 }, { kind: "resource", id: "biomass", min: 3, max: 6 }, { kind: "resource", id: "rawComb", min: 0, max: 2 }, { kind: "resource", id: "biofuel", min: 0, max: 1 }], baseline: { temperature: 42, humidity: 12, light: 58, flowerDensity: 18, soil: 24, canopy: 4, leafPressure: 28 } }
 };
 
 const breedingRecipes = {
@@ -305,7 +374,11 @@ const treeBreedingRecipes = {
   "birch|jungle": { result: "walnut", time: 12, chance: 20, requiresTreeFarm: 1, label: "坚果树培育路径", tier: 2 },
   "cherry|walnut": { result: "chestnut", time: 16, chance: 12, requiresTreeFarm: 2, label: "栗树三级路径", tier: 3 },
   "larch|walnut": { result: "pine", time: 14, chance: 16, requiresTreeFarm: 2, label: "耐寒木材培育路径", tier: 2 },
-  "pine|teak": { result: "sequoia", time: 18, chance: 10, requiresTreeFarm: 3, label: "红杉三级路径", tier: 3 }
+  "pine|teak": { result: "sequoia", time: 18, chance: 10, requiresTreeFarm: 3, label: "红杉三级路径", tier: 3 },
+  "birch|cherry": { result: "lemon", time: 13, chance: 20, requiresTreeFarm: 2, label: "柠檬果树路径", tier: 2 },
+  "cherry|larch": { result: "plum", time: 14, chance: 18, requiresTreeFarm: 2, label: "李树果木路径", tier: 2 },
+  "jungle|walnut": { result: "papaya", time: 17, chance: 12, requiresTreeFarm: 3, label: "木瓜热带果树路径", tier: 3 },
+  "teak|walnut": { result: "date", time: 17, chance: 12, requiresTreeFarm: 3, label: "枣椰干旱果树路径", tier: 3 }
 };
 
 const butterflyBreedingRecipes = {
@@ -353,7 +426,155 @@ completeBreedingMatrix(treeBreedingRecipes, Object.keys(treeSpecies), getTreeBre
 const flowerSources = {
   wildflower: { name: "野花", icon: "✦", color: "amber", speedBonus: 0, zone: "forest", label: "稳定基础花源" },
   clover: { name: "三叶草", icon: "♣", color: "green", speedBonus: .15, zone: "plains", label: "花粉密度高 · 产速 +15%" },
-  tropical: { name: "热带花", icon: "✿", color: "teal", speedBonus: .25, zone: "tropic", label: "稀有花粉 · 产速 +25%" }
+  tropical: { name: "热带花", icon: "✿", color: "teal", speedBonus: .25, zone: "tropic", label: "稀有花粉 · 产速 +25%" },
+  wheat: { name: "小麦花源", icon: "⋮", color: "gold", speedBonus: .12, zone: "plains", label: "农业蜂系花源" },
+  gourd: { name: "葫芦花源", icon: "◆", color: "amber", speedBonus: .1, zone: "plains", label: "季节蜂系花源" },
+  cactus: { name: "仙人掌花源", icon: "‡", color: "green", speedBonus: .08, zone: "desert", label: "干旱蜂系花源" },
+  mushroom: { name: "蘑菇花源", icon: "♠", color: "purple", speedBonus: .08, zone: "cave", label: "阴湿蜂系花源" },
+  nether: { name: "下界花源", icon: "✹", color: "amber", speedBonus: .28, zone: "cave", label: "炼狱蜂系稀有花源" },
+  end: { name: "末地花源", icon: "◇", color: "purple", speedBonus: .32, zone: "end", label: "末地蜂系稀有花源" }
+};
+
+const fruitData = {
+  cherry: { name: "樱桃", icon: "●", mode: "oil" },
+  walnut: { name: "核桃", icon: "◆", mode: "oil" },
+  chestnut: { name: "栗子", icon: "⬟", mode: "oil" },
+  lemon: { name: "柠檬", icon: "●", mode: "juice" },
+  plum: { name: "李子", icon: "●", mode: "juice" },
+  papaya: { name: "木瓜", icon: "▰", mode: "juice" },
+  date: { name: "椰枣", icon: "◆", mode: "juice" }
+};
+
+const centrifugeRecipes = {
+  rawComb: { name: "蜂蜜脾分离", input: { rawComb: 1 }, output: { honey: 1, wax: 1 }, energy: 2 },
+  drippingComb: { name: "滴落蜂巢分离", input: { drippingComb: 1 }, output: { honey: 2, wax: 1 }, energy: 2 },
+  stickyComb: { name: "黏性蜂巢分离", input: { stickyComb: 1 }, output: { resin: 1, wax: 1 }, energy: 2 },
+  silkyComb: { name: "丝质蜂巢分离", input: { silkyComb: 1 }, output: { silkPropolis: 1, honey: 1 }, energy: 3 }
+};
+
+const squeezerRecipes = {
+  wood: { name: "木材备用榨取", mode: "legacy", input: { wood: 2 }, output: { oil: 1 }, energy: 2 },
+  cherry: { name: "樱桃油料", mode: "oil", input: { cherry: 4 }, output: { oil: 1, mulch: 2 }, energy: 2 },
+  walnut: { name: "核桃油料", mode: "oil", input: { walnut: 3 }, output: { oil: 2, mulch: 2 }, energy: 2 },
+  chestnut: { name: "栗子油料", mode: "oil", input: { chestnut: 3 }, output: { oil: 3, mulch: 2 }, energy: 2 },
+  lemon: { name: "柠檬果汁", mode: "juice", input: { lemon: 4 }, output: { juice: 3, mulch: 2 }, energy: 2 },
+  plum: { name: "李子果汁", mode: "juice", input: { plum: 4 }, output: { juice: 2, mulch: 4 }, energy: 2 },
+  papaya: { name: "木瓜果汁", mode: "juice", input: { papaya: 3 }, output: { juice: 4, mulch: 1 }, energy: 2 },
+  date: { name: "椰枣果汁", mode: "juice", input: { date: 5 }, output: { juice: 2, mulch: 2 }, energy: 2 }
+};
+
+const fermenterRecipes = {
+  wood: { name: "木材低效发酵", input: { wood: 3 }, output: { biomass: 1 }, energy: 3 },
+  juice: { name: "果汁高效发酵", input: { juice: 2, mulch: 1 }, output: { biomass: 2 }, energy: 3 }
+};
+
+const frameData = {
+  untreated: { name: "未处理框架", durability: 80, bonus: .1, tier: 2 },
+  impregnated: { name: "浸渍框架", durability: 240, bonus: .2, tier: 3 },
+  proven: { name: "可靠框架", durability: 720, bonus: .35, tier: 4 }
+};
+
+const beeProductionData = {
+  forest: { comb: "rawComb", flower: "wildflower", name: "蜂蜜脾", specialties: {} },
+  meadows: { comb: "rawComb", flower: "wildflower", name: "蜂蜜脾", specialties: {} },
+  cultivated: { comb: "rawComb", flower: "clover", name: "蜂蜜脾", specialties: {} },
+  common: { comb: "rawComb", flower: "wildflower", name: "蜂蜜脾", specialties: {} },
+  noble: { comb: "drippingComb", flower: "wildflower", name: "滴落蜂巢", specialties: {} },
+  majestic: { comb: "drippingComb", flower: "wildflower", name: "滴落蜂巢", specialties: {} },
+  imperial: { comb: "drippingComb", flower: "wildflower", name: "滴落蜂巢", specialties: { royalJelly: .22 } },
+  diligent: { comb: "stickyComb", flower: "clover", name: "黏性蜂巢", specialties: {} },
+  unweary: { comb: "stickyComb", flower: "clover", name: "黏性蜂巢", specialties: {} },
+  industrious: { comb: "stickyComb", flower: "clover", name: "黏性蜂巢", specialties: { pollenCluster: .24 } },
+  tropical: { comb: "silkyComb", flower: "tropical", name: "丝质蜂巢", specialties: { silkPropolis: .2 } }
+};
+
+const warehouseCategoryData = {
+  regular: { name: "常规物资", capacities: [999, 2999, 9999] },
+  processed: { name: "加工产物", capacities: [499, 1499, 4999] },
+  rare: { name: "稀有材料", capacities: [99, 299, 999] },
+  biological: { name: "生物样本", capacities: [199, 599, 1999] },
+  equipment: { name: "工具装备", capacities: [32, 64, 128] }
+};
+
+const warehouseResourceCategories = {
+  rawComb: "regular", honey: "regular", wax: "regular", wood: "regular", mulch: "regular", fertilizer: "regular", container: "regular",
+  oil: "processed", juice: "processed", biomass: "processed", biofuel: "processed",
+  resin: "rare", drippingComb: "rare", stickyComb: "rare", silkyComb: "rare", royalJelly: "rare", pollenCluster: "rare", silkPropolis: "rare",
+  wildflower: "biological", clover: "biological", tropical: "biological", wheat: "biological", gourd: "biological", cactus: "biological", mushroom: "biological", nether: "biological", end: "biological",
+  cherry: "biological", walnut: "biological", chestnut: "biological", lemon: "biological", plum: "biological", papaya: "biological", date: "biological"
+};
+
+const shopTierData = [
+  { name: "学徒货架", reputation: 0 },
+  { name: "林业货架", reputation: 5 },
+  { name: "专家货架", reputation: 15 },
+  { name: "大师货架", reputation: 30 }
+];
+
+const shopBuyOffers = [
+  { id: "wildflower", name: "野花补给", tier: 1, output: { wildflower: 8 }, price: 1, limit: 6, icon: "✦" },
+  { id: "wood", name: "通用木材", tier: 1, output: { wood: 6 }, price: 1, limit: 8, icon: "L" },
+  { id: "honey", name: "蜂蜜", tier: 1, output: { honey: 2 }, price: 1, limit: 6, icon: "H" },
+  { id: "wax", name: "蜂蜡", tier: 1, output: { wax: 3 }, price: 1, limit: 6, icon: "W" },
+  { id: "energy-box", name: "能源补给箱", tier: 1, energy: 20, price: 5, limit: 3, icon: "⚡" },
+  { id: "clover", name: "三叶草", tier: 2, output: { clover: 5 }, price: 1, limit: 6, icon: "♣" },
+  { id: "tropical", name: "热带花源", tier: 2, output: { tropical: 3 }, price: 1, limit: 6, icon: "✿" },
+  { id: "oil", name: "种子油", tier: 2, output: { oil: 1 }, price: 2, limit: 4, icon: "O" },
+  { id: "fertilizer", name: "肥料", tier: 2, output: { fertilizer: 4 }, price: 2, limit: 5, icon: "▧" },
+  { id: "mulch", name: "覆盖物", tier: 2, output: { mulch: 8 }, price: 1, limit: 5, icon: "M" },
+  { id: "container", name: "空容器", tier: 2, output: { container: 8 }, price: 1, limit: 5, icon: "□" },
+  { id: "butterfly-net", name: "捕虫网", tier: 2, equipment: "butterflyNet", durability: 64, price: 6, limit: 2, icon: "⌗" },
+  { id: "grafting-knife", name: "嫁接刀", tier: 2, equipment: "graftingKnife", durability: 64, price: 10, limit: 2, icon: "⌁" },
+  { id: "frame-untreated", name: "未处理框架", tier: 2, frame: "untreated", price: 6, limit: 4, icon: "▣" },
+  { id: "wheat", name: "小麦花源包", tier: 3, output: { wheat: 6 }, price: 2, limit: 4, icon: "⋮" },
+  { id: "gourd", name: "葫芦花源包", tier: 3, output: { gourd: 4 }, price: 2, limit: 4, icon: "◆" },
+  { id: "cactus", name: "仙人掌花源包", tier: 3, output: { cactus: 4 }, price: 2, limit: 4, icon: "‡" },
+  { id: "mushroom", name: "蘑菇花源包", tier: 3, output: { mushroom: 4 }, price: 2, limit: 4, icon: "♠" },
+  { id: "frame-impregnated", name: "浸渍框架", tier: 3, frame: "impregnated", price: 12, limit: 2, icon: "▣" },
+  { id: "nether", name: "下界花源包", tier: 4, output: { nether: 2 }, price: 4, limit: 3, icon: "✹" },
+  { id: "end", name: "末地花源包", tier: 4, output: { end: 1 }, price: 6, limit: 2, icon: "◇" },
+  { id: "frame-proven", name: "可靠框架", tier: 4, frame: "proven", price: 24, limit: 1, icon: "▣" },
+  { id: "greenhouse-seal", name: "温室密封件", tier: 4, seal: 1, price: 18, limit: 2, icon: "▥" }
+];
+
+const saplingShopPrices = { oak: 1, birch: 1, larch: 3, jungle: 5, teak: 8, cherry: 6, walnut: 6, chestnut: 10, pine: 6, sequoia: 12, lemon: 6, plum: 6, papaya: 8, date: 8 };
+
+const shopSellOffers = [
+  { id: "rawComb", name: "蜂蜜脾", input: { rawComb: 3 }, reward: 1, icon: "⬢" },
+  { id: "drippingComb", name: "滴落蜂巢", input: { drippingComb: 2 }, reward: 1, icon: "⬢" },
+  { id: "stickyComb", name: "黏性蜂巢", input: { stickyComb: 2 }, reward: 1, icon: "⬢" },
+  { id: "silkyComb", name: "丝质蜂巢", input: { silkyComb: 1 }, reward: 1, icon: "⬢" },
+  { id: "honey", name: "蜂蜜", input: { honey: 4 }, reward: 1, icon: "H" },
+  { id: "wax", name: "蜂蜡", input: { wax: 6 }, reward: 1, icon: "W" },
+  { id: "wood", name: "通用木材", input: { wood: 12 }, reward: 1, icon: "L" },
+  { id: "resin", name: "树脂", input: { resin: 3 }, reward: 1, icon: "R" },
+  { id: "cherry", name: "樱桃", input: { cherry: 12 }, reward: 1, icon: "●" },
+  { id: "walnut", name: "核桃", input: { walnut: 8 }, reward: 1, icon: "◆" },
+  { id: "chestnut", name: "栗子", input: { chestnut: 6 }, reward: 1, icon: "⬟" },
+  { id: "lemon", name: "柠檬", input: { lemon: 10 }, reward: 1, icon: "●" },
+  { id: "plum", name: "李子", input: { plum: 10 }, reward: 1, icon: "●" },
+  { id: "papaya", name: "木瓜", input: { papaya: 6 }, reward: 1, icon: "▰" },
+  { id: "date", name: "椰枣", input: { date: 12 }, reward: 1, icon: "◆" },
+  { id: "oil", name: "种子油", input: { oil: 4 }, reward: 1, icon: "O" },
+  { id: "juice", name: "果汁", input: { juice: 5 }, reward: 1, icon: "J" },
+  { id: "mulch", name: "覆盖物", input: { mulch: 12 }, reward: 1, icon: "M" },
+  { id: "biomass", name: "生物质", input: { biomass: 2 }, reward: 1, icon: "B" },
+  { id: "biofuel", name: "生物燃料", input: { biofuel: 1 }, reward: 2, icon: "F" },
+  { id: "royalJelly", name: "蜂王浆", input: { royalJelly: 1 }, reward: 4, icon: "♛" },
+  { id: "pollenCluster", name: "花粉簇", input: { pollenCluster: 1 }, reward: 3, icon: "✣" },
+  { id: "silkPropolis", name: "丝质蜂胶", input: { silkPropolis: 1 }, reward: 2, icon: "S" }
+];
+
+const shopOrderTemplates = [
+  [{ name: "蜂场日常收购", input: { honey: 12 }, reward: 4 }, { name: "果园鲜果订单", input: { cherry: 20 }, reward: 3 }, { name: "生物质燃料订单", input: { biomass: 5 }, reward: 7 }],
+  [{ name: "蜂蜡框架备料", input: { wax: 18 }, reward: 5 }, { name: "胡桃木工补给", input: { wood: 28 }, reward: 4 }, { name: "果汁发酵补给", input: { juice: 12 }, reward: 4 }],
+  [{ name: "稀有蜂巢样本", input: { drippingComb: 6 }, reward: 5 }, { name: "热带果园补给", input: { papaya: 12 }, reward: 4 }, { name: "生态燃料收购", input: { biofuel: 4 }, reward: 10 }]
+];
+
+const lateFacilityData = {
+  alveary: { name: "大型蜂房", detail: "蜂箱速度 +25%，开放第三框架槽", cost: { emerald: 30, wood: 128, wax: 32 } },
+  greenhouse: { name: "生态温室", detail: "果园环境适配不低于 85%", cost: { emerald: 36, wood: 96, oil: 12, greenhouseSeal: 1 } },
+  automaticFarm: { name: "自动农场", detail: "树场速度 +20%，果园土壤消耗 -2", cost: { emerald: 32, wood: 160, fertilizer: 12 } }
 };
 
 const strategyData = {
@@ -374,27 +595,92 @@ const upgradeData = {
   apiary: { name: "养蜂箱 A-01", label: "APIARY", icon: "⬡", effect: "提高蜂箱生产速度", costs: [{ honey: 20, wax: 8, wood: 15 }, { honey: 45, wax: 20, wood: 35 }] },
   treeFarm: { name: "树场 T-01", label: "ARBOR", icon: "♣", effect: "提高木材生长速度", costs: [{ wood: 25, oil: 4 }, { wood: 60, oil: 12, resin: 2 }] },
   centrifuge: { name: "离心机 C-01", label: "PROCESSOR", icon: "◉", effect: "缩短蜂巢加工时间", costs: [{ honey: 18, wax: 6, oil: 3 }, { honey: 45, wax: 18, oil: 8 }] },
-  warehouse: { name: "仓库 R-01", label: "STORAGE", icon: "▣", effect: "提高各物资独立容量", costs: [{ wood: 25, oil: 4 }, { wood: 60, oil: 12, wax: 8, biofuel: 2 }] }
+  warehouse: { name: "分类仓库 R-01", label: "STORAGE", icon: "▣", effect: "提高常规、加工、稀有、生物与装备分区容量", costs: [{ emerald: 40, wood: 128, wax: 24, oil: 8 }, { emerald: 120, wood: 512, resin: 48, biofuel: 12 }] }
 };
 
+const energyCoreLevels = [
+  { level: 1, capacity: 100, recovery: 6, unlockText: "初始能源核心" },
+  { level: 2, capacity: 125, recovery: 7, unlock: () => state.machineCollectedCycles >= 1, unlockText: "收取第一次离心产物后开放", cost: { wood: 18, wax: 4, oil: 2 } },
+  { level: 3, capacity: 155, recovery: 8, unlock: () => state.contractsCompleted >= 3, unlockText: "完成主线委托 03 后开放", cost: { wood: 30, wax: 8, oil: 6 } },
+  { level: 4, capacity: 190, recovery: 10, unlock: () => state.fermenterCycles >= 1, unlockText: "完成 1 次发酵后开放", cost: { wood: 45, resin: 5, biomass: 3 } },
+  { level: 5, capacity: 230, recovery: 12, unlock: () => state.distillerCycles >= 3 && state.reputation >= 15, unlockText: "完成 3 次蒸馏且声望达到 15 后开放", cost: { wood: 64, resin: 10, biofuel: 3 } }
+];
+
 const guideSteps = [
-  { title: "开始第一次调查", text: "前往森林边缘，确认后选择手动或自动调查。第一轮手动教学会稳定带回木材、野花与蜂巢。", action: "explore", actionLabel: "前往探索", target: '.explore-button[data-zone="forest"]' },
-  { title: "收取第一份蜂巢", text: "等待蜂箱完成一个生产周期，再点击收取蜂巢；同时确认花源库存，避免蜂箱因缺花暂停。", action: "apiary", actionLabel: "查看蜂箱", target: "#collect-button" },
-  { title: "分析两种亲本蜂", text: "在养蜂工作台分别分析森林蜂和草原蜂，确认它们的属性。", action: "apiary", actionLabel: "打开养蜂台", target: ".analyze-button:not(.done)" },
-  { title: "完成第一次杂交", text: "确认两个亲本后，开始森林蜂 × 草原蜂的杂交实验。", action: "apiary", actionLabel: "进行杂交", target: "#breed-button" },
-  { title: "加工蜂巢", text: "前往机器台启动离心机，获得蜂蜜和蜂蜡，完成第一条生产链。", action: "machines", actionLabel: "打开机器台", target: "#machine-button" },
-  { title: "启动第二条生产线", text: "离心机完成后，榨汁机 S-01 会解锁；消耗 2 木材和 2 能源，产出 1 份种子油。", action: "machines", actionLabel: "打开榨汁机", target: "#squeezer-button" },
-  { title: "培育第一棵进阶树", text: "在树木培育台分析橡树和白桦，完成一次培育并发现落叶松。", action: "arbor", actionLabel: "打开树木台", target: ".tree-analyze-button:not(.done)" },
-  { title: "完成第一次设施升级", text: "前往研究台，把资源投入生产设施或仓库扩容；任一物资分区接近上限时优先升级 STORAGE。", action: "research", actionLabel: "打开研究台", target: ".upgrade-grid" },
-  { title: "完成第一份生态委托", text: "打开总览的生态委托板，交付指定资源换取补给和声望，让长期生产有明确出口。", action: "overview", actionLabel: "查看生态委托", target: "#contract-button" },
-  { title: "建立生物质生产线", text: "拥有 3 个蜂种并完成 1 份委托后解锁发酵机 F-01；消耗 3 木材和 3 能源，产出生物质。", action: "machines", actionLabel: "打开发酵机", target: "#fermenter-button" },
-  { title: "蒸馏第一桶生物燃料", text: "发酵机完成 1 批后解锁蒸馏机 ST-01；消耗 1 生物质和 4 能源，产出可用于长期扩张的生物燃料。", action: "machines", actionLabel: "打开蒸馏机", target: "#distiller-button" }
+  { title: "建立生态工坊", text: "存档已经建立。先从总览确认当前资源、自动保存和下一步行动。", action: "overview", actionLabel: "查看总览", target: ".chapter-deck" },
+  { title: "准备第一次调查", text: "打开森林边缘的调查确认窗口，比较难度、能源消耗和可能收获。", action: "explore", actionLabel: "查看森林边缘", target: '.explore-button[data-zone="forest"]' },
+  { title: "完成教学样方", text: "选择手动调查，到达 3 个资源点后撤离。道路、线索和调查袋会在这里逐步介绍。", action: "explore", actionLabel: "继续手动调查", target: '.explore-button[data-zone="forest"]' },
+  { title: "整理调查收获", text: "在结算窗口把蜂巢、野花与木材全部入库；仓库已满的物资会进入暂存箱。", action: "explore", actionLabel: "查看调查结算", target: "#survey-queue-card" },
+  { title: "检查蜂箱环境", text: "查看当前花源和森林环境。花源维持生产，温湿度与生态状态会影响效率。", action: "apiary", actionLabel: "检查蜂箱", target: "#flower-select" },
+  { title: "收取第一份蜂巢", text: "等待蜂箱进入 READY，再收取第一份蜂巢；这会开放生产加工页面。", action: "apiary", actionLabel: "查看蜂箱", target: "#collect-button" },
+  { title: "启动离心机", text: "投入 1 个蜂巢和 2 点能源，开始离心分离。机器启动后会开放树木育种。", action: "machines", actionLabel: "启动离心机", target: "#machine-button" },
+  { title: "认识基础树种", text: "查看橡树与白桦的生长、木材、树脂属性以及树苗库存。", action: "arbor", actionLabel: "查看基础树种", target: "#tree-species-row" },
+  { title: "收取蜂蜜与蜂蜡", text: "返回加工页收取第一次离心产物。蜂蜜和蜂蜡会连接研究、委托与升级。", action: "machines", actionLabel: "收取离心产物", target: "#machine-button" },
+  { title: "升级能源核心", text: "在研究页把能源核心升到 LV.2，提高容量与自然恢复速度，并立即补充 20 点能源。", action: "research", actionLabel: "升级能源核心", target: "#energy-core-upgrade" },
+  { title: "分析两种亲本", text: "分析森林蜂与草原蜂，读取属性并显示第一条稳定突变路径。", action: "apiary", actionLabel: "分析亲本", target: ".analyze-button:not(.done)" },
+  { title: "培育第一支蜂系", text: "完成森林蜂 × 草原蜂的稳定培育，发现培育蜂并开放生态档案。", action: "apiary", actionLabel: "开始培育", target: "#breed-button" },
+  { title: "交付第一份委托", text: "交付“林地调查补给”，理解资源出口、声望和奖励，并开放成就档案。", action: "overview", actionLabel: "查看主线委托", target: "#contract-button" },
+  { title: "选择下一条路线", text: "从短周期调查、中周期树木或长期加工中选择下一步，工坊将转入多目标经营。", action: "overview", actionLabel: "选择发展路线", target: ".horizon-grid" }
 ];
 
 const contractData = [
-  { id: "field-supply", label: "FIELD SUPPLY 01", title: "林地调查补给", detail: "前线调查站需要一批基础采集物，换取新的探索补给。", requires: { rawComb: 1, wood: 5 }, rewards: { oil: 2, energy: 10 }, reputation: 1 },
-  { id: "wax-frame", label: "APIARY FRAME 02", title: "蜂蜡框架委托", detail: "把离心加工后的蜂蜜和蜂蜡交给养蜂工坊，换取建造材料。", unlockText: "完成 1 次离心加工后开放", unlock: () => state.machineCycles >= 1, requires: { honey: 2, wax: 2 }, rewards: { wood: 8, energy: 15 }, reputation: 2 },
-  { id: "biofuel", label: "ECO FUEL 03", title: "生态燃料补给", detail: "研究站开始收集生物质，将其转化为能源和研究用蜂蜜。", unlockText: "拥有 3 个蜂种后开放", unlock: () => isFermenterUnlocked(), requires: { biomass: 1, oil: 1 }, rewards: { honey: 4, energy: 35 }, reputation: 3 }
+  { id: "main-01", label: "MAIN CONTRACT 01", title: "林地调查补给", detail: "前线调查站需要第一批基础采集物，换取新的探索补给。", unlockText: "完成教学调查后开放", unlock: () => state.tutorialSurveyCompleted, requires: { rawComb: 1, wood: 5 }, rewards: { oil: 2, energy: 10, emerald: 6 }, reputation: 1 },
+  { id: "main-02", label: "MAIN CONTRACT 02", title: "初建蜂房", detail: "用野花和蜂箱产出的蜂巢支援第一座公共蜂房。", unlockText: "从蜂箱收取 1 次后开放", unlock: () => state.apiaryCombCollected >= 1, requires: { wildflower: 2, rawComb: 1 }, rewards: { wood: 8, energy: 12 }, reputation: 1 },
+  { id: "main-03", label: "MAIN CONTRACT 03", title: "蜂蜡框架", detail: "提交离心产物，制作耐用的蜂房框架。", unlockText: "完成 1 次离心后开放", unlock: () => state.machineCycles >= 1, requires: { honey: 2, wax: 2 }, rewards: { wood: 8, energy: 15, emerald: 10 }, reputation: 2 },
+  { id: "main-04", label: "MAIN CONTRACT 04", title: "苗圃支架", detail: "树场需要木材和种子油扩建第一批苗圃。", unlockText: "完成 1 次树场收获后开放", unlock: () => state.treeHarvests >= 1, requires: { wood: 12, oil: 2 }, rewards: { honey: 4, energy: 15 }, reputation: 2 },
+  { id: "main-05", label: "MAIN CONTRACT 05", title: "平原授粉记录", detail: "整理平原花源与基础蜂种的授粉数据。", unlockText: "手动调查平原且分析 2 个蜂种后开放", unlock: () => getZoneProgress("plains").manualRuns >= 1 && state.analyzed.length >= 2, requires: { clover: 4, honey: 3 }, rewards: { wax: 4, energy: 18 }, reputation: 2 },
+  { id: "main-06", label: "MAIN CONTRACT 06", title: "湿地防护物资", detail: "为沼泽调查队提交防潮树脂和蜂蜡。", unlockText: "手动调查沼泽后开放", unlock: () => getZoneProgress("swamp").manualRuns >= 1, requires: { resin: 2, wax: 4 }, rewards: { wood: 12, energy: 20 }, reputation: 3 },
+  { id: "main-07", label: "MAIN CONTRACT 07", title: "培育谱系记录", detail: "提交培育蜂与树木杂交阶段需要的研究材料。", unlockText: "发现培育蜂且完成 1 次树木培育后开放", unlock: () => state.discovered.includes("cultivated") && state.treeCycles >= 1, requires: { honey: 6, oil: 3 }, rewards: { resin: 3, energy: 20 }, reputation: 3 },
+  { id: "main-08", label: "MAIN CONTRACT 08", title: "多花源调查", detail: "收集三类花源并建立蝴蝶授粉记录。", unlockText: "拥有 3 类花源且观察 2 个蝶种后开放", unlock: () => Object.values(state.flowerInventory).filter((amount) => amount > 0).length >= 3 && state.butterflyAnalyzed.length >= 2, requires: { wildflower: 4, clover: 4, tropical: 2 }, rewards: { oil: 4, energy: 25 }, reputation: 3 },
+  { id: "main-09", label: "MAIN CONTRACT 09", title: "生物质试产", detail: "为研究站提交首批稳定生物质和结构木材。", unlockText: "完成 1 次发酵后开放", unlock: () => state.fermenterCycles >= 1, requires: { biomass: 2, wood: 12 }, rewards: { honey: 8, energy: 25 }, reputation: 4 },
+  { id: "main-10", label: "MAIN CONTRACT 10", title: "生物燃料补给", detail: "蒸馏后的燃料将支持更远区域的长期调查。", unlockText: "完成 1 次蒸馏后开放", unlock: () => state.distillerCycles >= 1, requires: { biofuel: 1, oil: 4 }, rewards: { wax: 8, energy: 40, emerald: 18 }, reputation: 4 },
+  { id: "main-11", label: "MAIN CONTRACT 11", title: "寒带林业后勤", detail: "为雪林站点准备耐寒树种和大批木材。", unlockText: "手动调查雪林且发现落叶松后开放", unlock: () => getZoneProgress("snow").manualRuns >= 1 && state.treeDiscovered.includes("larch"), requires: { wood: 20, resin: 5 }, rewards: { honey: 10, energy: 35 }, reputation: 5 },
+  { id: "main-12", label: "MAIN CONTRACT 12", title: "菌洞实验包", detail: "洞穴生态实验需要高浓度树脂和生物质。", unlockText: "手动调查菌洞 2 次后开放", unlock: () => getZoneProgress("cave").manualRuns >= 2, requires: { resin: 8, biomass: 4 }, rewards: { oil: 8, energy: 40 }, reputation: 5 },
+  { id: "main-13", label: "MAIN CONTRACT 13", title: "高阶蜂群备案", detail: "为高阶蜂群建立完整的生产与谱系档案。", unlockText: "发现 8 个蜂种且完成三级蜂路径后开放", unlock: () => knownDiscoveredBees().length >= 8 && state.discovered.some((id) => getMutationTier(species[id]) >= 3), requires: { honey: 12, wax: 8, rawComb: 4 }, rewards: { resin: 8, energy: 45 }, reputation: 6 },
+  { id: "main-14", label: "MAIN CONTRACT 14", title: "末地边境观测", detail: "为末地边境观测站提供燃料和蜂群样本。", unlockText: "完成 1 次末地手动调查后开放", unlock: () => getZoneProgress("end").manualRuns >= 1, requires: { biofuel: 3, rawComb: 6 }, rewards: { honey: 16, energy: 60 }, reputation: 7 },
+  { id: "main-15", label: "MAIN CONTRACT 15", title: "生态工坊认证", detail: "提交最终认证物资，完成 P0 生态工坊长期目标。", unlockText: "开放八区、能源核心 LV.4，并完成 20 个成就后开放", unlock: () => getUnlockedZoneCount() >= 8 && getEnergyCoreLevel() >= 4 && getCompletedAchievementCount() >= 20, requires: { honey: 12, wax: 8, resin: 6, biofuel: 2 }, rewards: {}, rewardText: "能源补满", fullEnergy: true, reputation: 10, titleReward: "认证林业师" }
+];
+
+const regionalContractTemplates = [
+  { id: "regional-forest", title: "林缘常备物资", requires: { rawComb: 2, wood: 8 }, rewards: { oil: 2, energy: 8, emerald: 4 }, reputation: 1, unlock: () => true },
+  { id: "regional-apiary", title: "蜂房维护包", requires: { honey: 4, wax: 3 }, rewards: { wood: 10, energy: 10, emerald: 5 }, reputation: 1, unlock: () => state.machineCycles >= 1 },
+  { id: "regional-arbor", title: "树场周转单", requires: { wood: 15, oil: 2 }, rewards: { honey: 5, energy: 12, emerald: 5 }, reputation: 1, unlock: () => state.treeHarvests >= 1 },
+  { id: "regional-flowers", title: "平原花源交换", requires: { wildflower: 3, clover: 3 }, rewards: { oil: 3, energy: 10, emerald: 4 }, reputation: 1, unlock: () => getZoneVisits("plains") >= 1 },
+  { id: "regional-swamp", title: "湿地树脂补给", requires: { resin: 3, wax: 3 }, rewards: { wood: 10, energy: 15, emerald: 6 }, reputation: 1, unlock: () => isZoneUnlocked("swamp") },
+  { id: "regional-biomass", title: "生物质周转", requires: { biomass: 2, wood: 8 }, rewards: { honey: 6, energy: 15, emerald: 6 }, reputation: 2, unlock: () => state.fermenterCycles >= 1 },
+  { id: "regional-biofuel", title: "远征燃料储备", requires: { biofuel: 1, oil: 3 }, rewards: { wax: 6, energy: 20, emerald: 8 }, reputation: 2, unlock: () => state.distillerCycles >= 1 }
+];
+
+const achievementTiers = { bronze: { name: "铜", points: 10 }, silver: { name: "银", points: 20 }, gold: { name: "金", points: 40 }, diamond: { name: "钻石", points: 80 } };
+const achievementData = [
+  { id: "survey_first", category: "调查与区域", title: "林地第一步", tier: "bronze", detail: "完成第一次手动调查", reward: { energy: 10 }, condition: () => Object.values(state.zoneProgress).some((item) => item.manualRuns >= 1) },
+  { id: "survey_auto", category: "调查与区域", title: "放手调查", tier: "bronze", detail: "完成第一次自动调查", reward: { wood: 5 }, condition: () => Object.values(state.zoneProgress).some((item) => item.autoRuns >= 1) },
+  { id: "survey_10", category: "调查与区域", title: "踏遍近郊", tier: "silver", detail: "累计完成 10 次调查", reward: { energy: 20 }, reputation: 1, condition: () => state.explorations >= 10 },
+  { id: "survey_all_zones", category: "调查与区域", title: "八方生态", tier: "gold", detail: "开放全部 8 个区域", reward: { energy: 40 }, reputation: 3, condition: () => getUnlockedZoneCount() >= 8 },
+  { id: "survey_mastery", category: "调查与区域", title: "区域专家", tier: "gold", detail: "任一区域熟练度达到 100", reward: { wood: 20 }, reputation: 2, condition: () => Object.values(state.zoneProgress).some((item) => item.proficiency >= 100) },
+  { id: "survey_rare_pity", category: "调查与区域", title: "线索不会消失", tier: "silver", detail: "触发一次区域稀有保底", reward: { energy: 20 }, reputation: 1, condition: () => state.rarePityTriggers >= 1 },
+  { id: "apiary_collect", category: "蜜蜂与遗传", title: "第一枚蜂巢", tier: "bronze", detail: "从养蜂箱收取 1 次", reward: { wildflower: 2 }, condition: () => state.apiaryCombCollected >= 1 },
+  { id: "bee_analyze_3", category: "蜜蜂与遗传", title: "初级分析员", tier: "bronze", detail: "分析 3 个蜂种", reward: { honey: 3 }, condition: () => state.analyzed.length >= 3 },
+  { id: "bee_cultivated", category: "蜜蜂与遗传", title: "稳定培育", tier: "silver", detail: "发现培育蜂", reward: { wax: 3 }, reputation: 1, condition: () => state.discovered.includes("cultivated") },
+  { id: "bee_tier3", category: "蜜蜂与遗传", title: "三级谱系", tier: "gold", detail: "发现任意三级蜂种", reward: { energy: 30 }, reputation: 2, condition: () => state.discovered.some((id) => getMutationTier(species[id]) >= 3) },
+  { id: "bee_all", category: "蜜蜂与遗传", title: "养蜂大师", tier: "diamond", detail: "发现并分析全部蜂种", reward: { honey: 20, wax: 12 }, reputation: 5, condition: () => Object.keys(species).every((id) => state.discovered.includes(id) && state.analyzed.includes(id)) },
+  { id: "bee_pity", category: "蜜蜂与遗传", title: "坚持的价值", tier: "silver", detail: "任一蜂种组合触发保底", reward: { honey: 5, energy: 15 }, condition: () => state.beePityTriggers >= 1 },
+  { id: "tree_harvest", category: "树木、蝴蝶与生态", title: "第一批木材", tier: "bronze", detail: "收取 1 次树场", reward: { wood: 6 }, condition: () => state.treeHarvests >= 1 },
+  { id: "tree_larch", category: "树木、蝴蝶与生态", title: "新的年轮", tier: "silver", detail: "培育出落叶松", reward: { oil: 2 }, reputation: 1, condition: () => state.treeDiscovered.includes("larch") },
+  { id: "tree_tier3", category: "树木、蝴蝶与生态", title: "巨木谱系", tier: "gold", detail: "发现任意三级树种", reward: { resin: 4 }, reputation: 2, condition: () => state.treeDiscovered.some((id) => getMutationTier(treeSpecies[id]) >= 3) },
+  { id: "butterfly_3", category: "树木、蝴蝶与生态", title: "翅色档案", tier: "silver", detail: "观察 3 个蝶种", reward: { energy: 15 }, reputation: 1, condition: () => state.butterflyAnalyzed.length >= 3 },
+  { id: "flowers_3", category: "树木、蝴蝶与生态", title: "三季花源", tier: "silver", detail: "同时拥有 3 类花源", reward: { oil: 3 }, condition: () => Object.values(state.flowerInventory).filter((amount) => amount > 0).length >= 3 },
+  { id: "ecology_85", category: "树木、蝴蝶与生态", title: "繁盛林地", tier: "gold", detail: "生态评分连续 3 周期不低于 85", reward: { energy: 30 }, reputation: 3, condition: () => state.ecologyHighCycles >= 3 },
+  { id: "machine_centrifuge", category: "工业、能源与经营", title: "分离开始", tier: "bronze", detail: "完成 1 次离心", reward: { honey: 2, wax: 2 }, condition: () => state.machineCycles >= 1 },
+  { id: "machine_chain", category: "工业、能源与经营", title: "四段生产线", tier: "gold", detail: "四类机器各完成至少 1 次", reward: { energy: 30 }, reputation: 2, condition: () => [state.machineCycles, state.squeezerCycles, state.fermenterCycles, state.distillerCycles].every((value) => value >= 1) },
+  { id: "biofuel_first", category: "工业、能源与经营", title: "林木燃料", tier: "silver", detail: "收取第一份生物燃料", reward: { energy: 25 }, condition: () => state.distillerCollected >= 1 },
+  { id: "automation_10", category: "工业、能源与经营", title: "稳定队列", tier: "gold", detail: "自动化连续完成 10 批", reward: { energy: 35 }, reputation: 3, condition: () => state.automationCompletedBatches >= 10 },
+  { id: "energy_lv3", category: "工业、能源与经营", title: "扩容电网", tier: "silver", detail: "能源核心达到 LV.3", reward: {}, fullEnergy: true, condition: () => getEnergyCoreLevel() >= 3 },
+  { id: "energy_max", category: "工业、能源与经营", title: "充沛动力", tier: "gold", detail: "能源核心达到 LV.5", reward: { biofuel: 2 }, reputation: 3, condition: () => getEnergyCoreLevel() >= 5 },
+  { id: "contract_1", category: "工业、能源与经营", title: "第一次交付", tier: "bronze", detail: "完成 1 份主线委托", reward: { energy: 10 }, condition: () => state.contractsCompleted >= 1 },
+  { id: "contract_6", category: "工业、能源与经营", title: "区域合作", tier: "silver", detail: "完成 6 份主线委托", reward: { wood: 15 }, reputation: 2, condition: () => state.contractsCompleted >= 6 },
+  { id: "contract_15", category: "工业、能源与经营", title: "认证林业师", tier: "diamond", detail: "完成全部 15 份主线委托", reward: {}, reputation: 5, titleReward: "认证林业师", condition: () => state.contractsCompleted >= 15 },
+  { id: "regional_30", category: "工业、能源与经营", title: "长期供给者", tier: "gold", detail: "完成 30 份区域轮换委托", reward: { energy: 50 }, reputation: 5, condition: () => state.regionalContractsCompleted >= 30 }
 ];
 
 const $ = (selector) => document.querySelector(selector);
@@ -432,6 +718,7 @@ let appSettings = { simplifiedSurvey: readJsonStorage(SETTINGS_KEY)?.simplifiedS
 let activeSlotId = saveIndex.lastSlotId || saveIndex.slots[0]?.id || null;
 let gameStarted = false;
 let state = loadState(activeSlotId);
+initializeProgressionState(state);
 
 function loadState(slotId = activeSlotId) {
   try {
@@ -443,12 +730,31 @@ function loadState(slotId = activeSlotId) {
       ...saved,
       resources: { ...defaultState.resources, ...saved.resources },
       flowerInventory: { ...defaultState.flowerInventory, ...saved.flowerInventory },
+      fruitInventory: { ...defaultState.fruitInventory, ...saved.fruitInventory },
+      orchard: { ...defaultState.orchard, ...(saved.orchard || {}) },
+      apiaryReadyBundle: { ...defaultState.apiaryReadyBundle, ...(saved.apiaryReadyBundle || {}) },
+      frameInventory: { ...defaultState.frameInventory, ...(saved.frameInventory || {}) },
+      apiaryFrames: Array.isArray(saved.apiaryFrames) ? saved.apiaryFrames.slice(0, 3) : structuredClone(defaultState.apiaryFrames),
+      pollenInventory: saved.pollenInventory && typeof saved.pollenInventory === "object" ? { ...saved.pollenInventory } : {},
+      orchardPollen: { ...defaultState.orchardPollen, ...(saved.orchardPollen || {}) },
+      tools: { ...defaultState.tools, ...(saved.tools || {}) },
+      lateFacilities: { ...defaultState.lateFacilities, ...(saved.lateFacilities || {}) },
+      shopPurchases: saved.shopPurchases && typeof saved.shopPurchases === "object" ? { ...saved.shopPurchases } : {},
+      warehouseOverflow: Array.isArray(saved.warehouseOverflow) ? saved.warehouseOverflow.slice(0, 12) : [],
+      squeezerOutputBundle: { ...defaultState.squeezerOutputBundle, ...(saved.squeezerOutputBundle || {}) },
+      fermenterOutputBundle: { ...defaultState.fermenterOutputBundle, ...(saved.fermenterOutputBundle || {}) },
+      machineOutputBundle: { ...defaultState.machineOutputBundle, ...(saved.machineOutputBundle || {}) },
       explorationCounts: { ...defaultState.explorationCounts, ...saved.explorationCounts },
       zoneProgress: Object.fromEntries(Object.keys(defaultState.zoneProgress).map((zone) => [zone, { ...defaultState.zoneProgress[zone], ...(saved.zoneProgress?.[zone] || {}) }])),
       treeSaplings: { ...defaultState.treeSaplings, ...saved.treeSaplings },
+      woodInventory: saved.woodInventory && typeof saved.woodInventory === "object" ? { ...saved.woodInventory } : { generic: Math.max(0, Math.floor(Number(saved.resources?.wood) || defaultState.resources.wood)) },
       treeBreedingParents: { ...defaultState.treeBreedingParents, ...saved.treeBreedingParents },
       breedingParents: { ...defaultState.breedingParents, ...saved.breedingParents },
       butterflyBreedingParents: { ...defaultState.butterflyBreedingParents, ...saved.butterflyBreedingParents },
+      visitedViews: { ...defaultState.visitedViews, ...saved.visitedViews },
+      pageUnlocks: { ...defaultState.pageUnlocks, ...saved.pageUnlocks },
+      energyCore: { ...defaultState.energyCore, ...saved.energyCore },
+      achievements: saved.achievements && typeof saved.achievements === "object" && !Array.isArray(saved.achievements) ? saved.achievements : {},
       zoneEnvironments: Object.fromEntries(Object.keys(defaultState.zoneEnvironments).map((zone) => [zone, { ...defaultState.zoneEnvironments[zone], ...(saved.zoneEnvironments?.[zone] || {}) }])),
       environmentEvent: { ...defaultState.environmentEvent, ...(saved.environmentEvent || {}) },
       breedingPity: normalizePityStore(saved.breedingPity),
@@ -465,18 +771,25 @@ function loadState(slotId = activeSlotId) {
       butterflyAnalyzed: Array.isArray(saved.butterflyAnalyzed) ? saved.butterflyAnalyzed : [...defaultState.butterflyAnalyzed],
       logs: Array.isArray(saved.logs) ? saved.logs.slice(0, 6) : structuredClone(defaultState.logs),
       pendingSurvey: Array.isArray(saved.pendingSurvey) ? saved.pendingSurvey.slice(0, 40) : [],
-      claimedResultIds: Array.isArray(saved.claimedResultIds) ? saved.claimedResultIds.slice(-80) : []
+      claimedResultIds: Array.isArray(saved.claimedResultIds) ? saved.claimedResultIds.slice(-80) : [],
+      achievementPending: Array.isArray(saved.achievementPending) ? saved.achievementPending.slice(0, 80) : [],
+      regionalContractOffers: Array.isArray(saved.regionalContractOffers) ? saved.regionalContractOffers.slice(0, 3) : [],
+      titles: Array.isArray(saved.titles) ? [...new Set(saved.titles.map(String))].slice(0, 20) : [],
+      _needsAchievementBackfill: Number(saved.progressionSchema) !== defaultState.progressionSchema
     };
+    merged.energyCore.level = clamp(Math.floor(Number(merged.energyCore.level) || 1), 1, energyCoreLevels.length);
+    const energyCapacity = energyCoreLevels[merged.energyCore.level - 1].capacity;
     Object.keys(defaultState.resources).forEach((resource) => {
       const value = Number(merged.resources[resource]);
-      merged.resources[resource] = Number.isFinite(value) ? resource === "energy" ? clamp(value, 0, 100) : Math.max(0, value) : defaultState.resources[resource];
+      merged.resources[resource] = Number.isFinite(value) ? resource === "energy" ? clamp(value, 0, energyCapacity) : resource === "emerald" ? Math.max(0, Math.floor(value)) : Math.max(0, value) : defaultState.resources[resource];
     });
     Object.keys(defaultState.flowerInventory).forEach((flower) => {
       const value = Number(merged.flowerInventory[flower]);
       merged.flowerInventory[flower] = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : defaultState.flowerInventory[flower];
     });
-    merged.activeFlower = ["wildflower", "clover", "tropical"].includes(merged.activeFlower) ? merged.activeFlower : defaultState.activeFlower;
-    merged.activeHabitat = ["forest", "plains", "swamp", "tropic"].includes(merged.activeHabitat) ? merged.activeHabitat : defaultState.activeHabitat;
+    merged.activeFlower = flowerSources[merged.activeFlower] ? merged.activeFlower : defaultState.activeFlower;
+    merged.activeHabitat = zones[merged.activeHabitat] ? merged.activeHabitat : defaultState.activeHabitat;
+    merged.activeBee = species[merged.activeBee] && merged.discovered.includes(merged.activeBee) ? merged.activeBee : "forest";
     merged.strategyFocus = strategyData[merged.strategyFocus] ? merged.strategyFocus : defaultState.strategyFocus;
     merged.strategyReady = merged.strategyReady === true;
     merged.strategyActionsRemaining = clamp(Math.floor(Number(merged.strategyActionsRemaining) || defaultState.strategyActionsRemaining), 0, 3);
@@ -487,6 +800,39 @@ function loadState(slotId = activeSlotId) {
         merged.zoneEnvironments[zone][key] = Number.isFinite(value) ? clamp(value, 0, 100) : defaultState.zoneEnvironments[zone][key];
       });
     });
+    Object.keys(defaultState.fruitInventory).forEach((fruit) => {
+      const value = Number(merged.fruitInventory[fruit]);
+      merged.fruitInventory[fruit] = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+    });
+    Object.keys(frameData).forEach((frame) => { merged.frameInventory[frame] = Math.max(0, Math.floor(Number(merged.frameInventory[frame]) || 0)); });
+    merged.apiaryFrames = [...merged.apiaryFrames, null, null, null].slice(0, 3).map((frame) => frameData[frame?.id] ? { id: frame.id, durability: clamp(Math.floor(Number(frame.durability) || frameData[frame.id].durability), 1, frameData[frame.id].durability) } : null);
+    Object.keys(merged.apiaryReadyBundle).forEach((key) => { merged.apiaryReadyBundle[key] = Math.max(0, Math.floor(Number(merged.apiaryReadyBundle[key]) || 0)); });
+    Object.keys(merged.pollenInventory).forEach((tree) => { merged.pollenInventory[tree] = Math.max(0, Math.floor(Number(merged.pollenInventory[tree]) || 0)); });
+    merged.orchardPollen.treeId = treeSpecies[merged.orchardPollen.treeId] ? merged.orchardPollen.treeId : "";
+    merged.orchardPollen.cycles = Math.max(0, Math.floor(Number(merged.orchardPollen.cycles) || 0));
+    Object.keys(defaultState.tools).forEach((tool) => { merged.tools[tool] = Math.max(0, Math.floor(Number(merged.tools[tool]) || 0)); });
+    Object.keys(defaultState.lateFacilities).forEach((facility) => { merged.lateFacilities[facility] = merged.lateFacilities[facility] ? 1 : 0; });
+    merged.greenhouseSeals = Math.max(0, Math.floor(Number(merged.greenhouseSeals) || 0));
+    merged.butterflyHost = flowerSources[merged.butterflyHost] ? merged.butterflyHost : "wildflower";
+    merged.shopTab = ["buy", "sell", "orders", "storage"].includes(merged.shopTab) ? merged.shopTab : "buy";
+    merged.shopOpenedBonus = merged.shopOpenedBonus === true;
+    merged.shopManualRefreshes = clamp(Math.floor(Number(merged.shopManualRefreshes) || 0), 0, 2);
+    merged.shopRotation = Math.max(0, Math.floor(Number(merged.shopRotation) || 0));
+    merged.productionCycles = Math.max(0, Math.floor(Number(merged.productionCycles) || 0));
+    merged.activeTree = treeSpecies[merged.activeTree] && merged.treeDiscovered.includes(merged.activeTree) ? merged.activeTree : "oak";
+    merged.treeReadySpecies = treeSpecies[merged.treeReadySpecies] ? merged.treeReadySpecies : (merged.treeReady > 0 ? merged.activeTree : "");
+    merged.orchard.treeId = treeSpecies[merged.orchard.treeId]?.fruit && merged.treeDiscovered.includes(merged.orchard.treeId) ? merged.orchard.treeId : "";
+    merged.orchard.progress = clamp(Number(merged.orchard.progress) || 0, 0, 100);
+    ["readyFruit", "readyMulch", "cycles"].forEach((key) => { merged.orchard[key] = Math.max(0, Math.floor(Number(merged.orchard[key]) || 0)); });
+    merged.squeezerRecipe = squeezerRecipes[merged.squeezerRecipe] ? merged.squeezerRecipe : "wood";
+    merged.fermenterRecipe = fermenterRecipes[merged.fermenterRecipe] ? merged.fermenterRecipe : "wood";
+    merged.machineRecipe = centrifugeRecipes[merged.machineRecipe] ? merged.machineRecipe : "rawComb";
+    Object.keys(merged.machineOutputBundle).forEach((key) => { merged.machineOutputBundle[key] = Math.max(0, Math.floor(Number(merged.machineOutputBundle[key]) || 0)); });
+    Object.keys(merged.squeezerOutputBundle).forEach((key) => { merged.squeezerOutputBundle[key] = Math.max(0, Math.floor(Number(merged.squeezerOutputBundle[key]) || 0)); });
+    Object.keys(merged.fermenterOutputBundle).forEach((key) => { merged.fermenterOutputBundle[key] = Math.max(0, Math.floor(Number(merged.fermenterOutputBundle[key]) || 0)); });
+    if (Number(merged.squeezerOutput) > 0 && !Object.values(merged.squeezerOutputBundle).some((amount) => amount > 0)) merged.squeezerOutputBundle = { oil: Math.floor(Number(merged.squeezerOutput)) };
+    if (Number(merged.fermenterOutput) > 0 && !Object.values(merged.fermenterOutputBundle).some((amount) => amount > 0)) merged.fermenterOutputBundle = { biomass: Math.floor(Number(merged.fermenterOutput)) };
+    if (Number(merged.machineOutput) > 0 && !Object.values(merged.machineOutputBundle).some((amount) => amount > 0)) merged.machineOutputBundle = { honey: Math.floor(Number(merged.machineOutput)), wax: Math.floor(Number(merged.machineOutput)) };
     merged.environmentEvent.current = environmentEventData[merged.environmentEvent.current] ? merged.environmentEvent.current : defaultState.environmentEvent.current;
     merged.environmentEvent.next = environmentEventData[merged.environmentEvent.next] ? merged.environmentEvent.next : defaultState.environmentEvent.next;
     merged.environmentEvent.remaining = clamp(Math.floor(Number(merged.environmentEvent.remaining) || defaultState.environmentEvent.remaining), 1, 4);
@@ -515,6 +861,7 @@ function loadState(slotId = activeSlotId) {
       merged.treeBreedingParents[slot] = typeof merged.treeBreedingParents[slot] === "string" ? merged.treeBreedingParents[slot] : defaultState.treeBreedingParents[slot];
       merged.butterflyBreedingParents[slot] = typeof merged.butterflyBreedingParents[slot] === "string" ? merged.butterflyBreedingParents[slot] : defaultState.butterflyBreedingParents[slot];
     });
+    Object.keys(merged.woodInventory).forEach((tree) => { merged.woodInventory[tree] = Math.max(0, Math.floor(Number(merged.woodInventory[tree]) || 0)); });
     merged.machineActive = merged.machineActive === true;
     merged.squeezerActive = merged.squeezerActive === true;
     merged.fermenterActive = merged.fermenterActive === true;
@@ -522,7 +869,7 @@ function loadState(slotId = activeSlotId) {
     merged.automationEnabled = merged.automationEnabled === true;
     const automationReserveEnergy = Number(merged.automationReserveEnergy);
     merged.automationReserveEnergy = Number.isFinite(automationReserveEnergy) ? clamp(Math.floor(automationReserveEnergy), 0, 30) : defaultState.automationReserveEnergy;
-    ["rawComb", "processedHoney", "processedWax", "totalCombCollected", "apiaryCombCollected", "explorations", "apiaryReady", "apiaryCycles", "machineOutput", "machineCycles", "squeezerOutput", "squeezerCycles", "fermenterOutput", "fermenterCycles", "distillerOutput", "distillerCycles", "contractIndex", "contractsCompleted", "reputation", "treeReady", "treeReadyYield", "treeReadyResin", "treeCycles", "treeHarvests", "breedings", "breedingAttempts", "breedingFailures", "treeBreedingAttempts", "treeBreedingFailures", "butterflyBreedingAttempts", "butterflyBreedingFailures", "upgradesBought", "playTimeSeconds"].forEach((key) => {
+    ["rawComb", "processedHoney", "processedWax", "totalCombCollected", "apiaryCombCollected", "explorations", "apiaryReady", "apiaryCycles", "machineOutput", "machineCycles", "machineStarts", "machineCollectedCycles", "squeezerOutput", "squeezerCycles", "fermenterOutput", "fermenterCycles", "distillerOutput", "distillerCycles", "distillerCollected", "automationCompletedBatches", "contractIndex", "contractsCompleted", "regionalContractsCompleted", "regionalActionCounter", "reputation", "rarePityTriggers", "beePityTriggers", "ecologyHighCycles", "treeReady", "treeReadyYield", "treeReadyResin", "treeCycles", "treeHarvests", "breedings", "breedingAttempts", "breedingFailures", "treeBreedingAttempts", "treeBreedingFailures", "butterflyBreedingAttempts", "butterflyBreedingFailures", "upgradesBought", "playTimeSeconds"].forEach((key) => {
       const value = Number(merged[key]);
       merged[key] = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : defaultState[key];
     });
@@ -541,7 +888,9 @@ function loadState(slotId = activeSlotId) {
       const second = typeof merged.butterflyBreeding?.parentB === "string" ? merged.butterflyBreeding.parentB : merged.butterflyBreedingParents.parentB;
       merged.butterflyBreedingPity[getButterflyBreedingPairKey(first, second)] = clamp(merged.butterflyBreedingFailures, 0, 9);
     }
-    if (merged.contractsCompleted < contractData.length) merged.automationEnabled = false;
+    merged.contractIndex = clamp(merged.contractIndex, 0, contractData.length);
+    merged.contractsCompleted = clamp(Math.max(merged.contractsCompleted, merged.contractIndex), 0, contractData.length);
+    if (merged.contractsCompleted < 9) merged.automationEnabled = false;
     if (merged.treeReady === 0) {
       merged.treeReadyYield = 0;
       merged.treeReadyResin = 0;
@@ -563,7 +912,7 @@ function loadState(slotId = activeSlotId) {
           princess: typeof merged[key].princess === "string" ? merged[key].princess : defaultState.breedingParents.princess,
           drone: typeof merged[key].drone === "string" ? merged[key].drone : defaultState.breedingParents.drone,
           result: Object.prototype.hasOwnProperty.call(species, merged[key].result) ? merged[key].result : "cultivated",
-          chance: merged[key].chance !== null && merged[key].chance !== undefined && Number.isFinite(Number(merged[key].chance)) ? clamp(Number(merged[key].chance), 0, 95) : null
+          chance: merged[key].chance !== null && merged[key].chance !== undefined && Number.isFinite(Number(merged[key].chance)) ? clamp(Number(merged[key].chance), 0, 100) : null
         };
       } else if (key === "treeBreeding") {
         merged[key] = {
@@ -571,7 +920,7 @@ function loadState(slotId = activeSlotId) {
           parentA: typeof merged[key].parentA === "string" ? merged[key].parentA : defaultState.treeBreedingParents.parentA,
           parentB: typeof merged[key].parentB === "string" ? merged[key].parentB : defaultState.treeBreedingParents.parentB,
           result: Object.prototype.hasOwnProperty.call(treeSpecies, merged[key].result) ? merged[key].result : "larch",
-          chance: merged[key].chance !== null && merged[key].chance !== undefined && Number.isFinite(Number(merged[key].chance)) ? clamp(Number(merged[key].chance), 0, 95) : null
+          chance: merged[key].chance !== null && merged[key].chance !== undefined && Number.isFinite(Number(merged[key].chance)) ? clamp(Number(merged[key].chance), 0, 100) : null
         };
       } else {
         merged[key] = {
@@ -579,7 +928,7 @@ function loadState(slotId = activeSlotId) {
           parentA: typeof merged[key].parentA === "string" ? merged[key].parentA : defaultState.butterflyBreedingParents.parentA,
           parentB: typeof merged[key].parentB === "string" ? merged[key].parentB : defaultState.butterflyBreedingParents.parentB,
           result: Object.prototype.hasOwnProperty.call(butterflySpecies, merged[key].result) ? merged[key].result : "swallow",
-          chance: merged[key].chance !== null && merged[key].chance !== undefined && Number.isFinite(Number(merged[key].chance)) ? clamp(Number(merged[key].chance), 0, 95) : null
+          chance: merged[key].chance !== null && merged[key].chance !== undefined && Number.isFinite(Number(merged[key].chance)) ? clamp(Number(merged[key].chance), 0, 100) : null
         };
       }
     });
@@ -646,6 +995,7 @@ function addLog(text, kind = "amber") {
 
 function showToast(message) {
   const toast = $("#toast");
+  if (!toast) return;
   toast.textContent = message;
   toast.classList.add("show");
   window.clearTimeout(toastTimer);
@@ -680,7 +1030,7 @@ function getWorkshopLoad() {
 
 function getBeePollinationPotential() {
   if (getFlowerCount() <= 0) return 0;
-  const fertility = getCurrentBeeTrait("fertility");
+  const fertility = getActiveBeeTrait("fertility");
   return clamp((.04 + (fertility - 50) / 250) * getHabitatSuitability(), 0, .18);
 }
 
@@ -697,7 +1047,10 @@ function getButterflyPollinationBonus() {
     return total + ((butterfly?.traits?.pollination || 40) / 100) * zoneFit * .045;
   }, 0);
   const diversity = known.length >= 4 ? .1 : known.length === 3 ? .06 : known.length === 2 ? .03 : 0;
-  return clamp((pollination + diversity + event.butterflies) * activity, 0, .24);
+  const season = getSeasonData();
+  const hostAvailable = getFlowerCount(state.butterflyHost) > 0;
+  const hostBonus = hostAvailable ? (season.hosts.includes(state.butterflyHost) ? season.bonus : .01) : -.04;
+  return clamp((pollination + diversity + event.butterflies + hostBonus) * activity, 0, .28);
 }
 
 function getEcologyBreakdown() {
@@ -747,6 +1100,7 @@ function advanceEnvironmentEvent() {
 }
 
 function consumeStrategyAction() {
+  if (getRegionalSlotCount() > 0) state.regionalActionCounter += 1;
   if (state.strategyReady) {
     state.strategyReady = false;
     state.strategyActionsRemaining = 3;
@@ -755,6 +1109,7 @@ function consumeStrategyAction() {
   if (state.strategyActionsRemaining > 0) return;
   state.strategyCycles += 1;
   state.strategyReady = true;
+  state.ecologyHighCycles = getEcologyBreakdown().score >= 85 ? state.ecologyHighCycles + 1 : 0;
   advanceEnvironmentEvent();
 }
 
@@ -776,10 +1131,10 @@ function applyEnvironmentCycle(kind) {
     const fertilityPressure = getCurrentBeeTrait("fertility") > 80 ? 1 : 0;
     environment.flowerDensity = clamp(environment.flowerDensity - 4 - speedPressure - fertilityPressure, 0, 100);
   } else if (kind === "tree") {
-    const soilCost = 1 + (getCurrentTreeTrait("growth") > 75 ? 1 : 0) + (getCurrentTreeTrait("yield") > 80 ? 1 : 0);
+    const soilCost = 1 + (getActiveTreeTrait("growth") > 75 ? 1 : 0) + (getActiveTreeTrait("yield") > 80 ? 1 : 0);
     environment.soil = clamp(environment.soil - soilCost, 0, 100);
     environment.canopy = clamp(environment.canopy + .8, 0, 100);
-    environment.flowerDensity = clamp(environment.flowerDensity + (getCurrentTreeTrait("resin") < 60 ? 3 : 1), 0, 100);
+    environment.flowerDensity = clamp(environment.flowerDensity + (getActiveTreeTrait("resin") < 60 ? 3 : 1), 0, 100);
   } else if (kind === "butterfly") {
     environment.leafPressure = clamp(environment.leafPressure + 5, 0, 100);
   } else if (kind === "fermenter") {
@@ -788,6 +1143,252 @@ function applyEnvironmentCycle(kind) {
     environment.flowerDensity = clamp(environment.flowerDensity + 8, 0, 100);
     environment.soil = clamp(environment.soil + 2, 0, 100);
   }
+}
+
+function initializeProgressionState(target) {
+  if (!target || typeof target !== "object") return;
+  target.pageUnlocks = { ...defaultState.pageUnlocks, ...(target.pageUnlocks || {}) };
+  target.visitedViews = { ...defaultState.visitedViews, ...(target.visitedViews || {}) };
+  target.energyCore = { level: clamp(Math.floor(Number(target.energyCore?.level) || 1), 1, energyCoreLevels.length) };
+  target.achievements = target.achievements && typeof target.achievements === "object" ? target.achievements : {};
+  target.achievementPending = Array.isArray(target.achievementPending) ? target.achievementPending : [];
+  target.regionalContractOffers = Array.isArray(target.regionalContractOffers) ? target.regionalContractOffers : [];
+  target.titles = Array.isArray(target.titles) ? [...new Set(target.titles)] : [];
+  if (target._needsAchievementBackfill) {
+    target.tutorialSurveyOpened ||= target.explorations > 0;
+    target.tutorialSurveyClaimed ||= target.explorations > 0;
+    target.machineStarts = Math.max(target.machineStarts || 0, target.machineCycles > 0 || target.machineActive || target.machineOutput > 0 ? 1 : 0);
+    target.machineCollectedCycles = Math.max(target.machineCollectedCycles || 0, target.machineCycles > 0 ? 1 : 0);
+    target.visitedViews.apiary ||= target.apiaryCombCollected > 0 || target.analyzed.length > 0;
+    target.visitedViews.machines ||= target.machineStarts > 0;
+    target.visitedViews.arbor ||= target.treeHarvests > 0 || target.treeCycles > 0;
+    target.visitedViews.research ||= target.upgradesBought > 0;
+    target.visitedViews.codex ||= target.breedings > 0 || target.analyzed.length + target.treeAnalyzed.length + target.butterflyAnalyzed.length >= 3;
+    target.guideRouteChosen ||= target.contractsCompleted > 0 ? "machines" : "";
+  }
+  target.progressionSchema = defaultState.progressionSchema;
+  syncPageUnlocks(false);
+  checkAchievements({ migration: target._needsAchievementBackfill === true, silent: true });
+  delete target._needsAchievementBackfill;
+}
+
+function getEnergyCoreLevel() {
+  return clamp(Math.floor(Number(state.energyCore?.level) || 1), 1, energyCoreLevels.length);
+}
+
+function getEnergyCoreConfig(level = getEnergyCoreLevel()) {
+  return energyCoreLevels[clamp(level, 1, energyCoreLevels.length) - 1];
+}
+
+function getEnergyCapacity() {
+  return getEnergyCoreConfig().capacity;
+}
+
+function getEnergyRecoveryPerMinute() {
+  return getEnergyCoreConfig().recovery;
+}
+
+function upgradeEnergyCore() {
+  const level = getEnergyCoreLevel();
+  const next = energyCoreLevels[level];
+  if (!next) return showToast("能源核心已达到最高等级。");
+  if (next.unlock && !next.unlock()) return showToast(next.unlockText);
+  if (!canAfford(next.cost)) return showToast(`资源不足：需要 ${formatCost(next.cost)}。`);
+  consumeResourceBundle(next.cost);
+  state.energyCore.level = next.level;
+  state.resources.energy = clamp(state.resources.energy + 20, 0, next.capacity);
+  state.upgradesBought += 1;
+  consumeStrategyAction();
+  addLog(`能源核心升级至 LV.${next.level}：容量 ${next.capacity}，恢复 ${next.recovery}/分钟。`, "amber");
+  showToast(`能源核心 LV.${next.level} · 能源 +20`);
+  renderAll();
+}
+
+function rechargeEnergyWithBiofuel() {
+  if (state.distillerCycles < 1) return showToast("完成第一次蒸馏后开放生物燃料应急补能。");
+  if (state.resources.biofuel < 1) return showToast("生物燃料不足，需要 1 份。");
+  if (state.resources.energy >= getEnergyCapacity()) return showToast("当前能源已经充满。");
+  state.resources.biofuel -= 1;
+  state.resources.energy = clamp(state.resources.energy + 35, 0, getEnergyCapacity());
+  consumeStrategyAction();
+  addLog("使用 1 份生物燃料进行应急补能，能源 +35。", "teal");
+  showToast("应急补能完成：能源 +35");
+  renderAll();
+}
+
+function getUnlockedZoneCount() {
+  return Object.keys(zones).filter(isZoneUnlocked).length;
+}
+
+function getPageUnlockReason(view) {
+  const reasons = {
+    apiary: "完成教学调查并将收获入库后开放",
+    machines: "从养蜂箱收取第一份蜂巢后开放",
+    arbor: "第一次启动离心机后开放",
+    research: "收取第一次离心产物后开放",
+    shop: "完成第一次调查后开放",
+    codex: "完成一次成功培育或累计分析 3 个样本后开放",
+    achievements: "完成第一份主线委托后开放",
+    automation: "完成主线委托 09 后开放"
+  };
+  return reasons[view] || "继续推进当前教程后开放";
+}
+
+function syncPageUnlocks(announce = gameStarted) {
+  if (!state?.pageUnlocks) return;
+  const conditions = {
+    overview: true,
+    explore: true,
+    apiary: state.tutorialSurveyClaimed === true,
+    machines: state.apiaryCombCollected >= 1,
+    arbor: state.machineStarts >= 1 || state.machineActive || state.machineCycles >= 1,
+    research: state.machineCollectedCycles >= 1,
+    shop: state.explorations >= 1 || state.tutorialSurveyCompleted,
+    codex: state.breedings >= 1 || state.treeCycles >= 1 || state.analyzed.length + state.treeAnalyzed.length + state.butterflyAnalyzed.length >= 3,
+    achievements: state.contractsCompleted >= 1,
+    automation: state.contractsCompleted >= 9
+  };
+  const names = { apiary: "蜜蜂育种", machines: "生产加工", arbor: "树木育种", research: "研究升级", shop: "村民商店", codex: "生态档案", achievements: "成就档案", automation: "自动化队列" };
+  Object.entries(conditions).forEach(([view, ready]) => {
+    if (!ready || state.pageUnlocks[view]) return;
+    state.pageUnlocks[view] = true;
+    if (announce && names[view]) {
+      addLog(`新页面开放：${names[view]}。`, "green");
+      showToast(`已开放：${names[view]}`);
+    }
+  });
+}
+
+function isPageUnlocked(view) {
+  if (view === "overview" || view === "explore") return true;
+  return state.pageUnlocks?.[view] === true;
+}
+
+function renderPageUnlocks() {
+  syncPageUnlocks(true);
+  $$(".nav-button[data-view]").forEach((button) => {
+    const unlocked = isPageUnlocked(button.dataset.view);
+    button.classList.toggle("page-locked", !unlocked);
+    button.setAttribute("aria-disabled", String(!unlocked));
+    button.title = unlocked ? "" : getPageUnlockReason(button.dataset.view);
+  });
+  const achievementTab = $('[data-codex-tab="achievements"]');
+  if (achievementTab) {
+    const unlocked = isPageUnlocked("achievements");
+    achievementTab.classList.toggle("page-locked", !unlocked);
+    achievementTab.setAttribute("aria-disabled", String(!unlocked));
+  }
+}
+
+function checkAchievements({ migration = false, silent = false } = {}) {
+  if (!state?.achievements) return 0;
+  let added = 0;
+  achievementData.forEach((achievement) => {
+    if (state.achievements[achievement.id] || !achievement.condition()) return;
+    const now = Date.now();
+    state.achievements[achievement.id] = {
+      completedAt: now,
+      claimedAt: migration ? now : null,
+      rewardSnapshot: structuredClone(achievement.reward || {}),
+      reputation: achievement.reputation || 0,
+      fullEnergy: achievement.fullEnergy === true,
+      titleReward: achievement.titleReward || ""
+    };
+    added += 1;
+    if (!migration && !silent) addLog(`成就完成：${achievement.title}。前往生态档案领取奖励。`, "green");
+  });
+  return added;
+}
+
+function getCompletedAchievementCount() {
+  return Object.keys(state.achievements || {}).filter((id) => achievementData.some((item) => item.id === id)).length;
+}
+
+function getAchievementPoints() {
+  return achievementData.reduce((sum, achievement) => sum + (state.achievements?.[achievement.id] ? achievementTiers[achievement.tier].points : 0), 0);
+}
+
+function getUnclaimedAchievementCount() {
+  return Object.values(state.achievements || {}).filter((record) => record?.completedAt && !record.claimedAt).length;
+}
+
+function claimAchievement(id, quiet = false) {
+  const definition = achievementData.find((item) => item.id === id);
+  const record = state.achievements?.[id];
+  if (!definition || !record?.completedAt || record.claimedAt) return false;
+  Object.entries(record.rewardSnapshot || {}).forEach(([resource, amount]) => {
+    if (resource === "energy") state.resources.energy = clamp(state.resources.energy + amount, 0, getEnergyCapacity());
+    else if (resource in flowerSources) state.flowerInventory[resource] = getFlowerCount(resource) + amount;
+    else {
+      const result = addToWarehouse(resource, amount);
+      if (result.overflow > 0) state.achievementPending = mergeSurveyItems([...state.achievementPending, { kind: "resource", id: resource, amount: result.overflow, label: resourceNames[resource] }]);
+    }
+  });
+  if (record.fullEnergy) state.resources.energy = getEnergyCapacity();
+  state.reputation += Math.max(0, Number(record.reputation) || 0);
+  if (record.titleReward && !state.titles.includes(record.titleReward)) state.titles.push(record.titleReward);
+  record.claimedAt = Date.now();
+  if (!quiet) showToast(`已领取成就：${definition.title}`);
+  return true;
+}
+
+function claimAllAchievements() {
+  const count = achievementData.reduce((sum, item) => sum + (claimAchievement(item.id, true) ? 1 : 0), 0);
+  if (!count) return showToast("当前没有可领取的成就奖励。");
+  addLog(`领取 ${count} 项成就奖励。`, "amber");
+  showToast(`已领取 ${count} 项成就奖励`);
+  renderAll();
+}
+
+function claimAchievementPending() {
+  if (!state.achievementPending.length) return showToast("成就暂存箱为空。");
+  const claim = claimSurveyItems(state.achievementPending);
+  state.achievementPending = claim.overflow;
+  showToast(claim.overflow.length ? `已整理 ${claim.accepted} 份，仍有物资等待空间。` : "成就暂存物资已全部入库。");
+  renderAll();
+}
+
+function getRegionalSlotCount() {
+  if (state.contractsCompleted >= 15) return 3;
+  if (state.contractsCompleted >= 9) return 2;
+  if (state.contractsCompleted >= 6) return 1;
+  return 0;
+}
+
+function makeRegionalOffer(slot, serial = state.regionalContractsCompleted + state.regionalActionCounter) {
+  const eligible = regionalContractTemplates.filter((template) => !template.unlock || template.unlock());
+  const template = eligible[(serial + slot * 2) % Math.max(1, eligible.length)] || regionalContractTemplates[0];
+  return { offerId: `${template.id}-${Date.now()}-${slot}-${serial}`, templateId: template.id, createdAt: Date.now() };
+}
+
+function syncRegionalContracts() {
+  const slots = getRegionalSlotCount();
+  state.regionalContractOffers = state.regionalContractOffers.slice(0, slots).filter((offer) => regionalContractTemplates.some((item) => item.id === offer.templateId && (!item.unlock || item.unlock())));
+  while (state.regionalContractOffers.length < slots) state.regionalContractOffers.push(makeRegionalOffer(state.regionalContractOffers.length));
+  if (slots > 0 && state.regionalActionCounter >= 5) {
+    state.regionalContractOffers = Array.from({ length: slots }, (_, slot) => makeRegionalOffer(slot, state.regionalContractsCompleted + state.regionalActionCounter + 1));
+    state.regionalActionCounter = 0;
+  }
+}
+
+function completeRegionalContract(slot) {
+  syncRegionalContracts();
+  const offer = state.regionalContractOffers[slot];
+  const contract = regionalContractTemplates.find((item) => item.id === offer?.templateId);
+  if (!contract) return showToast("这个区域委托已经轮换，请重新查看。");
+  const missing = getMissingResources(contract.requires);
+  if (missing.length) return showToast(`资源不足：${formatResourceBundle(Object.fromEntries(missing))}。`);
+  const blocker = getWarehouseBundleBlocker(contract.rewards, contract.requires);
+  if (blocker) return showToast(`仓库分区不足：${formatWarehouseBlocker(blocker)}。`);
+  consumeResourceBundle(contract.requires);
+  grantResourceBundle(contract.rewards);
+  state.reputation += contract.reputation;
+  state.regionalContractsCompleted += 1;
+  state.regionalContractOffers[slot] = makeRegionalOffer(slot, state.regionalContractsCompleted + 1);
+  consumeStrategyAction();
+  addLog(`区域委托完成：${contract.title}，声望 +${contract.reputation}。`, "green");
+  showToast(`区域委托完成 · 声望 +${contract.reputation}`);
+  renderAll();
 }
 
 function advanceEnvironment(seconds) {
@@ -815,8 +1416,8 @@ function advanceEnvironment(seconds) {
   Object.keys(environment).forEach((key) => { environment[key] = clamp(environment[key], 0, 100); });
 }
 
-const resourceNames = { rawComb: "蜂巢", honey: "蜂蜜", wax: "蜂蜡", wood: "木材", oil: "种子油", resin: "树脂", biomass: "生物质", biofuel: "生物燃料", energy: "能源" };
-const warehouseBaseCapacities = Object.freeze({ rawComb: 24, honey: 60, wax: 40, wood: 80, oil: 30, resin: 24, biomass: 20, biofuel: 16 });
+const resourceNames = { emerald: "绿宝石", rawComb: "蜂蜜脾", drippingComb: "滴落蜂巢", stickyComb: "黏性蜂巢", silkyComb: "丝质蜂巢", royalJelly: "蜂王浆", pollenCluster: "花粉簇", silkPropolis: "丝质蜂胶", honey: "蜂蜜", wax: "蜂蜡", wood: "木材", oil: "种子油", juice: "果汁", mulch: "覆盖物", fertilizer: "肥料", container: "空容器", resin: "树脂", biomass: "生物质", biofuel: "生物燃料", energy: "能源", wildflower: "野花", clover: "三叶草", tropical: "热带花", wheat: "小麦花源", gourd: "葫芦花源", cactus: "仙人掌花源", mushroom: "蘑菇花源", nether: "下界花源", end: "末地花源", cherry: "樱桃", walnut: "核桃", chestnut: "栗子", lemon: "柠檬", plum: "李子", papaya: "木瓜", date: "椰枣", greenhouseSeal: "温室密封件" };
+const warehouseBaseCapacities = Object.freeze(Object.fromEntries(Object.entries(warehouseResourceCategories).map(([resource, category]) => [resource, warehouseCategoryData[category].capacities[0]])));
 const warehouseResources = Object.keys(warehouseBaseCapacities);
 
 function getUpgradeLevel(type) {
@@ -824,10 +1425,9 @@ function getUpgradeLevel(type) {
 }
 
 function getWarehouseCapacity(resource) {
-  const baseCapacity = warehouseBaseCapacities[resource];
-  if (!baseCapacity) return 0;
-  const multiplier = 1 + (getUpgradeLevel("warehouse") - 1) * .5;
-  return Math.floor(baseCapacity * multiplier);
+  const category = warehouseResourceCategories[resource];
+  if (!category) return 0;
+  return warehouseCategoryData[category].capacities[getUpgradeLevel("warehouse") - 1];
 }
 
 function getWarehouseLoad(resource) {
@@ -858,16 +1458,41 @@ function formatWarehouseBlocker(blocker) {
   return `${blocker.resourceName || blocker.name}分区剩余 ${blocker.space}，需要 ${blocker.requested}`;
 }
 
+function consumeWoodLedger(amount) {
+  let remaining = Math.max(0, Math.floor(Number(amount) || 0));
+  Object.keys(state.woodInventory || {}).forEach((treeId) => {
+    if (remaining <= 0) return;
+    const used = Math.min(remaining, Math.max(0, Number(state.woodInventory[treeId]) || 0));
+    state.woodInventory[treeId] -= used;
+    remaining -= used;
+  });
+}
+
+function registerSpeciesWood(treeId, amount) {
+  const value = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!value) return;
+  state.woodInventory.generic = Math.max(0, (state.woodInventory.generic || 0) - value);
+  state.woodInventory[treeId] = (state.woodInventory[treeId] || 0) + value;
+}
+
 function addToWarehouse(resource, amount) {
   const requested = Math.max(0, Math.floor(Number(amount) || 0));
   const accepted = Math.min(requested, getWarehouseSpace(resource));
   if (resource === "rawComb") state.rawComb += accepted;
-  else if (state.resources && resource in state.resources) state.resources[resource] += accepted;
+  else if (resource in flowerSources) state.flowerInventory[resource] = getFlowerCount(resource) + accepted;
+  else if (resource in fruitData) state.fruitInventory[resource] = (state.fruitInventory[resource] || 0) + accepted;
+  else if (state.resources && resource in state.resources) {
+    state.resources[resource] += accepted;
+    if (resource === "wood") state.woodInventory.generic = (state.woodInventory.generic || 0) + accepted;
+  }
   return { accepted, overflow: requested - accepted };
 }
 
 function getStoredResourceAmount(resource) {
   if (resource === "rawComb") return Math.max(0, Number(state.rawComb) || 0);
+  if (resource === "greenhouseSeal") return Math.max(0, Number(state.greenhouseSeals) || 0);
+  if (resource in flowerSources) return getFlowerCount(resource);
+  if (resource in fruitData) return Math.max(0, Number(state.fruitInventory?.[resource]) || 0);
   return Math.max(0, Number(state.resources?.[resource]) || 0);
 }
 
@@ -895,13 +1520,21 @@ function getContractRewardBlocker(contract) {
 function consumeResourceBundle(bundle) {
   Object.entries(bundle).forEach(([resource, amount]) => {
     if (resource === "rawComb") state.rawComb -= amount;
-    else state.resources[resource] -= amount;
+    else if (resource === "greenhouseSeal") state.greenhouseSeals = Math.max(0, state.greenhouseSeals - amount);
+    else if (resource in flowerSources) state.flowerInventory[resource] = Math.max(0, getFlowerCount(resource) - amount);
+    else if (resource in fruitData) state.fruitInventory[resource] = Math.max(0, getStoredResourceAmount(resource) - amount);
+    else {
+      state.resources[resource] -= amount;
+      if (resource === "wood") consumeWoodLedger(amount);
+    }
   });
 }
 
 function grantResourceBundle(bundle) {
   Object.entries(bundle).forEach(([resource, amount]) => {
-    if (resource === "energy") state.resources.energy = clamp(state.resources.energy + amount, 0, 100);
+    if (resource === "energy") state.resources.energy = clamp(state.resources.energy + amount, 0, getEnergyCapacity());
+    else if (resource === "emerald") state.resources.emerald = Math.max(0, Math.floor(state.resources.emerald + amount));
+    else if (resource === "greenhouseSeal") state.greenhouseSeals += Math.max(0, Math.floor(amount));
     else addToWarehouse(resource, amount);
   });
 }
@@ -916,7 +1549,181 @@ function formatCost(cost) {
 }
 
 function canAfford(cost) {
-  return Object.entries(cost).every(([resource, amount]) => (state.resources[resource] || 0) >= amount);
+  return Object.entries(cost).every(([resource, amount]) => getStoredResourceAmount(resource) >= amount);
+}
+
+function getShopTier() {
+  let tier = 1;
+  shopTierData.forEach((entry, index) => { if (state.reputation >= entry.reputation) tier = index + 1; });
+  return tier;
+}
+
+function getEquipmentCapacity() {
+  return warehouseCategoryData.equipment.capacities[getUpgradeLevel("warehouse") - 1];
+}
+
+function getEquipmentLoad() {
+  const frames = Object.values(state.frameInventory).reduce((sum, amount) => sum + Math.max(0, Number(amount) || 0), 0);
+  const equipped = state.apiaryFrames.filter(Boolean).length;
+  const tools = Object.values(state.tools).filter((durability) => Number(durability) > 0).length;
+  return frames + equipped + tools + state.greenhouseSeals;
+}
+
+function getShopBuyOffers() {
+  const saplings = knownDiscoveredTrees().map((treeId) => ({
+    id: `sapling-${treeId}`,
+    name: `${treeSpecies[treeId].name}树苗`,
+    tier: treeId === "oak" || treeId === "birch" ? 1 : 3,
+    sapling: treeId,
+    amount: treeId === "oak" || treeId === "birch" ? 4 : 1,
+    price: saplingShopPrices[treeId] || 8,
+    limit: treeId === "sequoia" ? 1 : treeId === "oak" || treeId === "birch" ? 4 : 2,
+    icon: treeSpecies[treeId].icon
+  }));
+  return [...shopBuyOffers, ...saplings];
+}
+
+function getShopPurchaseCount(id) {
+  return Math.max(0, Math.floor(Number(state.shopPurchases?.[id]) || 0));
+}
+
+function isShopBuyOfferUnlocked(offer) {
+  if (!offer || getShopTier() < offer.tier) return false;
+  if (offer.sapling && !knownDiscoveredTrees().includes(offer.sapling)) return false;
+  if (offer.sapling && offer.tier >= 3 && state.treeCycles < 1 && getTreeSaplingCount(offer.sapling) <= 0) return false;
+  return true;
+}
+
+function getShopBuyMax(offer) {
+  if (!isShopBuyOfferUnlocked(offer)) return 0;
+  const remaining = Math.max(0, offer.limit - getShopPurchaseCount(offer.id));
+  let max = Math.min(remaining, Math.floor(state.resources.emerald / offer.price));
+  if (offer.output) {
+    Object.entries(offer.output).forEach(([resource, amount]) => { max = Math.min(max, Math.floor(getWarehouseSpace(resource) / amount)); });
+  }
+  if (offer.energy) max = Math.min(max, Math.ceil(Math.max(0, getEnergyCapacity() - state.resources.energy) / offer.energy));
+  if (offer.frame || offer.equipment || offer.seal) max = Math.min(max, Math.max(0, getEquipmentCapacity() - getEquipmentLoad()));
+  return Math.max(0, max);
+}
+
+function getShopSellMax(offer) {
+  return Math.max(0, Math.min(...Object.entries(offer.input).map(([resource, amount]) => Math.floor(getStoredResourceAmount(resource) / amount))));
+}
+
+function resolveTradeTimes(max, quantity) {
+  if (quantity === "max") return max;
+  return Math.min(max, Math.max(1, Math.floor(Number(quantity) || 1)));
+}
+
+function executeShopTrade(kind, id, quantity = 1) {
+  if (kind === "buy") {
+    const offer = getShopBuyOffers().find((item) => item.id === id);
+    if (!offer || !isShopBuyOfferUnlocked(offer)) return showToast("该商品尚未解锁。");
+    const max = getShopBuyMax(offer);
+    const times = resolveTradeTimes(max, quantity);
+    if (times <= 0) return showToast(getShopPurchaseCount(offer.id) >= offer.limit ? "本轮限购数量已用完。" : "绿宝石、仓库空间或装备槽不足。");
+    const emeraldCost = offer.price * times;
+    if (state.resources.emerald < emeraldCost) return showToast("绿宝石不足。");
+    const output = offer.output ? Object.fromEntries(Object.entries(offer.output).map(([resource, amount]) => [resource, amount * times])) : null;
+    if (output) {
+      const blocker = getWarehouseBundleBlocker(output);
+      if (blocker) return showToast(`交易失败：${formatWarehouseBlocker(blocker)}。`);
+    }
+    state.resources.emerald -= emeraldCost;
+    if (output) grantResourceBundle(output);
+    if (offer.energy) state.resources.energy = clamp(state.resources.energy + offer.energy * times, 0, getEnergyCapacity());
+    if (offer.sapling) state.treeSaplings[offer.sapling] = getTreeSaplingCount(offer.sapling) + offer.amount * times;
+    if (offer.frame) state.frameInventory[offer.frame] += times;
+    if (offer.equipment) state.tools[offer.equipment] += offer.durability * times;
+    if (offer.seal) state.greenhouseSeals += offer.seal * times;
+    state.shopPurchases[offer.id] = getShopPurchaseCount(offer.id) + times;
+    addLog(`村民交易：支付绿宝石 ${emeraldCost}，购买${offer.name} ${times} 组。`, "green");
+    showToast(`购买成功：${offer.name} ×${times}`);
+  } else {
+    const offer = shopSellOffers.find((item) => item.id === id);
+    if (!offer) return;
+    const max = getShopSellMax(offer);
+    const times = resolveTradeTimes(max, quantity);
+    if (times <= 0) return showToast(`库存不足：每组需要 ${formatResourceBundle(offer.input)}。`);
+    const input = Object.fromEntries(Object.entries(offer.input).map(([resource, amount]) => [resource, amount * times]));
+    if (!canAfford(input)) return showToast("交易已取消：库存发生变化。");
+    consumeResourceBundle(input);
+    state.resources.emerald += offer.reward * times;
+    addLog(`村民收购：交付${formatResourceBundle(input)}，获得绿宝石 ${offer.reward * times}。`, "amber");
+    showToast(`出售成功：绿宝石 +${offer.reward * times}`);
+  }
+  consumeStrategyAction();
+  saveState(true);
+  renderAll();
+}
+
+function getShopOrders() {
+  const source = shopOrderTemplates[state.shopRotation % shopOrderTemplates.length];
+  return source.map((order) => {
+    if (order.input.cherry && !state.treeDiscovered.includes("cherry")) return { name: "林场木材订单", input: { wood: 24 }, reward: 3 };
+    if (order.input.papaya && !state.treeDiscovered.includes("papaya")) return { name: "果园覆盖物订单", input: { mulch: 18 }, reward: 3 };
+    if (order.input.drippingComb && !state.discovered.some((id) => beeProductionData[id]?.comb === "drippingComb")) return { name: "蜂蜜脾样本订单", input: { rawComb: 9 }, reward: 4 };
+    return order;
+  });
+}
+
+function completeShopOrder(index) {
+  const order = getShopOrders()[Number(index)];
+  if (!order) return;
+  if (!canAfford(order.input)) return showToast(`订单物资不足：${formatResourceBundle(order.input)}。`);
+  consumeResourceBundle(order.input);
+  state.resources.emerald += order.reward;
+  state.shopRotation += 1;
+  state.shopManualRefreshes = 0;
+  state.shopPurchases = {};
+  addLog(`轮换订单完成：${order.name}，绿宝石 +${order.reward}。`, "green");
+  showToast(`订单完成：绿宝石 +${order.reward}`);
+  saveState(true);
+  renderAll();
+}
+
+function refreshShopOrders() {
+  if (state.shopManualRefreshes >= 2) return showToast("本轮手动刷新次数已用完。");
+  if (state.resources.emerald < 3) return showToast("刷新订单需要 3 绿宝石。");
+  state.resources.emerald -= 3;
+  state.shopManualRefreshes += 1;
+  state.shopRotation += 1;
+  state.shopPurchases = {};
+  addLog("支付 3 绿宝石刷新村民订单与货架库存。", "teal");
+  saveState(true);
+  renderAll();
+}
+
+function recordProductionCycle() {
+  state.productionCycles += 1;
+  if (state.productionCycles % 5 !== 0) return;
+  state.shopRotation += 1;
+  state.shopManualRefreshes = 0;
+  state.shopPurchases = {};
+  addLog("完成 5 个生产周期，村民货架与轮换订单已刷新。", "teal");
+}
+
+function getSeasonData() {
+  const seasons = [
+    { id: "spring", name: "春季", hosts: ["wildflower", "clover"], bonus: .08 },
+    { id: "summer", name: "夏季", hosts: ["tropical", "gourd", "cactus"], bonus: .1 },
+    { id: "autumn", name: "秋季", hosts: ["wheat", "mushroom"], bonus: .06 },
+    { id: "winter", name: "冬季", hosts: ["nether", "end"], bonus: -.04 }
+  ];
+  return seasons[Math.floor(state.productionCycles / 8) % seasons.length];
+}
+
+function upgradeLateFacility(id) {
+  const facility = lateFacilityData[id];
+  if (!facility || state.lateFacilities[id]) return showToast("该后期设施已经建成。");
+  if (!canAfford(facility.cost)) return showToast(`建造需要：${formatResourceBundle(facility.cost)}。`);
+  consumeResourceBundle(facility.cost);
+  state.lateFacilities[id] = 1;
+  consumeStrategyAction();
+  addLog(`后期设施建成：${facility.name}。${facility.detail}。`, "amber");
+  showToast(`${facility.name}建造完成`);
+  saveState(true);
+  renderAll();
 }
 
 function getCurrentBeeTrait(key, fallback = 50) {
@@ -925,15 +1732,47 @@ function getCurrentBeeTrait(key, fallback = 50) {
   return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : fallback;
 }
 
+function getActiveBeeId() {
+  return knownDiscoveredBees().includes(state.activeBee) ? state.activeBee : "forest";
+}
+
+function getActiveBeeTrait(key, fallback = 50) {
+  return Number(species[getActiveBeeId()]?.traits?.[key]) || fallback;
+}
+
+function getActiveBeeProduction() {
+  return beeProductionData[getActiveBeeId()] || beeProductionData.forest;
+}
+
+function getFrameProductionBonus() {
+  return state.apiaryFrames.reduce((sum, frame, index) => {
+    if (index === 2 && !state.lateFacilities.alveary) return sum;
+    return sum + (frameData[frame?.id]?.bonus || 0);
+  }, 0);
+}
+
+function getApiaryReadyBundle() {
+  if (hasBundleItems(state.apiaryReadyBundle)) return state.apiaryReadyBundle;
+  return state.apiaryReady > 0 ? { rawComb: state.apiaryReady } : {};
+}
+
+function consumeApiaryFrameDurability() {
+  state.apiaryFrames = state.apiaryFrames.map((frame, index) => {
+    if (!frame || (index === 2 && !state.lateFacilities.alveary)) return frame;
+    const durability = Math.max(0, frame.durability - 1);
+    if (durability > 0) return { ...frame, durability };
+    addLog(`${frameData[frame.id].name}耐久耗尽并损坏。`, "amber");
+    return null;
+  });
+}
+
 function getActiveHabitatId() {
   return zones[state.activeHabitat] && isZoneUnlocked(state.activeHabitat) ? state.activeHabitat : "forest";
 }
 
 function getHabitatSuitability() {
   const habitat = getActiveHabitatId();
-  const ids = [getParentId("princess", "forest"), getParentId("drone", "meadows")];
-  const values = ids.map((id) => species[id]?.habitat?.[habitat]).filter(Number.isFinite);
-  const inheritedFit = values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : .7;
+  const inheritedFit = species[getActiveBeeId()]?.habitat?.[habitat] ?? .7;
   const environment = state.zoneEnvironments?.[habitat] || defaultState.zoneEnvironments[habitat];
   const baseline = zones[habitat].baseline;
   const climatePenalty = Math.abs(environment.temperature - baseline.temperature) * .0045 + Math.abs(environment.humidity - baseline.humidity) * .0035 + Math.abs(environment.light - baseline.light) * .002;
@@ -948,7 +1787,8 @@ function getCurrentTreeTrait(key, fallback = 50) {
 
 function getApiaryRate() {
   const baseRate = .8 + (getUpgradeLevel("apiary") - 1) * .18;
-  return Math.max(.4, (baseRate + (getCurrentBeeTrait("speed") - 50) * .008) * getHabitatSuitability());
+  const alvearyBonus = state.lateFacilities.alveary ? 1.25 : 1;
+  return Math.max(.4, (baseRate + (getActiveBeeTrait("speed") - 50) * .008) * getHabitatSuitability() * (1 + getFrameProductionBonus()) * alvearyBonus);
 }
 
 function getActiveFlowerId() {
@@ -965,8 +1805,8 @@ function getApiaryEffectiveRate() {
 }
 
 function getApiaryYieldPerCycle() {
-  const lifespan = getCurrentBeeTrait("lifespan");
-  const fertility = getCurrentBeeTrait("fertility");
+  const lifespan = getActiveBeeTrait("lifespan");
+  const fertility = getActiveBeeTrait("fertility");
   return Math.max(1, Math.min(2, Math.floor((lifespan + fertility) / 130) + 1));
 }
 
@@ -974,19 +1814,28 @@ function getPollinationBonus() {
   return clamp(getBeePollinationPotential() + getButterflyPollinationBonus(), 0, .34);
 }
 
+function getActiveTreeId() {
+  return knownDiscoveredTrees().includes(state.activeTree) ? state.activeTree : "oak";
+}
+
+function getActiveTreeTrait(key, fallback = 50) {
+  return Number(treeSpecies[getActiveTreeId()]?.traits?.[key]) || fallback;
+}
+
 function getTreeRate() {
   const baseRate = .65 + (getUpgradeLevel("treeFarm") - 1) * .15;
   const environment = getActiveEnvironment();
   const soilFactor = clamp(.55 + environment.soil / 180, .55, 1.1);
   const lightFactor = clamp(.62 + environment.light / 210, .62, 1.08);
-  return Math.max(.25, (baseRate + (getCurrentTreeTrait("growth") - 50) * .004) * (1 + getPollinationBonus()) * soilFactor * lightFactor * getStrategyConfig().treeRate * getEcologyProductionMultiplier());
+  const farmBonus = state.lateFacilities.automaticFarm ? 1.2 : 1;
+  return Math.max(.25, (baseRate + (getActiveTreeTrait("growth") - 50) * .004) * (1 + getPollinationBonus()) * soilFactor * lightFactor * getStrategyConfig().treeRate * getEcologyProductionMultiplier() * farmBonus);
 }
 
 function getTreeYieldMultiplier() {
   const environment = getActiveEnvironment();
   const leafFactor = clamp(1 - Math.max(0, environment.leafPressure - 50) * .004, .72, 1);
   const soilFactor = clamp(.7 + environment.soil / 250, .7, 1.1);
-  return clamp((1 + (getCurrentTreeTrait("yield") - 50) / 200) * (1 + getPollinationBonus() * .5) * leafFactor * soilFactor, .55, 1.5);
+  return clamp((1 + (getActiveTreeTrait("yield") - 50) / 200) * (1 + getPollinationBonus() * .5) * leafFactor * soilFactor, .55, 1.5);
 }
 
 function getTreeYieldPerCycle() {
@@ -994,7 +1843,7 @@ function getTreeYieldPerCycle() {
 }
 
 function getTreeResinPerCycle() {
-  const resinTrait = getCurrentTreeTrait("resin");
+  const resinTrait = getActiveTreeTrait("resin");
   return Math.max(0, Math.round((resinTrait - 45) / 25));
 }
 
@@ -1008,12 +1857,101 @@ function getMachineDuration() {
   return Math.max(3, (6 - (getUpgradeLevel("centrifuge") - 1) * .8) * getStrategyConfig().machineRate);
 }
 
+function getFruitTreeIds() {
+  return knownDiscoveredTrees().filter((id) => treeSpecies[id]?.fruit && fruitData[treeSpecies[id].fruit]);
+}
+
+function getOrchardStage(progress = state.orchard.progress) {
+  const value = clamp(Number(progress) || 0, 0, 100);
+  if (value < 25) return { id: "growth", name: "生长", index: 1 };
+  if (value < 50) return { id: "flowering", name: "开花", index: 2 };
+  if (value < 75) return { id: "pollination", name: "授粉", index: 3 };
+  return { id: "fruiting", name: "结果", index: 4 };
+}
+
+function getOrchardClimateSuitability(treeId = state.orchard.treeId) {
+  const climate = treeSpecies[treeId]?.climate || "temperate";
+  const environment = getActiveEnvironment();
+  const targets = {
+    temperate: { temperature: 56, humidity: 56, light: 66 },
+    warm: { temperature: 68, humidity: 54, light: 74 },
+    tropical: { temperature: 80, humidity: 78, light: 66 },
+    dry: { temperature: 78, humidity: 28, light: 86 }
+  };
+  const target = targets[climate] || targets.temperate;
+  const penalty = Math.abs(environment.temperature - target.temperature) * .004 + Math.abs(environment.humidity - target.humidity) * .003 + Math.abs(environment.light - target.light) * .002;
+  const suitability = clamp(1.08 - penalty, .42, 1.08);
+  return state.lateFacilities.greenhouse ? Math.max(.85, suitability) : suitability;
+}
+
+function getOrchardPollinationMultiplier() {
+  const environment = getActiveEnvironment();
+  const flowerFactor = getFlowerCount() > 0 ? .22 : 0;
+  const flowerDensity = clamp(environment.flowerDensity / 250, 0, .4);
+  const pollenBoost = state.orchardPollen.cycles > 0 ? .18 : 0;
+  return clamp(.32 + flowerFactor + flowerDensity + getPollinationBonus() + pollenBoost, .32, 1.45);
+}
+
+function getOrchardRate() {
+  if (!state.orchard.treeId || state.orchard.readyFruit > 0 || state.orchard.readyMulch > 0) return 0;
+  const tree = treeSpecies[state.orchard.treeId];
+  if (!tree?.fruit) return 0;
+  const environment = getActiveEnvironment();
+  const soilFactor = clamp(.42 + environment.soil / 150, .42, 1.08);
+  const growthFactor = clamp(.72 + (tree.traits.growth - 50) / 125, .55, 1.25);
+  return Math.max(.16, .42 * growthFactor * soilFactor * getOrchardClimateSuitability() * getOrchardPollinationMultiplier() * getEcologyProductionMultiplier());
+}
+
+function advanceOrchard(seconds) {
+  const safeSeconds = clamp(Number(seconds) || 0, 0, 60 * 60 * 8);
+  if (safeSeconds <= 0 || !state.orchard.treeId || state.orchard.readyFruit > 0 || state.orchard.readyMulch > 0) return false;
+  const tree = treeSpecies[state.orchard.treeId];
+  if (!tree?.fruit || !knownDiscoveredTrees().includes(state.orchard.treeId)) return false;
+  state.orchard.progress += getOrchardRate() * safeSeconds;
+  if (state.orchard.progress < 100) return false;
+  const environment = getActiveEnvironment();
+  const climate = getOrchardClimateSuitability();
+  const pollination = getOrchardPollinationMultiplier();
+  const health = clamp((environment.soil + (100 - environment.leafPressure)) / 170, .55, 1.15);
+  state.orchard.progress = 0;
+  state.orchard.readyFruit = Math.max(1, Math.round(tree.orchardYield * climate * pollination * health));
+  state.orchard.readyMulch = Math.max(1, Math.round(tree.mulchYield * clamp(health, .75, 1.2)));
+  state.orchard.cycles += 1;
+  const farmSoilSaving = state.lateFacilities.automaticFarm ? 2 : 0;
+  environment.soil = clamp(environment.soil - Math.max(1, 4 + Math.max(0, Math.round(tree.orchardYield / 5)) - farmSoilSaving), 0, 100);
+  environment.leafPressure = clamp(environment.leafPressure + 2, 0, 100);
+  if (state.orchardPollen.cycles > 0) state.orchardPollen.cycles -= 1;
+  recordProductionCycle();
+  addLog(`果园完成一轮${tree.name}结果：${fruitData[tree.fruit].name} ${state.orchard.readyFruit}、覆盖物 ${state.orchard.readyMulch}。`, "green");
+  showToast(`果园结果：${fruitData[tree.fruit].name} ${state.orchard.readyFruit}`);
+  return true;
+}
+
+function hasBundleItems(bundle) {
+  return Object.values(bundle || {}).some((amount) => Number(amount) > 0);
+}
+
 function isSqueezerUnlocked() {
   return state.machineCycles >= 1;
 }
 
 function getSqueezerDuration() {
   return 8 * getStrategyConfig().machineRate;
+}
+
+function getUnlockedSqueezerRecipeIds() {
+  return Object.keys(squeezerRecipes).filter((id) => id === "wood" || getStoredResourceAmount(id) > 0 || knownDiscoveredTrees().some((treeId) => treeSpecies[treeId]?.fruit === id));
+}
+
+function getSelectedSqueezerRecipe() {
+  const ids = getUnlockedSqueezerRecipeIds();
+  const id = ids.includes(state.squeezerRecipe) ? state.squeezerRecipe : "wood";
+  return { id, recipe: squeezerRecipes[id] };
+}
+
+function getSqueezerReadyBundle() {
+  if (hasBundleItems(state.squeezerOutputBundle)) return state.squeezerOutputBundle;
+  return state.squeezerOutput > 0 ? { oil: state.squeezerOutput } : {};
 }
 
 function isFermenterUnlocked() {
@@ -1024,12 +1962,22 @@ function getFermenterDuration() {
   return 10 * getStrategyConfig().machineRate;
 }
 
+function getSelectedFermenterRecipe() {
+  const id = fermenterRecipes[state.fermenterRecipe] ? state.fermenterRecipe : "wood";
+  return { id, recipe: fermenterRecipes[id] };
+}
+
+function getFermenterReadyBundle() {
+  if (hasBundleItems(state.fermenterOutputBundle)) return state.fermenterOutputBundle;
+  return state.fermenterOutput > 0 ? { biomass: state.fermenterOutput } : {};
+}
+
 function isDistillerUnlocked() {
   return state.fermenterCycles >= 1;
 }
 
 function isAutomationUnlocked() {
-  return state.contractsCompleted >= contractData.length;
+  return state.contractsCompleted >= 9;
 }
 
 function getAutomationReserveEnergy() {
@@ -1041,14 +1989,42 @@ function getDistillerDuration() {
   return 12 * getStrategyConfig().machineRate;
 }
 
+function getUnlockedCentrifugeRecipeIds() {
+  const ids = Object.keys(centrifugeRecipes).filter((id) => id === "rawComb" || getStoredResourceAmount(id) > 0 || state.machineRecipe === id || state.machineJob?.recipeId === id);
+  return ids.length ? ids : ["rawComb"];
+}
+
+function getSelectedCentrifugeRecipe() {
+  const ids = getUnlockedCentrifugeRecipeIds();
+  const id = ids.includes(state.machineRecipe) ? state.machineRecipe : ids[0];
+  return { id, recipe: centrifugeRecipes[id] };
+}
+
+function getMachineReadyBundle() {
+  if (hasBundleItems(state.machineOutputBundle)) return state.machineOutputBundle;
+  return state.machineOutput > 0 ? { honey: state.machineOutput, wax: state.machineOutput } : {};
+}
+
 function getCurrentRecipeLedger() {
-  if (state.machineActive || state.machineOutput > 0) return { title: "蜂巢基础分离", input: "1 蜂巢", output: "1 蜂蜜 + 1 蜂蜡", duration: getMachineDuration(), energy: 2 };
-  if (state.squeezerActive || state.squeezerOutput > 0) return { title: "种子油榨取", input: "2 木材 + 2 能源", output: "1 种子油", duration: getSqueezerDuration(), energy: 2 };
-  if (state.fermenterActive || state.fermenterOutput > 0) return { title: "生物质发酵", input: "3 木材 + 3 能源", output: "1 生物质", duration: getFermenterDuration(), energy: 3 };
+  if (state.machineActive || state.machineOutput > 0) {
+    const recipe = state.machineJob?.recipeId ? centrifugeRecipes[state.machineJob.recipeId] : getSelectedCentrifugeRecipe().recipe;
+    return { title: recipe.name, input: formatResourceBundle(recipe.input), output: formatResourceBundle(state.machineOutput > 0 ? getMachineReadyBundle() : recipe.output), duration: getMachineDuration(), energy: recipe.energy };
+  }
+  if (state.squeezerActive || state.squeezerOutput > 0) {
+    const recipe = state.squeezerJob?.recipeId ? squeezerRecipes[state.squeezerJob.recipeId] : getSelectedSqueezerRecipe().recipe;
+    return { title: recipe.name, input: formatResourceBundle(recipe.input), output: formatResourceBundle(state.squeezerOutput > 0 ? getSqueezerReadyBundle() : recipe.output), duration: getSqueezerDuration(), energy: recipe.energy };
+  }
+  if (state.fermenterActive || state.fermenterOutput > 0) {
+    const recipe = state.fermenterJob?.recipeId ? fermenterRecipes[state.fermenterJob.recipeId] : getSelectedFermenterRecipe().recipe;
+    return { title: recipe.name, input: formatResourceBundle(recipe.input), output: formatResourceBundle(state.fermenterOutput > 0 ? getFermenterReadyBundle() : recipe.output), duration: getFermenterDuration(), energy: recipe.energy };
+  }
   if (state.distillerActive || state.distillerOutput > 0) return { title: "生物燃料蒸馏", input: "1 生物质 + 4 能源", output: "1 生物燃料", duration: getDistillerDuration(), energy: 4 };
-  if (state.rawComb > 0) return { title: "蜂巢基础分离", input: "1 蜂巢", output: "1 蜂蜜 + 1 蜂蜡", duration: getMachineDuration(), energy: 2 };
-  if (isSqueezerUnlocked() && state.squeezerCycles === 0) return { title: "种子油榨取", input: "2 木材 + 2 能源", output: "1 种子油", duration: getSqueezerDuration(), energy: 2 };
-  if (isFermenterUnlocked() && state.fermenterCycles === 0) return { title: "生物质发酵", input: "3 木材 + 3 能源", output: "1 生物质", duration: getFermenterDuration(), energy: 3 };
+  if (getUnlockedCentrifugeRecipeIds().some((id) => getStoredResourceAmount(id) > 0)) {
+    const recipe = getSelectedCentrifugeRecipe().recipe;
+    return { title: recipe.name, input: formatResourceBundle(recipe.input), output: formatResourceBundle(recipe.output), duration: getMachineDuration(), energy: recipe.energy };
+  }
+  if (isSqueezerUnlocked() && state.squeezerCycles === 0) { const recipe = getSelectedSqueezerRecipe().recipe; return { title: recipe.name, input: formatResourceBundle(recipe.input), output: formatResourceBundle(recipe.output), duration: getSqueezerDuration(), energy: recipe.energy }; }
+  if (isFermenterUnlocked() && state.fermenterCycles === 0) { const recipe = getSelectedFermenterRecipe().recipe; return { title: recipe.name, input: formatResourceBundle(recipe.input), output: formatResourceBundle(recipe.output), duration: getFermenterDuration(), energy: recipe.energy }; }
   if (isDistillerUnlocked() && state.distillerCycles === 0) return { title: "生物燃料蒸馏", input: "1 生物质 + 4 能源", output: "1 生物燃料", duration: getDistillerDuration(), energy: 4 };
   return { title: "蜂巢基础分离", input: "1 蜂巢", output: "1 蜂蜜 + 1 蜂蜡", duration: getMachineDuration(), energy: 2 };
 }
@@ -1056,7 +2032,7 @@ function getCurrentRecipeLedger() {
 function getUpgradeEffectText(type) {
   if (type === "apiary") return `${upgradeData[type].effect} · 当前 ${getApiaryEffectiveRate().toFixed(2)}%/s`;
   if (type === "treeFarm") return `${upgradeData[type].effect} · 当前 ${getTreeRate().toFixed(2)}%/s`;
-  if (type === "warehouse") return `${upgradeData[type].effect} · 当前基准 ×${(1 + (getUpgradeLevel("warehouse") - 1) * .5).toFixed(1)}`;
+  if (type === "warehouse") return `${upgradeData[type].effect} · 常规 ${warehouseCategoryData.regular.capacities[getUpgradeLevel("warehouse") - 1]} / 稀有 ${warehouseCategoryData.rare.capacities[getUpgradeLevel("warehouse") - 1]}`;
   return `${upgradeData[type].effect} · 当前 ${getMachineDuration().toFixed(1)}s/轮`;
 }
 
@@ -1095,12 +2071,13 @@ function upgradeFacility(type) {
   const cost = getUpgradeCost(type);
   if (!cost) return showToast(`${data.name} 已达到最高等级。`);
   if (!canAfford(cost)) return showToast(`资源不足：升级 ${data.name} 需要 ${formatCost(cost)}。`);
-  Object.entries(cost).forEach(([resource, amount]) => { state.resources[resource] -= amount; });
+  consumeResourceBundle(cost);
   state.upgrades[type] = level + 1;
   state.upgradesBought += 1;
   consumeStrategyAction();
   addLog(`${data.name} 已升级至 LV.${String(level + 1).padStart(2, "0")}，${data.effect}。`, "amber");
   showToast(`${data.name} 升级完成`);
+  saveState(true);
   renderAll();
 }
 
@@ -1114,6 +2091,8 @@ function completeContract() {
   if (rewardBlocker) return showToast(`仓库分区不足：${formatWarehouseBlocker(rewardBlocker)}。`);
   consumeResourceBundle(contract.requires);
   grantResourceBundle(contract.rewards);
+  if (contract.fullEnergy) state.resources.energy = getEnergyCapacity();
+  if (contract.titleReward && !state.titles.includes(contract.titleReward)) state.titles.push(contract.titleReward);
   state.contractIndex += 1;
   state.contractsCompleted += 1;
   state.reputation += contract.reputation;
@@ -1124,7 +2103,7 @@ function completeContract() {
 }
 
 function toggleAutomation() {
-  if (!isAutomationUnlocked()) return showToast(`完成 ${contractData.length} 份生态委托后解锁机器队列。`);
+  if (!isAutomationUnlocked()) return showToast("完成主线委托 09 后解锁机器队列。");
   state.automationEnabled = !state.automationEnabled;
   addLog(`机器队列已${state.automationEnabled ? "启动" : "暂停"}，当前顺序：离心机 → 榨汁机 → 发酵机 → 蒸馏机。`, state.automationEnabled ? "green" : "amber");
   showToast(state.automationEnabled ? "自动化协议已启动" : "自动化协议已暂停");
@@ -1132,7 +2111,7 @@ function toggleAutomation() {
 }
 
 function selectAutomationReserve(value) {
-  if (!isAutomationUnlocked()) return showToast(`完成 ${contractData.length} 份生态委托后才能配置机器队列。`);
+  if (!isAutomationUnlocked()) return showToast("完成主线委托 09 后才能配置机器队列。");
   const parsed = Number(value);
   state.automationReserveEnergy = Number.isFinite(parsed) ? clamp(Math.floor(parsed), 0, 30) : 10;
   saveState();
@@ -1142,17 +2121,20 @@ function selectAutomationReserve(value) {
 
 function getGuideCompletionFlags() {
   return [
-    state.explorations >= 1,
+    true,
+    state.tutorialSurveyOpened === true,
+    state.tutorialSurveyCompleted === true,
+    state.tutorialSurveyClaimed === true,
+    state.visitedViews.apiary === true,
     state.apiaryCombCollected >= 1,
+    state.machineStarts >= 1,
+    state.visitedViews.arbor === true,
+    state.machineCollectedCycles >= 1,
+    getEnergyCoreLevel() >= 2,
     state.analyzed.includes("forest") && state.analyzed.includes("meadows"),
     state.breedings > 0,
-    state.machineCycles > 0,
-    state.squeezerCycles > 0,
-    state.treeCycles > 0,
-    state.upgradesBought > 0,
     state.contractsCompleted > 0,
-    state.fermenterCycles > 0,
-    state.distillerCycles > 0
+    Boolean(state.guideRouteChosen)
   ];
 }
 
@@ -1163,18 +2145,10 @@ function getGuideStep() {
 
 function getMissionPanelData() {
   const stepIndex = getGuideStep();
-  if (stepIndex >= guideSteps.length) return { label: "FIELD ARCHIVE", stamp: "OPEN", title: "生态工坊已建立", detail: "基础引导已经完成，可以继续追求稀有物种、树脂产出和三级设施。", action: "codex", actionLabel: "查看图鉴", target: "#codex-grid" };
-  if (stepIndex === 0 && state.apiaryReady > 0) return { label: "NOW · APIARY", stamp: "READY", title: "先收取现有蜂巢", detail: `蜂箱已提前完成一轮，本次可收取 ${state.apiaryReady} 个；处理后再去森林边缘调查，补充后续花源和材料。`, action: "apiary", actionLabel: "收取蜂巢", target: "#collect-button" };
-  if (stepIndex === 0) return { label: "NOW · FIELD", stamp: "NOW", title: "完成第一次调查", detail: "先去森林边缘补充蜂巢、木材和花源，启动整个生态循环。", action: "explore", actionLabel: "去寻找蜂巢", target: '.explore-button[data-zone="forest"]' };
-  if (stepIndex === 1) return { label: "NOW · APIARY", stamp: "NOW", title: "收取第一份蜂巢", detail: "蜂箱已进入生产循环；等待 READY 后收取，再把蜂巢送入离心机。", action: "apiary", actionLabel: "查看蜂箱", target: state.apiaryReady > 0 ? "#collect-button" : "#apiary-countdown" };
-  if (stepIndex <= 3) return { label: "CYCLE · BREEDING", stamp: "CYCLE", title: "完成第一次杂交", detail: stepIndex === 2 ? "分析森林蜂和草原蜂的属性，确认第一条稳定培育路径。" : "两个亲本已经分析完成，启动森林蜂 × 草原蜂杂交。", action: "apiary", actionLabel: stepIndex === 2 ? "分析亲本" : "进行杂交", target: getGuideTarget(stepIndex, ".analyze-button:not(.done)") };
-  if (stepIndex === 4) return { label: "CYCLE · PROCESS", stamp: "CYCLE", title: "建立第一条生产线", detail: "把收取的蜂巢投入离心机，获得蜂蜜和蜂蜡，完成第一条加工链。", action: "machines", actionLabel: "启动离心机", target: "#machine-button" };
-  if (stepIndex === 5) return { label: "CYCLE · EXTRACT", stamp: "CYCLE", title: "连接第二条生产线", detail: "离心机完成后启动榨汁机，种子油将成为树场和设施升级的输入。", action: "machines", actionLabel: "打开榨汁机", target: "#squeezer-button" };
-  if (stepIndex === 6) return { label: "CYCLE · ARBOR", stamp: "CYCLE", title: "培育第一棵进阶树", detail: "分析橡树与白桦，培育落叶松，并观察木材和树脂属性。", action: "arbor", actionLabel: "打开树木台", target: ".tree-analyze-button:not(.done)" };
-  if (stepIndex === 7) return { label: "LONG · RESEARCH", stamp: "LONG", title: "完成第一次设施升级", detail: "把短周期产物投入研究台，优先升级当前最常等待的设施或最先触顶的仓库分区。", action: "research", actionLabel: "打开研究台", target: ".upgrade-grid" };
-  if (stepIndex === 8) return { label: "LONG · CONTRACT", stamp: "LONG", title: "完成第一份生态委托", detail: "交付当前委托，换取补给和声望，同时开放生物质生产线。", action: "overview", actionLabel: "查看生态委托", target: "#contract-button" };
-  if (stepIndex <= 10) return { label: "LONG · ENERGY", stamp: "LONG", title: stepIndex === 9 ? "建立生物质生产线" : "蒸馏第一桶生物燃料", detail: stepIndex === 9 ? "拥有 3 个蜂种并完成委托后启动发酵机，继续扩展植物能源链。" : "发酵完成后启动蒸馏机，把生物质转成长期扩张资源。", action: "machines", actionLabel: stepIndex === 9 ? "打开发酵机" : "打开蒸馏机", target: getGuideTarget(stepIndex, stepIndex === 9 ? "#fermenter-button" : "#distiller-button") };
-  return { label: "FIELD ARCHIVE", stamp: "OPEN", title: "生态工坊已建立", detail: "基础引导已经完成，可以继续扩展生态网络。", action: "overview", actionLabel: "回到总览", target: "#ecology-network" };
+  if (stepIndex >= guideSteps.length) return { label: "FIELD ARCHIVE", stamp: "OPEN", title: "新手教程已完成", detail: "调查、养蜂、加工、树木、研究、培育、委托与档案已经连成闭环。", action: "overview", actionLabel: "规划长期进程", target: ".chapter-deck" };
+  const item = guideSteps[stepIndex];
+  const phase = stepIndex < 4 ? "FIELD" : stepIndex < 9 ? "CORE LOOP" : stepIndex < 13 ? "GROWTH" : "ROUTE";
+  return { label: `${phase} · STEP ${String(stepIndex + 1).padStart(2, "0")}`, stamp: stepIndex < 4 ? "NOW" : stepIndex < 9 ? "CYCLE" : "LONG", title: item.title, detail: item.text, action: item.action, actionLabel: item.actionLabel, target: getGuideTarget(stepIndex, item.target) };
 }
 
 function isZoneUnlocked(zone) {
@@ -1216,15 +2190,7 @@ function getGuidePresentation() {
       stepIndex,
       complete: true,
       temporary: false,
-      item: { title: "基础引导完成", text: "你已经掌握探索、养蜂、树木、分析、杂交、四条加工生产线、委托和升级，可以开始自由扩建生态工坊。", action: "overview", actionLabel: "回到总览" }
-    };
-  }
-  if (stepIndex === 0 && state.apiaryReady > 0) {
-    return {
-      stepIndex,
-      complete: false,
-      temporary: true,
-      item: { title: "先处理现有蜂巢", text: `蜂箱已经完成一轮生产，先收取 ${state.apiaryReady} 个蜂巢，再去森林边缘完成第一次调查。`, action: "apiary", actionLabel: "收取蜂巢", target: "#collect-button" }
+      item: { title: "新手教程完成", text: "你已经打通调查、养蜂、加工、树木、研究、杂交与委托，可以按章节目标继续发展。", action: "overview", actionLabel: "查看长期进程", target: ".chapter-deck" }
     };
   }
   return { stepIndex, complete: false, temporary: false, item: guideSteps[stepIndex] };
@@ -1261,7 +2227,9 @@ function renderResources() {
       chip.classList.toggle("resource-full", getWarehouseSpace(resource) <= 0);
     }
   });
+  setText("#emerald-value", state.resources.emerald);
   setText("#energy-value", Math.floor(state.resources.energy));
+  setText("#energy-capacity", getEnergyCapacity());
   setText("#flower-label", "花源");
   setText("#flower-value", getFlowerCount());
   setText("#comb-value", state.apiaryReady);
@@ -1387,17 +2355,67 @@ function selectHabitat(id) {
   renderAll();
 }
 
+function renderApiaryFrames() {
+  state.apiaryFrames.forEach((frame, index) => {
+    const slot = index + 1;
+    const select = $(`#apiary-frame-${slot}`);
+    const detail = $(`#apiary-frame-${slot}-detail`);
+    if (!select) return;
+    const slotUnlocked = index < 2 || Boolean(state.lateFacilities.alveary);
+    const choices = Object.keys(frameData).filter((id) => state.frameInventory[id] > 0);
+    select.innerHTML = `<option value="">${slotUnlocked ? "空框架槽" : "大型蜂房解锁"}</option>${choices.map((id) => `<option value="${id}">${frameData[id].name} · 库存 ${state.frameInventory[id]}</option>`).join("")}${frame ? `<option value="${frame.id}">${frameData[frame.id].name}</option>` : ""}`;
+    select.value = frame?.id || "";
+    select.disabled = !slotUnlocked || Boolean(frame) || state.apiaryProgress > 0 || state.apiaryReady > 0;
+    if (detail) detail.textContent = !slotUnlocked ? "建造大型蜂房后开放" : frame ? `耐久 ${frame.durability}/${frameData[frame.id].durability} · 产速 +${Math.round(frameData[frame.id].bonus * 100)}%` : "从村民商店购买框架后装入";
+  });
+}
+
+function selectProductionBee(id) {
+  if (state.apiaryReady > 0 || state.apiaryProgress > 0) return showToast("当前生产周期结束后才能更换蜂种。");
+  if (!knownDiscoveredBees().includes(id)) return showToast("这个蜂种尚未发现。");
+  state.activeBee = id;
+  const flower = beeProductionData[id]?.flower;
+  if (flowerSources[flower] && getFlowerCount(flower) > 0) state.activeFlower = flower;
+  addLog(`蜂箱 A-01 更换生产蜂种：${species[id].name}。`, "teal");
+  saveState();
+  renderAll();
+}
+
+function installApiaryFrame(slotIndex, frameId) {
+  const index = clamp(Math.floor(Number(slotIndex) || 0), 0, 2);
+  if (index === 2 && !state.lateFacilities.alveary) return showToast("第三框架槽需要大型蜂房。");
+  if (state.apiaryFrames[index]) return showToast("框架装入后会持续消耗，耐久耗尽前不能替换。");
+  if (state.apiaryProgress > 0 || state.apiaryReady > 0) return showToast("生产周期进行中，不能装入框架。");
+  if (!frameData[frameId] || state.frameInventory[frameId] <= 0) return showToast("没有可用的该类型框架。");
+  state.frameInventory[frameId] -= 1;
+  state.apiaryFrames[index] = { id: frameId, durability: frameData[frameId].durability };
+  addLog(`蜂箱装入${frameData[frameId].name}，产速 +${Math.round(frameData[frameId].bonus * 100)}%。`, "green");
+  renderAll();
+}
+
 function renderApiary() {
   const progress = Math.round(state.apiaryProgress);
   renderHabitatControl();
   const apiaryRate = getApiaryEffectiveRate();
   const activeFlower = flowerSources[getActiveFlowerId()];
   const flowerCount = getFlowerCount();
-  const beeSpeed = Math.round(getCurrentBeeTrait("speed"));
+  const activeBeeId = getActiveBeeId();
+  const activeBee = species[activeBeeId];
+  const production = getActiveBeeProduction();
+  const flowerCompatible = getActiveFlowerId() === production.flower;
+  const beeSpeed = Math.round(getActiveBeeTrait("speed"));
   const apiaryYield = getApiaryYieldPerCycle();
   const habitatZone = zones[getActiveHabitatId()];
   const habitatSuitability = getHabitatSuitability();
-  const apiaryBlocked = state.apiaryReady === 0 && flowerCount === 0;
+  const apiaryBlocked = state.apiaryReady === 0 && (flowerCount === 0 || !flowerCompatible);
+  const productionSelect = $("#apiary-production-select");
+  if (productionSelect) {
+    productionSelect.innerHTML = knownDiscoveredBees().map((id) => `<option value="${id}">${species[id].name} · ${beeProductionData[id]?.name || "蜂蜜脾"}</option>`).join("");
+    productionSelect.value = activeBeeId;
+    productionSelect.disabled = state.apiaryReady > 0 || state.apiaryProgress > 0;
+  }
+  setText("#apiary-product-preview", `${production.name} ×${apiaryYield}${Object.keys(production.specialties).length ? ` · 专属：${Object.entries(production.specialties).map(([id, chance]) => `${resourceNames[id]} ${Math.round(chance * 100)}%`).join("/")}` : ""}`);
+  renderApiaryFrames();
   const parentIds = state.breeding ? [state.breeding.princess, state.breeding.drone] : [getParentId("princess", "forest"), getParentId("drone", "meadows")];
   state.breedingParents.princess = parentIds[0];
   state.breedingParents.drone = parentIds[1];
@@ -1427,7 +2445,7 @@ function renderApiary() {
   renderTraitBar("#bee-trait-fertility", "#bee-fertility-value", beeTraits.fertility, ["低", "中", "高"]);
   setText("#overview-apiary-time", state.apiaryReady > 0 ? "可收取" : apiaryBlocked ? "补充花源" : `${Math.max(1, Math.ceil((100 - state.apiaryProgress) / apiaryRate))}s`);
   setText("#apiary-countdown", state.apiaryReady > 0 ? "READY" : apiaryBlocked ? "SUPPLY" : `${Math.max(1, Math.ceil((100 - state.apiaryProgress) / apiaryRate))}s`);
-  setText("#apiary-status-text", state.breeding ? `杂交中 · ${species[state.breeding.result]?.name || "未知后代"} · 剩余 ${state.breeding.remaining}s` : state.apiaryReady > 0 ? `蜂箱中有 ${state.apiaryReady} 个蜂巢等待收取` : apiaryBlocked ? `缺少${activeFlower.name} · 请探索补充` : `使用${activeFlower.name} · ${habitatZone.name} · 基因速度 ${beeSpeed} · 预计 ${apiaryYield} 蜂巢`);
+  setText("#apiary-status-text", state.breeding ? `杂交中 · ${species[state.breeding.result]?.name || "未知后代"} · 剩余 ${state.breeding.remaining}s` : state.apiaryReady > 0 ? `${activeBee.name}产物待收取：${formatResourceBundle(getApiaryReadyBundle())}` : apiaryBlocked ? !flowerCompatible ? `${activeBee.name}需要${flowerSources[production.flower].name}` : `缺少${activeFlower.name} · 请探索补充` : `${activeBee.name}使用${activeFlower.name} · 基因速度 ${beeSpeed} · 预计 ${production.name} ${apiaryYield}`);
   const apiaryLabel = state.apiaryReady > 0 ? "可收取" : apiaryBlocked ? "缺花源" : "运行中";
   const apiaryMode = state.apiaryReady > 0 ? "ready" : apiaryBlocked ? "waiting" : "online";
   updateStatusPill("#overview-apiary-status", apiaryLabel, apiaryMode);
@@ -1454,9 +2472,9 @@ function renderApiary() {
   const heroFlowerStatus = $("#hero-flower-status");
   if (heroFlowerStatus) heroFlowerStatus.classList.toggle("positive", flowerCount > 0);
   setText("#hero-ecology-score", `${ecologyScore}`);
-  setText("#apiary-flower-output", flowerCount > 0 ? `${activeFlower.name} ×${flowerCount}` : "需要补充");
+  setText("#apiary-flower-output", flowerCount > 0 && flowerCompatible ? `${activeFlower.name} ×${flowerCount}` : !flowerCompatible ? `需要${flowerSources[production.flower].name}` : "需要补充");
   const flowerOutput = $("#apiary-flower-output");
-  if (flowerOutput) flowerOutput.classList.toggle("positive", flowerCount > 0);
+  if (flowerOutput) flowerOutput.classList.toggle("positive", flowerCount > 0 && flowerCompatible);
   $("#collect-button").disabled = state.apiaryReady === 0;
   $("#collect-button").style.opacity = state.apiaryReady === 0 ? ".55" : "1";
   $("#overview-comb-count").textContent = state.rawComb;
@@ -1474,13 +2492,27 @@ function renderApiary() {
 }
 
 function renderMachine() {
-  const progress = Math.round(state.machineProgress);
+  const selected = getSelectedCentrifugeRecipe();
+  state.machineRecipe = selected.id;
+  const readyBundle = getMachineReadyBundle();
+  const ready = hasBundleItems(readyBundle);
+  const progress = ready ? 100 : Math.round(state.machineProgress);
   const machineRate = 100 / getMachineDuration();
   const recipeLedger = getCurrentRecipeLedger();
   $("#machine-progress").style.width = `${progress}%`;
   setText("#overview-machine-progress", "");
   $("#overview-machine-progress").style.width = `${progress}%`;
-  setText("#machine-progress-label", state.machineActive ? "正在分离蜂巢" : (state.machineOutput > 0 ? "产物可收取" : "等待输入"));
+  const recipeSelect = $("#centrifuge-recipe-select");
+  if (recipeSelect) {
+    recipeSelect.innerHTML = getUnlockedCentrifugeRecipeIds().map((id) => `<option value="${id}">${centrifugeRecipes[id].name}</option>`).join("");
+    recipeSelect.value = selected.id;
+    recipeSelect.disabled = state.machineActive || ready;
+  }
+  setText("#machine-input", formatResourceBundle(selected.recipe.input));
+  setText("#machine-output", ready ? formatResourceBundle(readyBundle) : formatResourceBundle(selected.recipe.output));
+  setText("#machine-input-label", formatResourceBundle(selected.recipe.input));
+  setText("#machine-output-label", formatResourceBundle(selected.recipe.output));
+  setText("#machine-progress-label", state.machineActive ? `正在执行${selected.recipe.name}` : (ready ? "产物可收取" : "等待输入"));
   setText("#machine-time", state.machineActive ? `${Math.max(1, Math.ceil((100 - state.machineProgress) / machineRate))}s` : "--");
   setText("#processed-output", `H ${state.processedHoney} · W ${state.processedWax}`);
   setText("#recipe-title", recipeLedger.title);
@@ -1488,15 +2520,15 @@ function renderMachine() {
   setText("#recipe-output", recipeLedger.output);
   setText("#recipe-duration", `${recipeLedger.duration.toFixed(1).replace(".0", "")} 秒`);
   setText("#recipe-energy", recipeLedger.energy);
-  const machineHasInput = state.rawComb > 0;
-  const machineLabel = state.machineActive ? "运行中" : state.machineOutput > 0 ? "可收取" : machineHasInput ? "待命" : "输入不足";
-  const machineMode = state.machineActive ? "online" : state.machineOutput > 0 ? "ready" : machineHasInput ? "waiting" : "blocked";
+  const machineHasInput = canAfford(selected.recipe.input) && state.resources.energy >= selected.recipe.energy;
+  const machineLabel = state.machineActive ? "运行中" : ready ? "可收取" : machineHasInput ? "待命" : "输入不足";
+  const machineMode = state.machineActive ? "online" : ready ? "ready" : machineHasInput ? "waiting" : "blocked";
   updateStatusPill("#machine-status", machineLabel, machineMode);
   updateStatusPill("#overview-machine-status", machineLabel, machineMode);
   const machineCard = $("#overview-machine-card");
   if (machineCard) machineCard.setAttribute("aria-label", `打开离心机 C-01 · ${machineLabel}`);
-  $("#machine-button").textContent = state.machineActive ? "加工中 · 等待" : state.machineOutput > 0 ? "收取产物  ＋" : machineHasInput ? "启动加工  →" : "蜂巢不足";
-  $("#machine-button").disabled = state.machineActive || (state.rawComb === 0 && state.machineOutput === 0);
+  $("#machine-button").textContent = state.machineActive ? "加工中 · 等待" : ready ? `收取${formatResourceBundle(readyBundle)}  ＋` : machineHasInput ? `启动${selected.recipe.name}  →` : "蜂巢或能源不足";
+  $("#machine-button").disabled = state.machineActive || (!machineHasInput && !ready);
   $("#machine-button").style.opacity = $("#machine-button").disabled ? ".55" : "1";
   renderSqueezer();
   renderFermenter();
@@ -1524,17 +2556,27 @@ function renderSqueezer() {
   if (lockedPanel) lockedPanel.style.display = "none";
   if (flow) flow.style.display = "grid";
   if (progressPanel) progressPanel.style.display = "block";
-  const progress = state.squeezerOutput > 0 ? 100 : Math.round(state.squeezerProgress);
+  const selected = getSelectedSqueezerRecipe();
+  state.squeezerRecipe = selected.id;
+  const readyBundle = getSqueezerReadyBundle();
+  const ready = hasBundleItems(readyBundle);
+  const progress = ready ? 100 : Math.round(state.squeezerProgress);
   const squeezerRate = 100 / getSqueezerDuration();
   const active = state.squeezerActive;
-  const ready = state.squeezerOutput > 0;
-  const lacksWood = state.resources.wood < 2;
-  const lacksEnergy = state.resources.energy < 2;
-  const canStart = !lacksWood && !lacksEnergy;
-  const idleLabel = lacksWood && lacksEnergy ? "需要木材与能源" : lacksWood ? "木材不足" : lacksEnergy ? "能源不足" : "等待木材";
-  setText("#squeezer-input", state.resources.wood);
-  setText("#squeezer-output", state.squeezerOutput);
-  setText("#squeezer-progress-label", active ? "正在榨取木材" : ready ? "产物可收取" : idleLabel);
+  const missing = getMissingResources(selected.recipe.input);
+  const lacksEnergy = state.resources.energy < selected.recipe.energy;
+  const canStart = missing.length === 0 && !lacksEnergy;
+  const recipeSelect = $("#squeezer-recipe-select");
+  if (recipeSelect) {
+    recipeSelect.innerHTML = getUnlockedSqueezerRecipeIds().map((id) => `<option value="${id}">${squeezerRecipes[id].name}</option>`).join("");
+    recipeSelect.value = selected.id;
+    recipeSelect.disabled = active || ready;
+  }
+  setText("#squeezer-input", formatResourceBundle(selected.recipe.input));
+  setText("#squeezer-output", ready ? formatResourceBundle(readyBundle) : formatResourceBundle(selected.recipe.output));
+  setText("#squeezer-input-label", formatResourceBundle(selected.recipe.input));
+  setText("#squeezer-output-label", formatResourceBundle(selected.recipe.output));
+  setText("#squeezer-progress-label", active ? `正在处理${selected.recipe.name}` : ready ? "产物可收取" : missing.length ? `缺少${resourceNames[missing[0][0]]}` : lacksEnergy ? "能源不足" : "配方就绪");
   setText("#squeezer-time", active ? `${Math.max(1, Math.ceil((100 - state.squeezerProgress) / squeezerRate))}s` : "--");
   const status = active ? "运行中" : ready ? "可收取" : !canStart ? "输入不足" : "待命";
   const mode = active ? "online" : ready ? "ready" : !canStart ? "blocked" : "waiting";
@@ -1543,7 +2585,7 @@ function renderSqueezer() {
   if (progressBar) progressBar.style.width = `${progress}%`;
   if (button) {
     button.disabled = active || (!canStart && !ready);
-    button.textContent = active ? "榨取中 · 等待" : ready ? "收取种子油  ＋" : lacksWood ? "木材不足" : lacksEnergy ? "能源不足" : "启动榨取  →";
+    button.textContent = active ? "榨取中 · 等待" : ready ? `收取${formatResourceBundle(readyBundle)}  ＋` : missing.length ? `${resourceNames[missing[0][0]]}不足` : lacksEnergy ? "能源不足" : `启动${selected.recipe.name}  →`;
     button.style.opacity = button.disabled ? ".55" : "1";
   }
 }
@@ -1573,24 +2615,33 @@ function renderFermenter() {
   if (lockedPanel) lockedPanel.style.display = "none";
   if (flow) flow.style.display = "grid";
   if (progressPanel) progressPanel.style.display = "block";
-  const progress = state.fermenterOutput > 0 ? 100 : Math.round(state.fermenterProgress);
+  const selected = getSelectedFermenterRecipe();
+  state.fermenterRecipe = selected.id;
+  const readyBundle = getFermenterReadyBundle();
+  const ready = hasBundleItems(readyBundle);
+  const progress = ready ? 100 : Math.round(state.fermenterProgress);
   const fermenterRate = 100 / getFermenterDuration();
   const active = state.fermenterActive;
-  const ready = state.fermenterOutput > 0;
-  const lacksWood = state.resources.wood < 3;
-  const lacksEnergy = state.resources.energy < 3;
-  const canStart = !lacksWood && !lacksEnergy;
-  const idleLabel = lacksWood && lacksEnergy ? "需要木材与能源" : lacksWood ? "木材不足" : lacksEnergy ? "能源不足" : "等待木材";
-  setText("#fermenter-input", state.resources.wood);
-  setText("#fermenter-output", state.fermenterOutput);
-  setText("#fermenter-progress-label", active ? "正在发酵植物原料" : ready ? "产物可收取" : idleLabel);
+  const missing = getMissingResources(selected.recipe.input);
+  const lacksEnergy = state.resources.energy < selected.recipe.energy;
+  const canStart = missing.length === 0 && !lacksEnergy;
+  const recipeSelect = $("#fermenter-recipe-select");
+  if (recipeSelect) {
+    recipeSelect.value = selected.id;
+    recipeSelect.disabled = active || ready;
+  }
+  setText("#fermenter-input", formatResourceBundle(selected.recipe.input));
+  setText("#fermenter-output", ready ? formatResourceBundle(readyBundle) : formatResourceBundle(selected.recipe.output));
+  setText("#fermenter-input-label", formatResourceBundle(selected.recipe.input));
+  setText("#fermenter-output-label", formatResourceBundle(selected.recipe.output));
+  setText("#fermenter-progress-label", active ? `正在处理${selected.recipe.name}` : ready ? "产物可收取" : missing.length ? `缺少${resourceNames[missing[0][0]]}` : lacksEnergy ? "能源不足" : "配方就绪");
   setText("#fermenter-time", active ? `${Math.max(1, Math.ceil((100 - state.fermenterProgress) / fermenterRate))}s` : "--");
   updateStatusPill("#fermenter-status", active ? "运行中" : ready ? "可收取" : !canStart ? "输入不足" : "待命", active ? "online" : ready ? "ready" : !canStart ? "blocked" : "waiting");
   const progressBar = $("#fermenter-progress");
   if (progressBar) progressBar.style.width = `${progress}%`;
   if (button) {
     button.disabled = active || (!canStart && !ready);
-    button.textContent = active ? "发酵中 · 等待" : ready ? "收取生物质  ＋" : lacksWood ? "木材不足" : lacksEnergy ? "能源不足" : "启动发酵  →";
+    button.textContent = active ? "发酵中 · 等待" : ready ? `收取${formatResourceBundle(readyBundle)}  ＋` : missing.length ? `${resourceNames[missing[0][0]]}不足` : lacksEnergy ? "能源不足" : `启动${selected.recipe.name}  →`;
     button.style.opacity = button.disabled ? ".55" : "1";
   }
 }
@@ -1658,7 +2709,7 @@ function renderAutomation() {
   if (!unlocked) {
     updateStatusPill("#automation-status", "待解锁", "waiting");
     setText("#automation-title", "建立机器队列");
-    setText("#automation-detail", `完成 ${contractData.length} 份生态委托后解锁，自动收取并串联四台机器。`);
+    setText("#automation-detail", "完成主线委托 09 后解锁，自动收取并串联四台机器。");
     if (button) {
       button.disabled = true;
       button.textContent = "完成委托后解锁";
@@ -1676,6 +2727,7 @@ function renderAutomation() {
 
 function renderLogs() {
   const list = $("#log-list");
+  if (!list) return;
   list.innerHTML = state.logs.map((item) => `<div class="log-entry"><time>${item.time}</time><i style="background:${item.kind === "green" ? "var(--green)" : item.kind === "teal" ? "var(--teal)" : "var(--amber)"}"></i><span>${item.text}</span></div>`).join("");
   setText("#log-count", `${String(state.logs.length).padStart(2, "0")} EVENTS`);
 }
@@ -1784,8 +2836,15 @@ function renderTree() {
     state.treeBreedingParents.parentA = state.treeBreeding.parentA;
     state.treeBreedingParents.parentB = state.treeBreeding.parentB;
   }
-  const displayTreeId = treeParents[0] || "oak";
+  const activeTreeId = getActiveTreeId();
+  const displayTreeId = state.treeReadySpecies && treeSpecies[state.treeReadySpecies] ? state.treeReadySpecies : activeTreeId;
   const displayTree = treeSpecies[displayTreeId] || treeSpecies.oak;
+  const productionSelect = $("#tree-production-select");
+  if (productionSelect) {
+    productionSelect.innerHTML = knownDiscoveredTrees().map((id) => `<option value="${id}">${treeSpecies[id].name} · ${treeSpecies[id].english}</option>`).join("");
+    productionSelect.value = activeTreeId;
+    productionSelect.disabled = state.treeReady > 0;
+  }
   const farmIcon = $("#tree-farm-icon");
   if (farmIcon) {
     farmIcon.className = `tree-farm-visual tree-species-${displayTree.color}`;
@@ -1832,7 +2891,7 @@ function renderTree() {
     treeCard.setAttribute("aria-label", `打开树场 T-01 · ${overviewTreeStatus}`);
   }
   setText("#tree-countdown", state.treeReady > 0 ? "READY" : `${Math.max(1, Math.ceil((100 - state.treeProgress) / treeRate))}s`);
-  setText("#tree-status-text", state.treeBreeding ? `培育中 · ${treeSpecies[state.treeBreeding.result]?.name || "未知树种"} · 剩余 ${state.treeBreeding.remaining}s` : (state.treeReady > 0 ? `树场中有产物等待收取 · 已锁定 ${treeYieldAmount} 木材${treeResinAmount > 0 ? `、${treeResinAmount} 树脂` : ""}` : `树苗正在生长 · 预估产量 ${Math.round(getTreeYieldMultiplier() * 100)}%`));
+  setText("#tree-status-text", state.treeBreeding ? `培育中 · ${treeSpecies[state.treeBreeding.result]?.name || "未知树种"} · 剩余 ${state.treeBreeding.remaining}s` : (state.treeReady > 0 ? `${displayTree.name}产物待收取 · ${treeYieldAmount} ${displayTree.name}木材${treeResinAmount > 0 ? `、${treeResinAmount} 树脂` : ""}` : `${displayTree.name}正在生长 · 预估产量 ${Math.round(getTreeYieldMultiplier() * 100)}%`));
   const collectButton = $("#tree-collect-button");
   collectButton.disabled = state.treeReady === 0;
   collectButton.style.opacity = state.treeReady === 0 ? ".55" : "1";
@@ -1853,10 +2912,82 @@ function renderTree() {
     const item = treeSpecies[id];
     return `<article class="species-card archive-species-card tree-species-card"><span class="species-icon archive-species-icon tree-species-icon ${item.color}">${treeSpriteMarkup(id)}</span><div class="archive-species-copy tree-species-copy"><span>${item.type}</span><strong>${item.name}</strong><small>${item.english.toUpperCase()}</small></div></article>`;
   }).join("");
+  renderOrchard();
+}
+
+function renderOrchard() {
+  const fruitTrees = getFruitTreeIds();
+  const select = $("#orchard-tree-select");
+  const button = $("#orchard-action");
+  const mulchButton = $("#orchard-mulch-button");
+  const orchard = state.orchard;
+  const ready = orchard.readyFruit > 0 || orchard.readyMulch > 0;
+  if (select) {
+    select.innerHTML = fruitTrees.length
+      ? `<option value="">选择果树</option>${fruitTrees.map((id) => `<option value="${id}">${treeSpecies[id].name} · ${fruitData[treeSpecies[id].fruit].name}</option>`).join("")}`
+      : `<option value="">尚未发现果树</option>`;
+    select.value = fruitTrees.includes(orchard.treeId) ? orchard.treeId : "";
+    select.disabled = ready;
+  }
+  const tree = treeSpecies[orchard.treeId];
+  const fruit = tree?.fruit ? fruitData[tree.fruit] : null;
+  const stage = getOrchardStage();
+  const rate = getOrchardRate();
+  const environment = getActiveEnvironment();
+  setText("#orchard-stage", tree ? (ready ? "成熟待收" : `${stage.index}/4 · ${stage.name}`) : "未配置");
+  setText("#orchard-status-text", !tree ? "从已发现的果树中选择栽培品种" : ready ? `${fruit.name} ${orchard.readyFruit} 与覆盖物 ${orchard.readyMulch} 已准备收取` : `${tree.name}正在${stage.name} · 环境适配 ${Math.round(getOrchardClimateSuitability() * 100)}%`);
+  setText("#orchard-countdown", !tree ? "--" : ready ? "READY" : `${Math.max(1, Math.ceil((100 - orchard.progress) / Math.max(.01, rate)))}s`);
+  setText("#orchard-progress-label", `${Math.round(ready ? 100 : orchard.progress)}%`);
+  setText("#orchard-ready-fruit", orchard.readyFruit);
+  setText("#orchard-ready-mulch", orchard.readyMulch);
+  setText("#orchard-soil", `${Math.round(environment.soil)}%`);
+  setText("#orchard-pollination", `${Math.round(getOrchardPollinationMultiplier() * 100)}%`);
+  const pollenSelect = $("#orchard-pollen-select");
+  if (pollenSelect) {
+    const pollenIds = Object.keys(state.pollenInventory).filter((id) => treeSpecies[id] && state.pollenInventory[id] > 0);
+    pollenSelect.innerHTML = pollenIds.length ? pollenIds.map((id) => `<option value="${id}">${treeSpecies[id].name}花粉 · ${state.pollenInventory[id]}</option>`).join("") : `<option value="">暂无树木花粉</option>`;
+    pollenSelect.disabled = !pollenIds.length;
+  }
+  const pollenCollect = $("#tree-pollen-collect");
+  if (pollenCollect) {
+    const canCollect = state.tools.graftingKnife > 0 && state.treeAnalyzed.includes(getActiveTreeId());
+    pollenCollect.disabled = !canCollect;
+    pollenCollect.textContent = state.tools.graftingKnife <= 0 ? "需要嫁接刀" : !state.treeAnalyzed.includes(getActiveTreeId()) ? "先分析生产树种" : `采集${treeSpecies[getActiveTreeId()].name}花粉 · 刀 ${state.tools.graftingKnife}`;
+  }
+  const pollenApply = $("#orchard-pollen-apply");
+  if (pollenApply) {
+    pollenApply.disabled = !tree || !pollenSelect?.value;
+    pollenApply.textContent = state.orchardPollen.cycles > 0 ? `补授粉剩余 ${state.orchardPollen.cycles} 轮` : "应用花粉 · 授粉与培育 +8%";
+  }
+  const hostSelect = $("#butterfly-host-select");
+  if (hostSelect) {
+    const hosts = Object.keys(flowerSources).filter((id) => getFlowerCount(id) > 0 || id === state.butterflyHost);
+    hostSelect.innerHTML = hosts.map((id) => `<option value="${id}">${flowerSources[id].name} · ${getFlowerCount(id)}</option>`).join("");
+    hostSelect.value = state.butterflyHost;
+  }
+  const season = getSeasonData();
+  setText("#butterfly-season", `${season.name} · ${season.hosts.includes(state.butterflyHost) ? "寄主活跃" : "寄主低活性"} · 蝶群 +${Math.round(getButterflyPollinationBonus() * 100)}%`);
+  const progress = $("#orchard-progress");
+  if (progress) progress.style.width = `${Math.round(ready ? 100 : orchard.progress)}%`;
+  updateStatusPill("#orchard-status", !tree ? "待选树苗" : ready ? "可收取" : stage.name, !tree ? "waiting" : ready ? "ready" : "online");
+  if (button) {
+    const bundle = tree ? { [tree.fruit]: orchard.readyFruit, mulch: orchard.readyMulch } : {};
+    const blocker = ready ? getWarehouseBundleBlocker(bundle) : null;
+    button.disabled = !ready || Boolean(blocker);
+    button.textContent = !tree ? "先选择果树" : !ready ? `${stage.name}中 · 等待` : blocker ? `${blocker.name}分区不足` : `收取${fruit.name}与覆盖物  ＋`;
+    button.style.opacity = button.disabled ? ".55" : "1";
+  }
+  if (mulchButton) {
+    const canRestore = state.resources.mulch >= 4 && environment.soil < 96;
+    mulchButton.disabled = !canRestore;
+    mulchButton.textContent = environment.soil >= 96 ? "土壤状态良好" : state.resources.mulch < 4 ? "需要覆盖物 4" : "铺设覆盖物 · 土壤 +18";
+    mulchButton.style.opacity = canRestore ? "1" : ".55";
+  }
 }
 
 function renderResearch() {
-  setText("#research-count", `${state.upgradesBought} 次升级 · ${Object.values(state.upgrades).filter((level) => level >= 3).length} 项满级`);
+  const fullFacilities = Object.values(state.upgrades).filter((level) => level >= 3).length + (getEnergyCoreLevel() >= energyCoreLevels.length ? 1 : 0);
+  setText("#research-count", `${state.upgradesBought} 次升级 · ${fullFacilities} 项满级`);
   Object.entries(upgradeData).forEach(([type, data]) => {
     const level = getUpgradeLevel(type);
     const cost = getUpgradeCost(type);
@@ -1876,6 +3007,93 @@ function renderResearch() {
     }
     setText(`#upgrade-${type}-name`, data.name);
   });
+  const level = getEnergyCoreLevel();
+  const current = getEnergyCoreConfig(level);
+  const next = energyCoreLevels[level];
+  setText("#energy-core-level", `LV.${String(level).padStart(2, "0")}`);
+  setText("#energy-core-effect", `容量 ${current.capacity} · 自然恢复 ${current.recovery}/分钟`);
+  setText("#energy-core-cost", !next ? "已达到最高等级" : next.unlock && !next.unlock() ? next.unlockText : `下一等级：${formatCost(next.cost)}`);
+  const track = $("#energy-core-card .upgrade-track");
+  track?.querySelectorAll?.("span")?.forEach((segment, index) => segment.classList.toggle("active", index < level));
+  const upgradeButton = $("#energy-core-upgrade");
+  if (upgradeButton) {
+    const unlocked = Boolean(next && (!next.unlock || next.unlock()));
+    const affordable = Boolean(next && canAfford(next.cost));
+    upgradeButton.disabled = !next || !unlocked || !affordable;
+    upgradeButton.textContent = !next ? "已满级" : !unlocked ? "研究条件未满足" : affordable ? "升级能源核心  →" : "资源不足";
+    upgradeButton.style.opacity = upgradeButton.disabled ? ".55" : "1";
+  }
+  const rechargeButton = $("#energy-recharge-button");
+  if (rechargeButton) {
+    rechargeButton.disabled = state.distillerCycles < 1 || state.resources.biofuel < 1 || state.resources.energy >= getEnergyCapacity();
+    rechargeButton.textContent = state.distillerCycles < 1 ? "首次蒸馏后开放" : state.resources.energy >= getEnergyCapacity() ? "能源已满" : state.resources.biofuel < 1 ? "需要生物燃料 1" : "应急补能 +35";
+    rechargeButton.style.opacity = rechargeButton.disabled ? ".55" : "1";
+  }
+}
+
+function shopTradeButtons(kind, id, max) {
+  const disabled = max <= 0 ? "disabled" : "";
+  return `<div class="trade-actions"><button data-trade-kind="${kind}" data-trade-id="${id}" data-trade-qty="1" ${disabled}>×1</button><button data-trade-kind="${kind}" data-trade-id="${id}" data-trade-qty="5" ${disabled}>×5</button><button data-trade-kind="${kind}" data-trade-id="${id}" data-trade-qty="max" ${disabled}>MAX ${max}</button></div>`;
+}
+
+function renderShop() {
+  const grid = $("#shop-trade-grid");
+  if (!grid) return;
+  const tier = getShopTier();
+  const tierInfo = shopTierData[tier - 1];
+  setText("#shop-emerald-value", state.resources.emerald);
+  setText("#shop-tier-name", tierInfo.name);
+  setText("#shop-reputation", `声望 ${state.reputation}`);
+  setText("#shop-cycle", `${state.productionCycles % 5} / 5 周期`);
+  const nextTier = shopTierData[tier];
+  setText("#shop-next-tier", nextTier ? `下一货架：声望 ${nextTier.reputation}` : "已开放全部货架");
+  $$('[data-shop-tab]').forEach((button) => button.classList.toggle("active", button.dataset.shopTab === state.shopTab));
+  if (state.shopTab === "buy") {
+    grid.className = "shop-trade-grid";
+    grid.innerHTML = getShopBuyOffers().map((offer) => {
+      const unlocked = isShopBuyOfferUnlocked(offer);
+      const max = getShopBuyMax(offer);
+      const bought = getShopPurchaseCount(offer.id);
+      const outputText = offer.output ? formatResourceBundle(offer.output) : offer.energy ? `能源 ${offer.energy}` : offer.sapling ? `${treeSpecies[offer.sapling].name}树苗 ${offer.amount}` : offer.frame ? `${frameData[offer.frame].name} 1` : offer.equipment ? `${offer.name} · 耐久 ${offer.durability}` : `温室密封件 ${offer.seal}`;
+      return `<article class="trade-card panel-inset ${unlocked ? "" : "locked"}"><div class="trade-card-head"><span class="trade-icon">${offer.icon}</span><div><small>${unlocked ? `限购 ${bought}/${offer.limit}` : `${shopTierData[offer.tier - 1].name}解锁`}</small><h4>${offer.name}</h4></div></div><div class="villager-trade-line"><span><b>◆ ${offer.price}</b><small>绿宝石</small></span><i>→</i><span><b>${outputText}</b><small>获得物品</small></span></div>${unlocked ? shopTradeButtons("buy", offer.id, max) : `<div class="trade-lock">需要${shopTierData[offer.tier - 1].name}</div>`}</article>`;
+    }).join("");
+  } else if (state.shopTab === "sell") {
+    grid.className = "shop-trade-grid";
+    grid.innerHTML = shopSellOffers.map((offer) => {
+      const max = getShopSellMax(offer);
+      return `<article class="trade-card panel-inset"><div class="trade-card-head"><span class="trade-icon">${offer.icon}</span><div><small>库存可交付 ${max} 组</small><h4>${offer.name}</h4></div></div><div class="villager-trade-line"><span><b>${formatResourceBundle(offer.input)}</b><small>交付物品</small></span><i>→</i><span><b>◆ ${offer.reward}</b><small>绿宝石</small></span></div>${shopTradeButtons("sell", offer.id, max)}</article>`;
+    }).join("");
+  } else if (state.shopTab === "orders") {
+    grid.className = "shop-trade-grid order-grid";
+    grid.innerHTML = getShopOrders().map((order, index) => {
+      const ready = canAfford(order.input);
+      return `<article class="trade-card order-card panel-inset"><div class="trade-card-head"><span class="trade-icon">${String(index + 1).padStart(2, "0")}</span><div><small>轮换高价收购</small><h4>${order.name}</h4></div></div><div class="villager-trade-line"><span><b>${formatResourceBundle(order.input)}</b><small>本轮仅交付一次</small></span><i>→</i><span><b>◆ ${order.reward}</b><small>绿宝石</small></span></div><button class="primary-button full-button" data-shop-order="${index}" ${ready ? "" : "disabled"}>${ready ? "交付订单 →" : "订单物资不足"}</button></article>`;
+    }).join("");
+  } else {
+    grid.className = "shop-storage-grid";
+    const categoryCards = Object.entries(warehouseCategoryData).map(([id, category]) => {
+      const capacity = id === "equipment" ? getEquipmentCapacity() : category.capacities[getUpgradeLevel("warehouse") - 1];
+      let members = id === "equipment"
+        ? `已用 ${getEquipmentLoad()} / ${capacity} 槽`
+        : Object.entries(warehouseResourceCategories).filter(([, categoryId]) => categoryId === id).map(([resource]) => `${resourceNames[resource]} ${getStoredResourceAmount(resource)}`).filter((text) => !text.endsWith(" 0")).slice(0, 6).join(" · ") || "暂无库存";
+      if (id === "regular") {
+        const timber = Object.entries(state.woodInventory).filter(([, amount]) => amount > 0).map(([treeId, amount]) => `${treeSpecies[treeId]?.name || "通用"}木 ${amount}`).join(" · ");
+        if (timber) members += `<br><small>${timber}</small>`;
+      }
+      return `<article class="warehouse-category-card panel-inset"><span class="mini-label">${id.toUpperCase()}</span><h4>${category.name}</h4><strong>${id === "equipment" ? capacity : `每类 ${capacity}`}</strong><p>${members}</p></article>`;
+    }).join("");
+    const facilities = Object.entries(lateFacilityData).map(([id, facility]) => {
+      const built = Boolean(state.lateFacilities[id]);
+      const ready = !built && canAfford(facility.cost);
+      return `<article class="facility-card panel-inset ${built ? "built" : ""}"><span class="mini-label">P1 FACILITY</span><h4>${facility.name}</h4><p>${facility.detail}</p><small>${built ? "已投入运行" : `建造：${formatResourceBundle(facility.cost)}`}</small><button class="secondary-button full-button" data-late-facility="${id}" ${ready ? "" : "disabled"}>${built ? "已建成" : ready ? "建造设施 →" : "材料不足"}</button></article>`;
+    }).join("");
+    grid.innerHTML = `${categoryCards}<article class="warehouse-upgrade-card panel-inset"><span class="mini-label">WAREHOUSE LV.${getUpgradeLevel("warehouse")}</span><h4>分类仓库扩建</h4><p>调查暂存 ${state.pendingSurvey.length} · 成就暂存 ${state.achievementPending.length} · 交易暂存 ${state.warehouseOverflow.length}/12</p><small>${getUpgradeCost("warehouse") ? `下一等级：${formatResourceBundle(getUpgradeCost("warehouse"))}` : "仓库已满级"}</small><button class="primary-button full-button" data-shop-warehouse-upgrade ${getUpgradeCost("warehouse") && canAfford(getUpgradeCost("warehouse")) ? "" : "disabled"}>${getUpgradeCost("warehouse") ? "扩建仓库 →" : "已满级"}</button></article>${facilities}`;
+  }
+  const refresh = $("#shop-refresh");
+  if (refresh) {
+    refresh.disabled = state.resources.emerald < 3 || state.shopManualRefreshes >= 2;
+    refresh.textContent = state.shopManualRefreshes >= 2 ? "本轮刷新已用完" : `刷新订单 · ◆3 (${state.shopManualRefreshes}/2)`;
+  }
 }
 
 function renderCodex() {
@@ -1900,6 +3118,59 @@ function renderCodex() {
   }).join("");
   grid.innerHTML = `<div class="codex-section-divider"><span>01 / BEES · 蜂种</span><small>亲本、突变与基因</small></div>${beeEntries}<div class="codex-section-divider"><span>02 / BUTTERFLIES · 蝴蝶</span><small>观察、授粉与生态指标</small></div>${butterflyEntries}<div class="codex-section-divider"><span>03 / TREES · 树种</span><small>生长、木材与树脂</small></div>${treeEntries}`;
   renderButterflyBreeding();
+  renderAchievements();
+}
+
+function formatAchievementReward(achievement, record = null) {
+  const rewards = record?.rewardSnapshot || achievement.reward || {};
+  const parts = Object.keys(rewards).length ? [formatResourceBundle(rewards)] : [];
+  if (record?.fullEnergy || achievement.fullEnergy) parts.push("能源补满");
+  const reputation = Number(record?.reputation ?? achievement.reputation) || 0;
+  if (reputation) parts.push(`声望 ${reputation}`);
+  if (record?.titleReward || achievement.titleReward) parts.push(`称号“${record?.titleReward || achievement.titleReward}”`);
+  return parts.join(" · ") || "档案点数";
+}
+
+function renderAchievements() {
+  const archiveContent = $("#codex-archive-content");
+  const achievementContent = $("#codex-achievement-content");
+  if (!archiveContent || !achievementContent) return;
+  if (!isPageUnlocked("achievements") && activeCodexTab === "achievements") activeCodexTab = "archive";
+  archiveContent.hidden = activeCodexTab !== "archive";
+  achievementContent.hidden = activeCodexTab !== "achievements";
+  $$("[data-codex-tab]").forEach((button) => button.classList.toggle("active", button.dataset.codexTab === activeCodexTab));
+  const completed = getCompletedAchievementCount();
+  const claimed = Object.values(state.achievements).filter((record) => record?.claimedAt).length;
+  const points = getAchievementPoints();
+  setText("#achievement-summary", `${completed} / ${achievementData.length} · ${points} POINTS`);
+  setText("#achievement-claim-count", `${getUnclaimedAchievementCount()} 项待领取`);
+  const claimAll = $("#achievement-claim-all");
+  if (claimAll) claimAll.disabled = getUnclaimedAchievementCount() === 0;
+  const pendingCount = state.achievementPending.reduce((sum, item) => sum + Math.max(0, Number(item.amount) || 0), 0);
+  const pendingButton = $("#achievement-pending-button");
+  if (pendingButton) {
+    pendingButton.hidden = pendingCount === 0;
+    pendingButton.textContent = `整理成就暂存 ×${pendingCount}`;
+  }
+  const grid = $("#achievement-grid");
+  const categories = [...new Set(achievementData.map((item) => item.category))];
+  grid.innerHTML = categories.map((category, categoryIndex) => {
+    const cards = achievementData.filter((item) => item.category === category).map((achievement) => {
+      const record = state.achievements[achievement.id];
+      const done = Boolean(record?.completedAt);
+      const isClaimed = Boolean(record?.claimedAt);
+      const tier = achievementTiers[achievement.tier];
+      return `<article class="achievement-card panel-inset ${done ? "completed" : "locked"} ${isClaimed ? "claimed" : ""}"><div class="achievement-card-top"><span class="achievement-tier tier-${achievement.tier}">${tier.name}</span><small>${tier.points} PT</small></div><h4>${achievement.title}</h4><p>${achievement.detail}</p><small class="achievement-reward">奖励：${formatAchievementReward(achievement, record)}</small><button class="secondary-button" data-achievement-claim="${achievement.id}" ${done && !isClaimed ? "" : "disabled"}>${isClaimed ? "已领取" : done ? "领取奖励" : "未完成"}</button></article>`;
+    }).join("");
+    return `<div class="achievement-category"><div class="codex-section-divider"><span>${String(categoryIndex + 1).padStart(2, "0")} / ${category}</span><small>${achievementData.filter((item) => item.category === category && state.achievements[item.id]).length} / ${achievementData.filter((item) => item.category === category).length}</small></div><div class="achievement-category-grid">${cards}</div></div>`;
+  }).join("");
+  setText("#achievement-claimed", `${claimed} 项奖励已领取`);
+}
+
+function switchCodexTab(tab) {
+  if (tab === "achievements" && !isPageUnlocked("achievements")) return showToast(getPageUnlockReason("achievements"));
+  activeCodexTab = tab === "achievements" ? "achievements" : "archive";
+  renderAchievements();
 }
 
 function renderButterflyBreeding() {
@@ -2000,14 +3271,22 @@ function renderGuide() {
     const currentClass = !complete && index === stepIndex ? "current" : "";
     return `<div class="guide-step-row ${done ? "done" : ""} ${currentClass}"><span>${done ? "✓" : String(index + 1).padStart(2, "0")}</span><strong>${item.title}</strong></div>`;
   }).join("");
+  const routeOptions = $("#guide-route-options");
+  if (routeOptions) {
+    routeOptions.hidden = complete || stepIndex !== 13;
+    routeOptions.innerHTML = stepIndex === 13 ? '<button data-guide-route="explore">区域调查</button><button data-guide-route="arbor">树木培育</button><button data-guide-route="machines">生产加工</button>' : "";
+  }
 }
 
 function getGuideTarget(stepIndex, fallback = "") {
-  if (stepIndex === 1) return state.apiaryReady > 0 ? "#collect-button" : "#apiary-countdown";
-  if (stepIndex === 7) return $(".upgrade-button:not(:disabled)") ? ".upgrade-button:not(:disabled)" : ".upgrade-grid";
-  if (stepIndex === 8) return "#contract-button";
-  if (stepIndex === 9) return isFermenterUnlocked() ? "#fermenter-button" : "#fermenter-locked-panel";
-  if (stepIndex === 10) return isDistillerUnlocked() ? "#distiller-button" : "#distiller-locked-panel";
+  if (stepIndex === 3) return state.surveyResult ? "#survey-result-content" : "#survey-queue-card";
+  if (stepIndex === 5) return state.apiaryReady > 0 ? "#collect-button" : "#apiary-countdown";
+  if (stepIndex === 8) return "#machine-button";
+  if (stepIndex === 9) return "#energy-core-upgrade";
+  if (stepIndex === 10) return ".analyze-button:not(.done)";
+  if (stepIndex === 11) return "#breed-button";
+  if (stepIndex === 12) return "#contract-button";
+  if (stepIndex === 13) return ".horizon-grid";
   return fallback;
 }
 
@@ -2037,8 +3316,8 @@ function renderContracts() {
     updateStatusPill("#contract-status", "档案完成", "online");
     setText("#contract-label", "生态委托档案");
     setText("#contract-title", "委托网络已建立");
-    setText("#contract-detail", "三份生态委托都已完成，继续积累声望并优化生产效率。");
-    setText("#contract-reward", "全部委托已交付");
+    setText("#contract-detail", "十五份主线委托都已完成，区域轮换委托仍会持续提供资源出口。");
+    setText("#contract-reward", "主线认证完成 · 区域合作继续开放");
     if (requirements) requirements.innerHTML = "<span class=\"contract-complete-mark\">✓</span>";
     if (button) {
       button.disabled = true;
@@ -2058,9 +3337,14 @@ function renderContracts() {
     wax: '<span class="pixel-resource resource-wax" aria-hidden="true"></span>',
     wood: '<span class="pixel-resource resource-wood" aria-hidden="true"></span>',
     oil: '<span class="pixel-resource resource-oil" aria-hidden="true"></span>',
-    biomass: '<span class="pixel-resource resource-biomass" aria-hidden="true"></span>'
+    resin: '<span class="pixel-resource resource-resin" aria-hidden="true"></span>',
+    biomass: '<span class="pixel-resource resource-biomass" aria-hidden="true"></span>',
+    biofuel: '<span class="pixel-resource resource-biofuel" aria-hidden="true"></span>',
+    wildflower: "✿",
+    clover: "♣",
+    tropical: "❀"
   };
-  const toneMap = { rawComb: "amber", honey: "honey", wax: "wax", wood: "wood", oil: "oil", biomass: "biomass" };
+  const toneMap = { rawComb: "amber", honey: "honey", wax: "wax", wood: "wood", oil: "oil", resin: "resin", biomass: "biomass", biofuel: "biofuel", wildflower: "flower-resource", clover: "flower-resource", tropical: "flower-resource" };
   if (requirements) {
     requirements.innerHTML = Object.entries(contract.requires).map(([resource, amount]) => {
       const have = getStoredResourceAmount(resource);
@@ -2072,7 +3356,8 @@ function renderContracts() {
   setText("#contract-label", contract.label);
   setText("#contract-title", contract.title);
   setText("#contract-detail", !unlocked ? contract.unlockText : !spaceReady && missing.length === 0 ? `仓库分区不足：${formatWarehouseBlocker(rewardBlocker)}。` : contract.detail);
-  setText("#contract-reward", `奖励：${formatResourceBundle(contract.rewards)} · 声望 +${contract.reputation}`);
+  const rewardText = contract.rewardText || formatResourceBundle(contract.rewards);
+  setText("#contract-reward", `奖励：${rewardText}${rewardText ? " · " : ""}声望 +${contract.reputation}${contract.titleReward ? ` · 称号“${contract.titleReward}”` : ""}`);
   if (button) {
     button.disabled = !ready;
     button.textContent = !unlocked ? "完成前置后解锁" : ready ? "交付委托  →" : missing.length ? "资源未齐" : "物资分区已满";
@@ -2082,11 +3367,11 @@ function renderContracts() {
 
 function getBlockedReadyOutput() {
   const candidates = [
-    state.machineOutput > 0 ? { name: "离心机产物", bundle: { honey: state.machineOutput, wax: state.machineOutput } } : null,
-    state.squeezerOutput > 0 ? { name: "榨汁机产物", bundle: { oil: state.squeezerOutput } } : null,
-    state.fermenterOutput > 0 ? { name: "发酵机产物", bundle: { biomass: state.fermenterOutput } } : null,
+    state.machineOutput > 0 ? { name: "离心机产物", bundle: getMachineReadyBundle() } : null,
+    hasBundleItems(getSqueezerReadyBundle()) ? { name: "榨汁机产物", bundle: getSqueezerReadyBundle() } : null,
+    hasBundleItems(getFermenterReadyBundle()) ? { name: "发酵机产物", bundle: getFermenterReadyBundle() } : null,
     state.distillerOutput > 0 ? { name: "蒸馏机产物", bundle: { biofuel: state.distillerOutput } } : null,
-    state.apiaryReady > 0 ? { name: "蜂箱产物", bundle: { rawComb: state.apiaryReady } } : null,
+    state.apiaryReady > 0 ? { name: "蜂箱产物", bundle: getApiaryReadyBundle() } : null,
     state.treeReady > 0 ? { name: "树场产物", bundle: { wood: getTreeYieldAmount(), resin: Math.max(0, Number(state.treeReadyResin) || 0) } } : null
   ].filter(Boolean);
   for (const candidate of candidates) {
@@ -2098,10 +3383,13 @@ function getBlockedReadyOutput() {
 
 function getAutomationEnergyBlocker() {
   const reserve = getAutomationReserveEnergy();
+  const centrifuge = getSelectedCentrifugeRecipe().recipe;
+  const squeezer = getSelectedSqueezerRecipe().recipe;
+  const fermenter = getSelectedFermenterRecipe().recipe;
   const candidates = [
-    !state.machineActive && state.machineOutput === 0 && state.rawComb > 0 ? { name: "离心机", cost: 2 } : null,
-    isSqueezerUnlocked() && !state.squeezerActive && state.squeezerOutput === 0 && state.resources.wood >= 2 ? { name: "榨汁机", cost: 2 } : null,
-    isFermenterUnlocked() && !state.fermenterActive && state.fermenterOutput === 0 && state.resources.wood >= 3 ? { name: "发酵机", cost: 3 } : null,
+    !state.machineActive && state.machineOutput === 0 && canAfford(centrifuge.input) ? { name: "离心机", cost: centrifuge.energy } : null,
+    isSqueezerUnlocked() && !state.squeezerActive && !hasBundleItems(getSqueezerReadyBundle()) && canAfford(squeezer.input) ? { name: "榨汁机", cost: squeezer.energy } : null,
+    isFermenterUnlocked() && !state.fermenterActive && !hasBundleItems(getFermenterReadyBundle()) && canAfford(fermenter.input) ? { name: "发酵机", cost: fermenter.energy } : null,
     isDistillerUnlocked() && !state.distillerActive && state.distillerOutput === 0 && state.resources.biomass >= 1 ? { name: "蒸馏机", cost: 4 } : null
   ].filter(Boolean);
   return candidates.find((candidate) => state.resources.energy < candidate.cost || state.resources.energy - candidate.cost < reserve) || null;
@@ -2436,13 +3724,13 @@ function renderHorizons() {
     longLabel = !distillerReady ? "查看机器台" : state.distillerOutput > 0 ? "收取生物燃料" : state.distillerActive ? "查看蒸馏机" : "启动蒸馏机";
   } else if (!longParts[7]) {
     longTitle = "完成生态委托";
-    longDetail = `已完成 ${Math.min(3, state.contractsCompleted)} / 3 份生态委托，把生物质和加工产物交给研究站换取声望。`;
+    longDetail = `主线委托 ${Math.min(contractData.length, state.contractsCompleted)} / ${contractData.length}，持续把调查与生产成果转化为声望和远征补给。`;
     longStatus = "记录中";
     longAction = "overview";
     longLabel = "查看委托";
   } else if (!longParts[8]) {
     longTitle = "开启机器队列";
-    longDetail = !isAutomationUnlocked() ? `完成 ${contractData.length} 份生态委托后解锁机器队列。` : "机器队列已经开放，按离心机 → 榨汁机 → 发酵机 → 蒸馏机顺序接管生产。";
+    longDetail = !isAutomationUnlocked() ? `主线委托 ${Math.min(9, state.contractsCompleted)} / 9；完成第 09 份后解锁机器队列。` : "机器队列已经开放，按离心机 → 榨汁机 → 发酵机 → 蒸馏机顺序接管生产。";
     longStatus = !isAutomationUnlocked() ? "待解锁" : "可部署";
     longAction = "machines";
     longLabel = !isAutomationUnlocked() ? "查看委托" : "配置队列";
@@ -2529,15 +3817,26 @@ function getChapterPresentation() {
 }
 
 function getFieldRank() {
-  const score = state.explorations + state.breedings * 3 + state.treeCycles * 2 + state.machineCycles * 2 + state.upgradesBought * 3 + state.contractsCompleted * 4 + knownDiscoveredBees().length + knownDiscoveredTrees().length + knownDiscoveredButterflies().length;
-  if (score >= 70) return { rank: "R5", name: "生态专家" };
-  if (score >= 40) return { rank: "R4", name: "工坊主管" };
-  if (score >= 20) return { rank: "R3", name: "基因研究员" };
-  if (score >= 8) return { rank: "R2", name: "生态助手" };
+  const points = getAchievementPoints();
+  const completionRate = getCompletedAchievementCount() / achievementData.length;
+  const tutorialComplete = getGuideStep() >= guideSteps.length;
+  const basicGuideComplete = state.contractsCompleted >= 3 && state.treeHarvests >= 1 && getZoneProgress("plains").manualRuns >= 1;
+  const productionChain = [state.machineCycles, state.squeezerCycles, state.fermenterCycles, state.distillerCycles].every((value) => value >= 1);
+  if (state.contractsCompleted >= 15 && getUnlockedZoneCount() >= 8 && completionRate >= .8) return { rank: "R6", name: "首席林业师" };
+  if (productionChain && state.contractsCompleted >= 12 && points >= 400) return { rank: "R5", name: "生态工程师" };
+  if (getUnlockedZoneCount() >= 5 && knownDiscoveredBees().length >= 6 && points >= 240) return { rank: "R4", name: "遗传研究员" };
+  if (basicGuideComplete && state.reputation >= 6 && points >= 120) return { rank: "R3", name: "调查员" };
+  if (tutorialComplete && points >= 40) return { rank: "R2", name: "生态助手" };
   return { rank: "R1", name: "林地学徒" };
 }
 
 function getRecommendedAction() {
+  const guideStep = getGuideStep();
+  if (guideStep < guideSteps.length) {
+    const guide = getMissionPanelData();
+    const loopStep = [1, 1, 1, 1, 2, 2, 5, 4, 5, 6, 2, 3, 6, 1][guideStep] || 1;
+    return { step: loopStep, view: guide.action, target: guide.target, title: guide.title, detail: guide.detail, label: guide.actionLabel };
+  }
   const blocked = getBlockedReadyOutput();
   if (blocked) return { step: 6, view: "research", target: "#upgrade-warehouse-button", title: `仓库阻塞 · ${blocked.name}`, detail: `${formatWarehouseBlocker(blocked)}，先扩容或消耗该物资才能继续收取。`, label: "处理仓库" };
   if (state.apiaryReady > 0) return { step: 4, view: "apiary", target: "#collect-button", title: "收取蜂箱产物", detail: `${state.apiaryReady} 个蜂巢已经准备好，收取后可进入离心加工。`, label: "收取蜂巢" };
@@ -2646,6 +3945,15 @@ function renderEcologyNetwork() {
   }).join("");
 }
 
+function chooseGuideRoute(route) {
+  if (!["explore", "arbor", "machines"].includes(route)) return;
+  state.guideRouteChosen = route;
+  addLog(`新手教程完成，下一条发展路线：${route === "explore" ? "区域调查" : route === "arbor" ? "树木培育" : "生产加工"}。`, "green");
+  showToast("新手教程完成 · 长期进程已开放");
+  renderAll();
+  switchView(route);
+}
+
 function closeMobileMore() {
   const sheet = $("#mobile-more-sheet");
   const scrim = $("#mobile-sheet-scrim");
@@ -2667,7 +3975,8 @@ function openMobileMore() {
 }
 
 function navigateWithFocus(view, target = "") {
-  switchView(view || "overview");
+  if (!switchView(view || "overview")) return;
+  if (target === "#survey-result-content" && state.surveyResult) showSurveyResult();
   if (target) window.setTimeout(() => focusGuideTarget(target), 120);
 }
 
@@ -2728,6 +4037,7 @@ function createNewGame(slotId) {
   if (existing && !window.confirm(`槽位中已有“${existing.name}”。建议先导出备份；仍要覆盖并开始新游戏吗？`)) return;
   activeSlotId = Number(slotId);
   state = structuredClone(defaultState);
+  initializeProgressionState(state);
   gameStarted = true;
   const current = getSlotMeta(activeSlotId);
   const meta = { id: activeSlotId, name: current?.name || `林业工坊 ${activeSlotId}`, updatedAt: Date.now(), playTime: 0, chapter: "新的林地调查" };
@@ -2744,6 +4054,7 @@ function loadGameSlot(slotId) {
   if (gameStarted) saveState(true);
   activeSlotId = Number(slotId);
   state = loadState(activeSlotId);
+  initializeProgressionState(state);
   gameStarted = true;
   saveIndex.lastSlotId = activeSlotId;
   enterGame();
@@ -2820,7 +4131,11 @@ function importSaveFile(file, slotId) {
 }
 
 function renderAll() {
+  syncPageUnlocks(true);
+  checkAchievements();
+  renderPageUnlocks();
   renderResources();
+  renderShop();
   renderApiary();
   renderMachine();
   renderAutomation();
@@ -2828,11 +4143,13 @@ function renderAll() {
   renderSpecies();
   renderTree();
   renderResearch();
+  renderShop();
   renderCodex();
   renderZones();
   renderGuide();
   renderMilestones();
   renderContracts();
+  renderRegionalContracts();
   renderHorizons();
   renderChapterDeck();
   renderCommandCenter();
@@ -2840,19 +4157,38 @@ function renderAll() {
 }
 
 function switchView(view) {
+  const labels = { overview: ["ECOLOGY COMMAND · FOREST EDGE", "生态总览"], explore: ["FIELD SURVEY · REGIONS", "野外调查"], apiary: ["APICULTURE STATION · A-01", "蜜蜂育种"], arbor: ["ARBORETUM STATION · T-01", "树木育种"], machines: ["PROCESSING FLOOR · C-01", "生产加工"], research: ["WORKSHOP RESEARCH · R-01", "研究升级"], shop: ["VILLAGER FORESTER · MARKET", "村民商店"], codex: ["", "生态档案"] };
+  if (!labels[view]) return switchView("overview");
+  if (!isPageUnlocked(view)) {
+    showToast(getPageUnlockReason(view));
+    return false;
+  }
+  if (view === "shop" && !state.shopOpenedBonus) {
+    state.shopOpenedBonus = true;
+    state.resources.emerald += 4;
+    addLog("首次拜访林业村民，获得交易教学资金：绿宝石 4。", "green");
+    showToast("首次商店补助：绿宝石 +4");
+    renderResources();
+    renderShop();
+    saveState(true);
+  }
+  state.visitedViews[view] = true;
   $$(".nav-button").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
   $$(".view-panel").forEach((panel) => panel.classList.toggle("active", panel.id === `view-${view}`));
   const codexFound = knownDiscoveredBees().length + knownDiscoveredButterflies().length + knownDiscoveredTrees().length;
   const codexTotal = Object.keys(species).length + Object.keys(butterflySpecies).length + Object.keys(treeSpecies).length;
-  const labels = { overview: ["ECOLOGY COMMAND · FOREST EDGE", "生态总览"], explore: ["FIELD SURVEY · REGIONS", "野外调查"], apiary: ["APICULTURE STATION · A-01", "蜜蜂育种"], arbor: ["ARBORETUM STATION · T-01", "树木育种"], machines: ["PROCESSING FLOOR · C-01", "生产加工"], research: ["WORKSHOP RESEARCH · R-01", "研究升级"], codex: [`FIELD ARCHIVE · ${String(codexFound).padStart(2, "0")} / ${String(codexTotal).padStart(2, "0")}`, "生态档案"] };
-  if (!labels[view]) return switchView("overview");
+  labels.codex[0] = `FIELD ARCHIVE · ${String(codexFound).padStart(2, "0")} / ${String(codexTotal).padStart(2, "0")}`;
   setText("#view-eyebrow", labels[view][0]);
   setText("#view-title", labels[view][1]);
   document.body.dataset.view = view;
   const moreButton = $("#mobile-more-button");
-  if (moreButton) moreButton.classList.toggle("active", view === "research" || view === "codex");
+  if (moreButton) moreButton.classList.toggle("active", view === "research" || view === "shop" || view === "codex");
   closeMobileMore();
+  renderGuide();
+  renderPageUnlocks();
+  saveState();
   if (window.matchMedia?.("(max-width: 899px)").matches) window.scrollTo({ top: 0, behavior: "smooth" });
+  return true;
 }
 
 function focusGuideTarget(selector) {
@@ -2871,6 +4207,7 @@ function handleGuideAction() {
   const view = action.dataset.jump || "overview";
   const target = action.dataset.target || "";
   switchView(view);
+  if (getGuideStep() === 3 && state.surveyResult) showSurveyResult();
   window.setTimeout(() => focusGuideTarget(target), 120);
 }
 
@@ -2972,6 +4309,7 @@ function completeSurveyProgress(zone, mode, seed, yieldCount, clues = 0) {
   state.explorationCounts[zone] = getZoneVisits(zone) + 1;
   const guaranteed = progress.rareProgress >= 100;
   const discoveries = discoverSurveyRare(zone, mode, seed, guaranteed);
+  if (guaranteed && discoveries.length) state.rarePityTriggers += 1;
   if (guaranteed) progress.rareProgress = discoveries.length ? 0 : 100;
   const environment = state.zoneEnvironments[zone] || (state.zoneEnvironments[zone] = { ...defaultState.zoneEnvironments[zone] });
   environment.flowerDensity = clamp(environment.flowerDensity + 5, 0, 100);
@@ -2981,6 +4319,7 @@ function completeSurveyProgress(zone, mode, seed, yieldCount, clues = 0) {
 
 function openSurveyConfirm(zone) {
   if (!isZoneUnlocked(zone)) return showToast(`尚未开放：${zones[zone]?.unlockText || "继续推进工坊"}`);
+  if (zone === "forest" && !state.tutorialSurveyCompleted) state.tutorialSurveyOpened = true;
   if (state.expedition) return openManualSurveyScreen();
   if (state.surveyResult) return showSurveyResult();
   if (state.autoSurvey) return showToast(`自动调查队列正在${zones[state.autoSurvey.zone]?.name || "其他区域"}运行，请先完成当前队列。`);
@@ -3256,10 +4595,29 @@ function advanceAutoSurvey(seconds, offline = false) {
   }
 }
 
+function renderRegionalContracts() {
+  const section = $("#regional-contracts-section");
+  if (!section) return;
+  syncRegionalContracts();
+  const slots = getRegionalSlotCount();
+  section.hidden = slots === 0;
+  if (!slots) return;
+  setText("#regional-contract-count", `${state.regionalContractsCompleted} 已完成 · ${slots} 个槽位`);
+  setText("#regional-contract-refresh", state.regionalActionCounter > 0 ? `再完成 ${Math.max(0, 5 - state.regionalActionCounter)} 次有效行动后轮换` : "新一轮区域需求" );
+  const grid = $("#regional-contract-grid");
+  grid.innerHTML = state.regionalContractOffers.map((offer, slot) => {
+    const contract = regionalContractTemplates.find((item) => item.id === offer.templateId);
+    if (!contract) return "";
+    const missing = getMissingResources(contract.requires);
+    const blocker = getWarehouseBundleBlocker(contract.rewards, contract.requires);
+    const ready = missing.length === 0 && !blocker;
+    return `<article class="regional-contract-card panel-inset"><span class="mini-label">REGIONAL SLOT ${String(slot + 1).padStart(2, "0")}</span><h4>${contract.title}</h4><p>交付：${formatResourceBundle(contract.requires)}</p><small>奖励：${formatResourceBundle(contract.rewards)} · 声望 +${contract.reputation}</small><button class="secondary-button" data-regional-contract="${slot}" ${ready ? "" : "disabled"}>${ready ? "交付区域委托 →" : missing.length ? "资源未齐" : "仓库空间不足"}</button></article>`;
+  }).join("");
+}
+
 function applySurveyItem(item) {
   if (item.kind === "flower") {
-    state.flowerInventory[item.id] = getFlowerCount(item.id) + item.amount;
-    return { accepted: item.amount, overflow: 0 };
+    return addToWarehouse(item.id, item.amount);
   }
   if (item.kind === "sapling") {
     if (treeSpecies[item.id] && !state.treeDiscovered.includes(item.id)) state.treeDiscovered.push(item.id);
@@ -3291,6 +4649,7 @@ function claimSurveyResult() {
     return;
   }
   const claim = claimSurveyItems(result.items);
+  if (result.zone === "forest" && result.mode === "manual") state.tutorialSurveyClaimed = true;
   state.pendingSurvey = mergeSurveyItems([...(state.pendingSurvey || []), ...claim.overflow]);
   state.claimedResultIds = [...state.claimedResultIds, result.id].slice(-80);
   result.claimed = true;
@@ -3332,15 +4691,17 @@ function explore(zone) { openSurveyConfirm(zone); }
 function collectApiary() {
   if (state.apiaryReady === 0) return showToast("蜂箱还没有准备好产物。");
   const amount = state.apiaryReady;
-  const blocker = getWarehouseBundleBlocker({ rawComb: amount });
+  const bundle = getApiaryReadyBundle();
+  const blocker = getWarehouseBundleBlocker(bundle);
   if (blocker) return showToast(`仓库分区不足：${formatWarehouseBlocker(blocker)}。`);
-  addToWarehouse("rawComb", amount);
+  grantResourceBundle(bundle);
   state.totalCombCollected += amount;
   state.apiaryCombCollected += amount;
   state.apiaryReady = 0;
+  state.apiaryReadyBundle = {};
   consumeStrategyAction();
-  addLog(`蜂箱 A-01 收取 ${amount} 个蜂巢，已送入仓库。`, "amber");
-  showToast(`收取成功：${amount} 个蜂巢`);
+  addLog(`蜂箱 A-01 收取${formatResourceBundle(bundle)}，已送入仓库。`, "amber");
+  showToast(`收取成功：${formatResourceBundle(bundle)}`);
   renderAll();
 }
 
@@ -3357,9 +4718,11 @@ function analyzeSpecies(id) {
 function analyzeButterfly(id) {
   if (!state.butterflyDiscovered.includes(id)) return showToast("还没有发现这个蝶种。");
   if (state.butterflyAnalyzed.includes(id)) return showToast(`${butterflySpecies[id].name} 已经观察完成。`);
+  if (id !== "azure" && state.tools.butterflyNet <= 0) return showToast("记录进阶蝶种需要从村民商店购买捕虫网。");
+  if (id !== "azure") state.tools.butterflyNet -= 1;
   state.butterflyAnalyzed.push(id);
   consumeStrategyAction();
-  addLog(`观察完成：${butterflySpecies[id].name} 的稀有度和授粉属性已记录。`, "teal");
+  addLog(`观察完成：${butterflySpecies[id].name} 的稀有度和授粉属性已记录${id !== "azure" ? `，捕虫网耐久 ${state.tools.butterflyNet}` : ""}。`, "teal");
   showToast(`已记录 ${butterflySpecies[id].name}`);
   renderAll();
 }
@@ -3398,21 +4761,109 @@ function selectTreeBreedingParent(slot, id) {
   renderAll();
 }
 
+function selectProductionTree(id) {
+  if (state.treeReady > 0) return showToast("先收取当前树场产物，再更换生产树种。");
+  if (!knownDiscoveredTrees().includes(id)) return showToast("这棵树还没有进入图鉴。");
+  state.activeTree = id;
+  state.treeProgress = 0;
+  addLog(`树场 T-01 更换生产树种：${treeSpecies[id].name}。`, "teal");
+  saveState();
+  renderAll();
+}
+
+function selectOrchardTree(id) {
+  if (state.orchard.readyFruit > 0 || state.orchard.readyMulch > 0) return showToast("先收取当前果园产物，再更换果树。");
+  if (!id) {
+    state.orchard.treeId = "";
+    state.orchard.progress = 0;
+    saveState();
+    return renderAll();
+  }
+  if (!getFruitTreeIds().includes(id)) return showToast("需要先发现这棵果树。");
+  state.orchard.treeId = id;
+  state.orchard.progress = 0;
+  addLog(`果园开始栽培${treeSpecies[id].name}。`, "green");
+  saveState();
+  renderAll();
+}
+
+function collectOrchard() {
+  const tree = treeSpecies[state.orchard.treeId];
+  if (!tree?.fruit || (state.orchard.readyFruit <= 0 && state.orchard.readyMulch <= 0)) return showToast("果园还没有成熟产物。");
+  const bundle = { [tree.fruit]: state.orchard.readyFruit, mulch: state.orchard.readyMulch };
+  const blocker = getWarehouseBundleBlocker(bundle);
+  if (blocker) return showToast(`仓库分区不足：${formatWarehouseBlocker(blocker)}。`);
+  grantResourceBundle(bundle);
+  state.orchard.readyFruit = 0;
+  state.orchard.readyMulch = 0;
+  consumeStrategyAction();
+  addLog(`果园收取：${formatResourceBundle(bundle)}。`, "green");
+  showToast(`果园收取成功：${formatResourceBundle(bundle)}`);
+  renderAll();
+}
+
+function applyMulchToOrchard() {
+  const environment = getActiveEnvironment();
+  if (environment.soil >= 96) return showToast("当前土壤状态良好，无需铺设覆盖物。");
+  if (state.resources.mulch < 4) return showToast("覆盖物不足，需要 4 份。");
+  state.resources.mulch -= 4;
+  environment.soil = clamp(environment.soil + 18, 0, 100);
+  consumeStrategyAction();
+  addLog(`果园铺设覆盖物 4，土壤恢复至 ${Math.round(environment.soil)}。`, "green");
+  showToast("覆盖物已铺设 · 土壤 +18");
+  renderAll();
+}
+
+function collectTreePollen() {
+  const treeId = getActiveTreeId();
+  if (state.tools.graftingKnife <= 0) return showToast("需要从村民商店购买嫁接刀。");
+  if (!state.treeAnalyzed.includes(treeId)) return showToast("先分析当前生产树种，才能识别花粉。");
+  state.tools.graftingKnife -= 1;
+  state.pollenInventory[treeId] = (state.pollenInventory[treeId] || 0) + 1;
+  consumeStrategyAction();
+  addLog(`使用嫁接刀采集${treeSpecies[treeId].name}花粉 1，剩余耐久 ${state.tools.graftingKnife}。`, "green");
+  showToast(`获得${treeSpecies[treeId].name}花粉 1`);
+  renderAll();
+}
+
+function applyTreePollen() {
+  const treeId = $("#orchard-pollen-select")?.value;
+  if (!state.orchard.treeId) return showToast("先在果园选择果树。");
+  if (!treeId || (state.pollenInventory[treeId] || 0) <= 0) return showToast("没有可用的树木花粉。");
+  state.pollenInventory[treeId] -= 1;
+  state.orchardPollen = { treeId, cycles: 2 };
+  consumeStrategyAction();
+  addLog(`果园应用${treeSpecies[treeId].name}花粉：未来 2 轮授粉增强，树木培育概率 +8%。`, "green");
+  showToast("补授粉窗口已开启：2 轮");
+  renderAll();
+}
+
+function selectButterflyHost(id) {
+  if (!flowerSources[id] || getFlowerCount(id) <= 0) return showToast("该寄主植物库存不足。");
+  state.butterflyHost = id;
+  addLog(`蝴蝶寄主切换为${flowerSources[id].name}，当前季节为${getSeasonData().name}。`, "teal");
+  saveState();
+  renderAll();
+}
+
 function collectTree() {
   if (state.treeReady === 0) return showToast("树场还没有准备好木材。");
   const amount = getTreeYieldAmount();
   const resinAmount = Math.max(0, Number(state.treeReadyResin) || 0);
   const blocker = getWarehouseBundleBlocker({ wood: amount, resin: resinAmount });
   if (blocker) return showToast(`仓库分区不足：${formatWarehouseBlocker(blocker)}。`);
+  const woodSpecies = state.treeReadySpecies || getActiveTreeId();
   addToWarehouse("wood", amount);
+  registerSpeciesWood(woodSpecies, amount);
   if (resinAmount > 0) addToWarehouse("resin", resinAmount);
   state.treeReady = 0;
   state.treeReadyYield = 0;
   state.treeReadyResin = 0;
+  state.treeReadySpecies = "";
   state.treeHarvests += 1;
   consumeStrategyAction();
-  addLog(`树场 T-01 收取木材 ${amount}${resinAmount > 0 ? `、树脂 ${resinAmount}` : ""}，产物已入库。`, "green");
-  showToast(`收取成功：${amount} 木材${resinAmount > 0 ? `、${resinAmount} 树脂` : ""}`);
+  addLog(`树场 T-01 收取${treeSpecies[woodSpecies]?.name || "通用"}木材 ${amount}${resinAmount > 0 ? `、树脂 ${resinAmount}` : ""}，产物已入库。`, "green");
+  showToast(`收取成功：${amount} ${treeSpecies[woodSpecies]?.name || "通用"}木材${resinAmount > 0 ? `、${resinAmount} 树脂` : ""}`);
   renderAll();
 }
 
@@ -3429,7 +4880,7 @@ function startTreeBreeding() {
   const saplingCost = getTreeSaplingCost(parentA, parentB);
   const missingSaplings = getMissingTreeSaplings(saplingCost);
   if (missingSaplings.length) return showToast(`树苗不足：${missingSaplings.map(([id, amount]) => `${treeSpecies[id].name} ×${amount}`).join("、")}。`);
-  state.resources.wood -= 4;
+  consumeResourceBundle({ wood: 4 });
   Object.entries(saplingCost).forEach(([id, amount]) => { state.treeSaplings[id] = getTreeSaplingCount(id) - amount; });
   state.treeBreedingAttempts += 1;
   state.treeBreedingFailures = getBreedingFailureCount("tree", parentA, parentB);
@@ -3448,7 +4899,7 @@ function finishTreeBreeding() {
   const parentB = breeding?.parentB || "birch";
   const recipe = getTreeBreedingRecipe(parentA, parentB);
   const storedChance = Number(breeding?.chance);
-  const chance = Number.isFinite(storedChance) ? clamp(storedChance, 0, 95) : (getMutationChance(recipe, "tree", parentA, parentB) || (resultId === "teak" ? 16 : 28));
+  const chance = getResolvedMutationChance(storedChance, getMutationChance(recipe, "tree", parentA, parentB) || (resultId === "teak" ? 16 : 28));
   state.treeBreeding = null;
   if (Math.random() < chance / 100) {
     state.treeCycles += 1;
@@ -3498,10 +4949,12 @@ function finishBreeding() {
   const drone = breeding?.drone || "meadows";
   const recipe = getBreedingRecipe(princess, drone);
   const storedChance = Number(breeding?.chance);
-  const chance = Number.isFinite(storedChance) ? clamp(storedChance, 0, 95) : (getMutationChance(recipe, "bee", princess, drone) || (resultId === "noble" ? 18 : 32));
+  const chance = getResolvedMutationChance(storedChance, getMutationChance(recipe, "bee", princess, drone) || (resultId === "noble" ? 18 : 32));
+  const previousFailures = getBreedingFailureCount("bee", princess, drone);
   state.breeding = null;
   if (Math.random() < chance / 100) {
     state.breedings += 1;
+    if (previousFailures >= 3) state.beePityTriggers += 1;
     setBreedingFailureCount("bee", princess, drone, 0);
     if (!state.discovered.includes(resultId)) {
       state.discovered.push(resultId);
@@ -3550,7 +5003,7 @@ function finishButterflyBreeding() {
   const parentB = breeding?.parentB || "brimstone";
   const recipe = getButterflyBreedingRecipe(parentA, parentB);
   const storedChance = Number(breeding?.chance);
-  const chance = Number.isFinite(storedChance) ? clamp(storedChance, 0, 95) : (getMutationChance(recipe, "butterfly", parentA, parentB) || 18);
+  const chance = getResolvedMutationChance(storedChance, getMutationChance(recipe, "butterfly", parentA, parentB) || 18);
   state.butterflyBreeding = null;
   applyEnvironmentCycle("butterfly");
   if (Math.random() < chance / 100) {
@@ -3573,55 +5026,61 @@ function finishButterflyBreeding() {
 }
 
 function machineAction() {
-  if (state.machineOutput > 0) {
-    const amount = state.machineOutput;
-    const blocker = getWarehouseBundleBlocker({ honey: amount, wax: amount });
+  const readyBundle = getMachineReadyBundle();
+  if (hasBundleItems(readyBundle)) {
+    const blocker = getWarehouseBundleBlocker(readyBundle);
     if (blocker) return showToast(`仓库分区不足：${formatWarehouseBlocker(blocker)}。`);
-    addToWarehouse("honey", amount);
-    addToWarehouse("wax", amount);
+    grantResourceBundle(readyBundle);
     state.machineOutput = 0;
+    state.machineOutputBundle = {};
+    state.machineCollectedCycles += 1;
     consumeStrategyAction();
-    addLog(`离心机 C-01 收取产物：蜂蜜 ${amount}、蜂蜡 ${amount}。`, "amber");
-    showToast(`获得蜂蜜 ${amount}、蜂蜡 ${amount}`);
-  } else if (state.rawComb > 0 && !state.machineActive) {
-    if (state.resources.energy < 2) return showToast("能源不足，至少需要 2 点能源启动离心机。");
-    state.rawComb -= 1;
+    addLog(`离心机 C-01 收取产物：${formatResourceBundle(readyBundle)}。`, "amber");
+    showToast(`获得 ${formatResourceBundle(readyBundle)}`);
+  } else if (!state.machineActive) {
+    const selected = getSelectedCentrifugeRecipe();
+    const missing = getMissingResources(selected.recipe.input);
+    if (missing.length) return showToast(`蜂巢不足：需要${formatResourceBundle(selected.recipe.input)}。`);
+    if (state.resources.energy < selected.recipe.energy) return showToast(`能源不足，至少需要 ${selected.recipe.energy} 点能源。`);
+    consumeResourceBundle(selected.recipe.input);
     state.machineActive = true;
     state.machineProgress = 0;
-    state.resources.energy = clamp(state.resources.energy - 2, 0, 100);
+    state.machineJob = { recipeId: selected.id, output: { ...selected.recipe.output }, name: selected.recipe.name };
+    state.machineStarts += 1;
+    state.resources.energy = clamp(state.resources.energy - selected.recipe.energy, 0, getEnergyCapacity());
     consumeStrategyAction();
-    addLog("离心机 C-01 开始分离蜂巢。", "teal");
+    addLog(`离心机 C-01 开始${selected.recipe.name}。`, "teal");
     showToast(`加工开始：${getMachineDuration().toFixed(1).replace(".0", "")} 秒后完成`);
-  } else if (state.rawComb === 0) {
-    showToast("没有蜂巢可加工，先去探索或收取蜂箱。");
   }
   renderAll();
 }
 
 function squeezerAction() {
   if (!isSqueezerUnlocked()) return showToast("完成 1 次离心加工后解锁榨汁机 S-01。");
-  if (state.squeezerOutput > 0) {
-    const amount = state.squeezerOutput;
-    const blocker = getWarehouseBundleBlocker({ oil: amount });
+  const readyBundle = getSqueezerReadyBundle();
+  if (hasBundleItems(readyBundle)) {
+    const blocker = getWarehouseBundleBlocker(readyBundle);
     if (blocker) return showToast(`仓库分区不足：${formatWarehouseBlocker(blocker)}。`);
-    addToWarehouse("oil", amount);
+    grantResourceBundle(readyBundle);
     state.squeezerOutput = 0;
+    state.squeezerOutputBundle = {};
     consumeStrategyAction();
-    addLog(`榨汁机 S-01 收取产物：种子油 ${amount}。`, "green");
-    showToast(`获得种子油 ${amount}`);
+    addLog(`榨汁机 S-01 收取产物：${formatResourceBundle(readyBundle)}。`, "green");
+    showToast(`获得 ${formatResourceBundle(readyBundle)}`);
   } else if (state.squeezerActive) {
     showToast("榨汁机正在运行中，请等待本批完成。");
-  } else if (state.resources.wood < 2) {
-    showToast("木材不足，至少需要 2 木材启动榨汁机。");
-  } else if (state.resources.energy < 2) {
-    showToast("能源不足，至少需要 2 点能源启动榨汁机。");
   } else {
-    state.resources.wood -= 2;
-    state.resources.energy = clamp(state.resources.energy - 2, 0, 100);
+    const selected = getSelectedSqueezerRecipe();
+    const missing = getMissingResources(selected.recipe.input);
+    if (missing.length) return showToast(`原料不足：${formatResourceBundle(Object.fromEntries(missing))}。`);
+    if (state.resources.energy < selected.recipe.energy) return showToast(`能源不足，至少需要 ${selected.recipe.energy} 点能源。`);
+    consumeResourceBundle(selected.recipe.input);
+    state.resources.energy = clamp(state.resources.energy - selected.recipe.energy, 0, getEnergyCapacity());
     state.squeezerActive = true;
     state.squeezerProgress = 0;
+    state.squeezerJob = { recipeId: selected.id, name: selected.recipe.name, output: { ...selected.recipe.output } };
     consumeStrategyAction();
-    addLog("榨汁机 S-01 开始榨取木材，目标：种子油。", "teal");
+    addLog(`榨汁机 S-01 启动${selected.recipe.name}：${formatResourceBundle(selected.recipe.input)} → ${formatResourceBundle(selected.recipe.output)}。`, "teal");
     showToast(`榨取开始：${getSqueezerDuration()} 秒后完成`);
   }
   renderAll();
@@ -3629,28 +5088,30 @@ function squeezerAction() {
 
 function fermenterAction() {
   if (!isFermenterUnlocked()) return showToast(`发酵机需要 3 个蜂种和 1 份已完成的生态委托。`);
-  if (state.fermenterOutput > 0) {
-    const amount = state.fermenterOutput;
-    const blocker = getWarehouseBundleBlocker({ biomass: amount });
+  const readyBundle = getFermenterReadyBundle();
+  if (hasBundleItems(readyBundle)) {
+    const blocker = getWarehouseBundleBlocker(readyBundle);
     if (blocker) return showToast(`仓库分区不足：${formatWarehouseBlocker(blocker)}。`);
-    addToWarehouse("biomass", amount);
+    grantResourceBundle(readyBundle);
     state.fermenterOutput = 0;
+    state.fermenterOutputBundle = {};
     consumeStrategyAction();
-    addLog(`发酵机 F-01 收取产物：生物质 ${amount}。`, "green");
-    showToast(`获得生物质 ${amount}`);
+    addLog(`发酵机 F-01 收取产物：${formatResourceBundle(readyBundle)}。`, "green");
+    showToast(`获得 ${formatResourceBundle(readyBundle)}`);
   } else if (state.fermenterActive) {
     showToast("发酵机正在运行中，请等待本批完成。");
-  } else if (state.resources.wood < 3) {
-    showToast("木材不足，至少需要 3 木材启动发酵机。");
-  } else if (state.resources.energy < 3) {
-    showToast("能源不足，至少需要 3 点能源启动发酵机。");
   } else {
-    state.resources.wood -= 3;
-    state.resources.energy = clamp(state.resources.energy - 3, 0, 100);
+    const selected = getSelectedFermenterRecipe();
+    const missing = getMissingResources(selected.recipe.input);
+    if (missing.length) return showToast(`原料不足：${formatResourceBundle(Object.fromEntries(missing))}。`);
+    if (state.resources.energy < selected.recipe.energy) return showToast(`能源不足，至少需要 ${selected.recipe.energy} 点能源。`);
+    consumeResourceBundle(selected.recipe.input);
+    state.resources.energy = clamp(state.resources.energy - selected.recipe.energy, 0, getEnergyCapacity());
     state.fermenterActive = true;
     state.fermenterProgress = 0;
+    state.fermenterJob = { recipeId: selected.id, name: selected.recipe.name, output: { ...selected.recipe.output } };
     consumeStrategyAction();
-    addLog("发酵机 F-01 开始处理木材，目标：生物质。", "teal");
+    addLog(`发酵机 F-01 启动${selected.recipe.name}：${formatResourceBundle(selected.recipe.input)} → ${formatResourceBundle(selected.recipe.output)}。`, "teal");
     showToast(`发酵开始：${getFermenterDuration()} 秒后完成`);
   }
   renderAll();
@@ -3664,6 +5125,7 @@ function distillerAction() {
     if (blocker) return showToast(`仓库分区不足：${formatWarehouseBlocker(blocker)}。`);
     addToWarehouse("biofuel", amount);
     state.distillerOutput = 0;
+    state.distillerCollected += amount;
     consumeStrategyAction();
     addLog(`蒸馏机 ST-01 收取产物：生物燃料 ${amount}。`, "amber");
     showToast(`获得生物燃料 ${amount}`);
@@ -3675,7 +5137,7 @@ function distillerAction() {
     showToast("能源不足，至少需要 4 点能源启动蒸馏机。");
   } else {
     state.resources.biomass -= 1;
-    state.resources.energy = clamp(state.resources.energy - 4, 0, 100);
+    state.resources.energy = clamp(state.resources.energy - 4, 0, getEnergyCapacity());
     state.distillerActive = true;
     state.distillerProgress = 0;
     consumeStrategyAction();
@@ -3688,6 +5150,7 @@ function distillerAction() {
 function resetState() {
   if (!window.confirm("确定要重置原型进度吗？")) return;
   state = structuredClone(defaultState);
+  initializeProgressionState(state);
   saveState();
   addLog("原型数据已重置，新的林地调查开始。", "teal");
   switchView("overview");
@@ -3696,6 +5159,11 @@ function resetState() {
 }
 
 function handleHorizonAction(action, target = "") {
+  if (getGuideStep() === 13 && ["explore", "arbor", "machines"].includes(action)) {
+    state.guideRouteChosen = action;
+    addLog(`新手教程完成，下一条发展路线：${action === "explore" ? "区域调查" : action === "arbor" ? "树木培育" : "生产加工"}。`, "green");
+    showToast("新手教程完成 · 长期进程已开放");
+  }
   switch (action) {
     case "apiary":
       switchView("apiary");
@@ -3730,28 +5198,34 @@ function runAutomation() {
     setText("#last-action", `自动化：${text}`);
   };
   if (state.machineOutput > 0) {
-    const amount = state.machineOutput;
-    if (!getWarehouseBundleBlocker({ honey: amount, wax: amount })) {
-      addToWarehouse("honey", amount);
-      addToWarehouse("wax", amount);
+    const bundle = getMachineReadyBundle();
+    if (!getWarehouseBundleBlocker(bundle)) {
+      grantResourceBundle(bundle);
       state.machineOutput = 0;
-      record(`离心机收取蜂蜜 ${amount}、蜂蜡 ${amount}`);
+      state.machineOutputBundle = {};
+      state.machineCollectedCycles += 1;
+      state.automationCompletedBatches += 1;
+      record(`离心机收取${formatResourceBundle(bundle)}`);
     }
   }
-  if (state.squeezerOutput > 0) {
-    const amount = state.squeezerOutput;
-    if (!getWarehouseBundleBlocker({ oil: amount })) {
-      addToWarehouse("oil", amount);
+  const squeezerReady = getSqueezerReadyBundle();
+  if (hasBundleItems(squeezerReady)) {
+    if (!getWarehouseBundleBlocker(squeezerReady)) {
+      grantResourceBundle(squeezerReady);
       state.squeezerOutput = 0;
-      record(`榨汁机收取种子油 ${amount}`);
+      state.squeezerOutputBundle = {};
+      state.automationCompletedBatches += 1;
+      record(`榨汁机收取${formatResourceBundle(squeezerReady)}`);
     }
   }
-  if (state.fermenterOutput > 0) {
-    const amount = state.fermenterOutput;
-    if (!getWarehouseBundleBlocker({ biomass: amount })) {
-      addToWarehouse("biomass", amount);
+  const fermenterReady = getFermenterReadyBundle();
+  if (hasBundleItems(fermenterReady)) {
+    if (!getWarehouseBundleBlocker(fermenterReady)) {
+      grantResourceBundle(fermenterReady);
       state.fermenterOutput = 0;
-      record(`发酵机收取生物质 ${amount}`);
+      state.fermenterOutputBundle = {};
+      state.automationCompletedBatches += 1;
+      record(`发酵机收取${formatResourceBundle(fermenterReady)}`);
     }
   }
   if (state.distillerOutput > 0) {
@@ -3759,55 +5233,69 @@ function runAutomation() {
     if (!getWarehouseBundleBlocker({ biofuel: amount })) {
       addToWarehouse("biofuel", amount);
       state.distillerOutput = 0;
+      state.distillerCollected += amount;
+      state.automationCompletedBatches += amount;
       record(`蒸馏机收取生物燃料 ${amount}`);
     }
   }
   if (state.apiaryReady > 0) {
     const amount = state.apiaryReady;
-    if (!getWarehouseBundleBlocker({ rawComb: amount })) {
-      addToWarehouse("rawComb", amount);
+    const bundle = getApiaryReadyBundle();
+    if (!getWarehouseBundleBlocker(bundle)) {
+      grantResourceBundle(bundle);
       state.totalCombCollected += amount;
       state.apiaryCombCollected += amount;
       state.apiaryReady = 0;
-      record(`蜂箱收取蜂巢 ${amount}`);
+      state.apiaryReadyBundle = {};
+      record(`蜂箱收取${formatResourceBundle(bundle)}`);
     }
   }
   if (state.treeReady > 0) {
     const amount = getTreeYieldAmount();
     const resinAmount = Math.max(0, Number(state.treeReadyResin) || 0);
     if (!getWarehouseBundleBlocker({ wood: amount, resin: resinAmount })) {
+      const woodSpecies = state.treeReadySpecies || getActiveTreeId();
       addToWarehouse("wood", amount);
+      registerSpeciesWood(woodSpecies, amount);
       if (resinAmount > 0) addToWarehouse("resin", resinAmount);
       state.treeReady = 0;
       state.treeReadyYield = 0;
       state.treeReadyResin = 0;
+      state.treeReadySpecies = "";
       record(`树场收取木材 ${amount}${resinAmount > 0 ? `、树脂 ${resinAmount}` : ""}`);
     }
   }
-  if (!state.machineActive && state.machineOutput === 0 && state.rawComb > 0 && canSpendEnergy(2)) {
-    state.rawComb -= 1;
+  const selectedCentrifuge = getSelectedCentrifugeRecipe();
+  if (!state.machineActive && state.machineOutput === 0 && canAfford(selectedCentrifuge.recipe.input) && canSpendEnergy(selectedCentrifuge.recipe.energy)) {
+    consumeResourceBundle(selectedCentrifuge.recipe.input);
     state.machineActive = true;
     state.machineProgress = 0;
-    state.resources.energy = clamp(state.resources.energy - 2, 0, 100);
-    record("离心机启动");
+    state.machineJob = { recipeId: selectedCentrifuge.id, output: { ...selectedCentrifuge.recipe.output }, name: selectedCentrifuge.recipe.name };
+    state.machineStarts += 1;
+    state.resources.energy = clamp(state.resources.energy - selectedCentrifuge.recipe.energy, 0, getEnergyCapacity());
+    record(`离心机启动${selectedCentrifuge.recipe.name}`);
   }
-  if (isSqueezerUnlocked() && !state.squeezerActive && state.squeezerOutput === 0 && state.resources.wood >= 2 && canSpendEnergy(2)) {
-    state.resources.wood -= 2;
-    state.resources.energy = clamp(state.resources.energy - 2, 0, 100);
+  const selectedSqueezer = getSelectedSqueezerRecipe();
+  if (isSqueezerUnlocked() && !state.squeezerActive && !hasBundleItems(getSqueezerReadyBundle()) && canAfford(selectedSqueezer.recipe.input) && canSpendEnergy(selectedSqueezer.recipe.energy)) {
+    consumeResourceBundle(selectedSqueezer.recipe.input);
+    state.resources.energy = clamp(state.resources.energy - selectedSqueezer.recipe.energy, 0, getEnergyCapacity());
     state.squeezerActive = true;
     state.squeezerProgress = 0;
-    record("榨汁机启动");
+    state.squeezerJob = { recipeId: selectedSqueezer.id, name: selectedSqueezer.recipe.name, output: { ...selectedSqueezer.recipe.output } };
+    record(`榨汁机启动${selectedSqueezer.recipe.name}`);
   }
-  if (isFermenterUnlocked() && !state.fermenterActive && state.fermenterOutput === 0 && state.resources.wood >= 3 && canSpendEnergy(3)) {
-    state.resources.wood -= 3;
-    state.resources.energy = clamp(state.resources.energy - 3, 0, 100);
+  const selectedFermenter = getSelectedFermenterRecipe();
+  if (isFermenterUnlocked() && !state.fermenterActive && !hasBundleItems(getFermenterReadyBundle()) && canAfford(selectedFermenter.recipe.input) && canSpendEnergy(selectedFermenter.recipe.energy)) {
+    consumeResourceBundle(selectedFermenter.recipe.input);
+    state.resources.energy = clamp(state.resources.energy - selectedFermenter.recipe.energy, 0, getEnergyCapacity());
     state.fermenterActive = true;
     state.fermenterProgress = 0;
-    record("发酵机启动");
+    state.fermenterJob = { recipeId: selectedFermenter.id, name: selectedFermenter.recipe.name, output: { ...selectedFermenter.recipe.output } };
+    record(`发酵机启动${selectedFermenter.recipe.name}`);
   }
   if (isDistillerUnlocked() && !state.distillerActive && state.distillerOutput === 0 && state.resources.biomass >= 1 && canSpendEnergy(4)) {
     state.resources.biomass -= 1;
-    state.resources.energy = clamp(state.resources.energy - 4, 0, 100);
+    state.resources.energy = clamp(state.resources.energy - 4, 0, getEnergyCapacity());
     state.distillerActive = true;
     state.distillerProgress = 0;
     record("蒸馏机启动");
@@ -3819,20 +5307,27 @@ function advanceSimulation(seconds) {
   const safeSeconds = clamp(Number(seconds) || 0, 0, 60 * 60 * 8);
   if (safeSeconds <= 0) return;
   advanceEnvironment(safeSeconds);
-  const energyRate = state.strategyFocus === "industry" ? .22 : .2;
-  if (state.resources.energy < 100) state.resources.energy = clamp(state.resources.energy + energyRate * safeSeconds, 0, 100);
+  const energyRate = (getEnergyRecoveryPerMinute() / 60) * (state.strategyFocus === "industry" ? 1.1 : 1);
+  if (state.resources.energy < getEnergyCapacity()) state.resources.energy = clamp(state.resources.energy + energyRate * safeSeconds, 0, getEnergyCapacity());
   advanceAutoSurvey(safeSeconds, safeSeconds > 2);
   const flowerId = getActiveFlowerId();
-  if (state.apiaryReady === 0 && getFlowerCount(flowerId) > 0) {
+  const beeProduction = getActiveBeeProduction();
+  if (state.apiaryReady === 0 && flowerId === beeProduction.flower && getFlowerCount(flowerId) > 0) {
     state.apiaryProgress += getApiaryEffectiveRate() * safeSeconds;
     if (state.apiaryProgress >= 100) {
       state.apiaryProgress = 0;
       state.apiaryReady = getApiaryYieldPerCycle();
+      state.apiaryReadyBundle = { [beeProduction.comb]: state.apiaryReady };
+      Object.entries(beeProduction.specialties).forEach(([resource, chance]) => {
+        if (Math.random() < chance) state.apiaryReadyBundle[resource] = (state.apiaryReadyBundle[resource] || 0) + 1;
+      });
       state.flowerInventory[flowerId] = getFlowerCount(flowerId) - 1;
       state.apiaryCycles += 1;
+      consumeApiaryFrameDurability();
+      recordProductionCycle();
       applyEnvironmentCycle("apiary");
-      addLog(`蜂箱 A-01 消耗 1 份${flowerSources[flowerId].name}，完成一个生产周期，产出蜂巢 ${state.apiaryReady}。`, "green");
-      showToast(`蜂箱产出完成：蜂巢 ${state.apiaryReady}`);
+      addLog(`蜂箱 A-01 消耗 1 份${flowerSources[flowerId].name}，${species[getActiveBeeId()].name}产出${formatResourceBundle(state.apiaryReadyBundle)}。`, "green");
+      showToast(`蜂箱产出完成：${formatResourceBundle(state.apiaryReadyBundle)}`);
     }
   }
   if (state.machineActive) {
@@ -3840,12 +5335,16 @@ function advanceSimulation(seconds) {
     if (state.machineProgress >= 100) {
       state.machineProgress = 0;
       state.machineActive = false;
-      state.machineOutput += 1;
-      state.processedHoney += 1;
-      state.processedWax += 1;
+      const output = state.machineJob?.output || centrifugeRecipes.rawComb.output;
+      state.machineOutputBundle = { ...output };
+      state.machineOutput = 1;
+      state.processedHoney += output.honey || 0;
+      state.processedWax += output.wax || 0;
+      state.machineJob = null;
       state.machineCycles += 1;
-      addLog("离心机分离完成，蜂蜜与蜂蜡已准备收取。", "green");
-      showToast("离心机加工完成");
+      recordProductionCycle();
+      addLog(`离心机分离完成，${formatResourceBundle(output)}已准备收取。`, "green");
+      showToast(`离心机完成：${formatResourceBundle(output)}`);
     }
   }
   if (state.squeezerActive) {
@@ -3853,10 +5352,15 @@ function advanceSimulation(seconds) {
     if (state.squeezerProgress >= 100) {
       state.squeezerProgress = 0;
       state.squeezerActive = false;
-      state.squeezerOutput += 1;
+      const output = state.squeezerJob?.output || squeezerRecipes.wood.output;
+      state.squeezerOutputBundle = { ...output };
+      state.squeezerOutput = 1;
+      const outputText = formatResourceBundle(output);
+      state.squeezerJob = null;
       state.squeezerCycles += 1;
-      addLog("榨汁机完成加工，种子油已准备收取。", "green");
-      showToast("榨汁机加工完成");
+      recordProductionCycle();
+      addLog(`榨汁机完成加工，${outputText}已准备收取。`, "green");
+      showToast(`榨汁机完成：${outputText}`);
     }
   }
   if (state.fermenterActive) {
@@ -3864,11 +5368,16 @@ function advanceSimulation(seconds) {
     if (state.fermenterProgress >= 100) {
       state.fermenterProgress = 0;
       state.fermenterActive = false;
-      state.fermenterOutput += 1;
+      const output = state.fermenterJob?.output || fermenterRecipes.wood.output;
+      state.fermenterOutputBundle = { ...output };
+      state.fermenterOutput = 1;
+      const outputText = formatResourceBundle(output);
+      state.fermenterJob = null;
       state.fermenterCycles += 1;
+      recordProductionCycle();
       applyEnvironmentCycle("fermenter");
-      addLog("发酵机处理完成，生物质已准备收取。", "green");
-      showToast("发酵机加工完成");
+      addLog(`发酵机处理完成，${outputText}已准备收取。`, "green");
+      showToast(`发酵机完成：${outputText}`);
     }
   }
   if (state.distillerActive) {
@@ -3878,6 +5387,7 @@ function advanceSimulation(seconds) {
       state.distillerActive = false;
       state.distillerOutput += 1;
       state.distillerCycles += 1;
+      recordProductionCycle();
       addLog("蒸馏机处理完成，生物燃料已准备收取。", "green");
       showToast("蒸馏机加工完成");
     }
@@ -3887,13 +5397,16 @@ function advanceSimulation(seconds) {
     if (state.treeProgress >= 100) {
       state.treeProgress = 0;
       state.treeReady = 1;
+      state.treeReadySpecies = getActiveTreeId();
       state.treeReadyYield = getTreeYieldPerCycle();
       state.treeReadyResin = getTreeResinPerCycle();
+      recordProductionCycle();
       applyEnvironmentCycle("tree");
-      addLog(`树场 T-01 完成一个生长周期，木材${state.treeReadyYield}${state.treeReadyResin > 0 ? `、树脂${state.treeReadyResin}` : ""}已准备收取。`, "green");
+      addLog(`树场 T-01 的${treeSpecies[state.treeReadySpecies].name}完成生长，木材${state.treeReadyYield}${state.treeReadyResin > 0 ? `、树脂${state.treeReadyResin}` : ""}已准备收取。`, "green");
       showToast(state.treeReadyResin > 0 ? "树场产出完成：木材与树脂已锁定" : "树场产出完成");
     }
   }
+  advanceOrchard(safeSeconds);
   if (state.breeding) {
     state.breeding.remaining -= safeSeconds;
     if (state.breeding.remaining <= 0) finishBreeding();
@@ -3992,6 +5505,9 @@ function gameTick() {
   runAutomation();
   advanceSimulation(1);
   runAutomation();
+  syncPageUnlocks(true);
+  checkAchievements();
+  renderPageUnlocks();
   renderResources();
   renderApiary();
   renderTree();
@@ -4000,6 +5516,8 @@ function gameTick() {
   renderGuide();
   renderMilestones();
   renderContracts();
+  renderRegionalContracts();
+  renderAchievements();
   renderHorizons();
   renderChapterDeck();
   renderCommandCenter();
@@ -4018,6 +5536,17 @@ function bindEvents() {
     window.location.href = link.href;
   });
   $$(".nav-button").forEach((button) => button.addEventListener("click", () => button.dataset.view && switchView(button.dataset.view)));
+  $$('[data-shop-tab]').forEach((button) => button.addEventListener("click", () => { state.shopTab = button.dataset.shopTab; renderShop(); saveState(); }));
+  $("#shop-refresh")?.addEventListener("click", refreshShopOrders);
+  $("#shop-trade-grid")?.addEventListener("click", (event) => {
+    const trade = event.target.closest("[data-trade-kind]");
+    if (trade) return executeShopTrade(trade.dataset.tradeKind, trade.dataset.tradeId, trade.dataset.tradeQty);
+    const order = event.target.closest("[data-shop-order]");
+    if (order) return completeShopOrder(order.dataset.shopOrder);
+    const facility = event.target.closest("[data-late-facility]");
+    if (facility) return upgradeLateFacility(facility.dataset.lateFacility);
+    if (event.target.closest("[data-shop-warehouse-upgrade]")) return upgradeFacility("warehouse");
+  });
   ["#command-action", "#mobile-command-action"].forEach((selector) => {
     const button = $(selector);
     if (button) button.addEventListener("click", () => navigateWithFocus(button.dataset.view, button.dataset.target));
@@ -4108,25 +5637,55 @@ function bindEvents() {
   $("#breed-button").addEventListener("click", startBreeding);
   $("#flower-select").addEventListener("change", (event) => selectFlowerSource(event.target.value));
   $("#habitat-select").addEventListener("change", (event) => selectHabitat(event.target.value));
+  $("#apiary-production-select")?.addEventListener("change", (event) => selectProductionBee(event.target.value));
+  [1, 2, 3].forEach((slot) => $(`#apiary-frame-${slot}`)?.addEventListener("change", (event) => installApiaryFrame(slot - 1, event.target.value)));
   $("#princess-select").addEventListener("change", (event) => selectBreedingParent("princess", event.target.value));
   $("#drone-select").addEventListener("change", (event) => selectBreedingParent("drone", event.target.value));
   $("#tree-collect-button").addEventListener("click", collectTree);
   $("#tree-breed-button").addEventListener("click", startTreeBreeding);
+  $("#tree-production-select")?.addEventListener("change", (event) => selectProductionTree(event.target.value));
   $("#tree-parent-a-select").addEventListener("change", (event) => selectTreeBreedingParent("parentA", event.target.value));
   $("#tree-parent-b-select").addEventListener("change", (event) => selectTreeBreedingParent("parentB", event.target.value));
+  $("#orchard-tree-select")?.addEventListener("change", (event) => selectOrchardTree(event.target.value));
+  $("#orchard-action")?.addEventListener("click", collectOrchard);
+  $("#orchard-mulch-button")?.addEventListener("click", applyMulchToOrchard);
+  $("#tree-pollen-collect")?.addEventListener("click", collectTreePollen);
+  $("#orchard-pollen-apply")?.addEventListener("click", applyTreePollen);
+  $("#butterfly-host-select")?.addEventListener("change", (event) => selectButterflyHost(event.target.value));
   $("#butterfly-breed-button").addEventListener("click", startButterflyBreeding);
   $("#butterfly-parent-a-select").addEventListener("change", (event) => selectButterflyBreedingParent("parentA", event.target.value));
   $("#butterfly-parent-b-select").addEventListener("change", (event) => selectButterflyBreedingParent("parentB", event.target.value));
   $("#machine-button").addEventListener("click", machineAction);
+  $("#centrifuge-recipe-select")?.addEventListener("change", (event) => { state.machineRecipe = event.target.value; saveState(); renderMachine(); });
   $("#squeezer-button").addEventListener("click", squeezerAction);
+  $("#squeezer-recipe-select")?.addEventListener("change", (event) => { state.squeezerRecipe = event.target.value; saveState(); renderMachine(); });
   $("#fermenter-button").addEventListener("click", fermenterAction);
+  $("#fermenter-recipe-select")?.addEventListener("change", (event) => { state.fermenterRecipe = event.target.value; saveState(); renderMachine(); });
   $("#distiller-button").addEventListener("click", distillerAction);
   $("#contract-button").addEventListener("click", completeContract);
+  $("#regional-contract-grid")?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-regional-contract]");
+    if (button) completeRegionalContract(Number(button.dataset.regionalContract));
+  });
   $("#automation-button").addEventListener("click", toggleAutomation);
   $("#automation-reserve").addEventListener("change", (event) => selectAutomationReserve(event.target.value));
   $$(".upgrade-button").forEach((button) => button.addEventListener("click", () => upgradeFacility(button.dataset.upgrade)));
+  $("#energy-core-upgrade")?.addEventListener("click", upgradeEnergyCore);
+  $("#energy-recharge-button")?.addEventListener("click", rechargeEnergyWithBiofuel);
   $("#guide-action").addEventListener("click", handleGuideAction);
+  $("#guide-route-options")?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-guide-route]");
+    if (button) chooseGuideRoute(button.dataset.guideRoute);
+  });
   $$(".horizon-action").forEach((button) => button.addEventListener("click", () => handleHorizonAction(button.dataset.action, button.dataset.target)));
+  $$("[data-codex-tab]").forEach((button) => button.addEventListener("click", () => switchCodexTab(button.dataset.codexTab)));
+  $("#achievement-grid")?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-achievement-claim]");
+    if (!button || !claimAchievement(button.dataset.achievementClaim)) return;
+    renderAll();
+  });
+  $("#achievement-claim-all")?.addEventListener("click", claimAllAchievements);
+  $("#achievement-pending-button")?.addEventListener("click", claimAchievementPending);
   $("#reset-button").addEventListener("click", resetState);
 
   $("#continue-game-button")?.addEventListener("click", () => {
