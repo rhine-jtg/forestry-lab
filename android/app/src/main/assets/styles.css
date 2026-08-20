@@ -1523,3 +1523,497 @@ body { font-size: 14px; }
   .shop-trade-grid, .shop-storage-grid { grid-template-columns: 1fr; }
   .trade-card { padding: 10px; }
 }
+
+/* Accessibility contrast pass: keep MC color semantics while making every label readable. */
+:root {
+  --muted: #bac7b8;
+  --muted-2: #9eae9d;
+}
+
+:where(
+  .sidebar,
+  .command-center,
+  .mobile-more-sheet,
+  .p0-dialog,
+  .survey-status,
+  .survey-bag,
+  main .panel-inset,
+  main .status-card,
+  main .horizon-card,
+  main .zone-card,
+  main .machine-card,
+  main .upgrade-card,
+  main .contract-card,
+  main .log-card,
+  main .guide-card,
+  main .codex-entry
+) {
+  --amber: #3b2907 !important;
+  --green: #173d13 !important;
+  --teal: #0f463e !important;
+  --red: #491c17 !important;
+  --muted: #344139 !important;
+  --muted-2: #344139 !important;
+}
+
+/* Light Minecraft windows use dark copy, including secondary and metadata text. */
+main .panel-inset p,
+main .panel-inset .muted,
+main .panel-inset .cost-note,
+main .panel-inset .mini-label,
+main .panel-inset .log-count,
+.zone-info p,
+.zone-footer,
+.zone-footer small,
+.research-banner p,
+.research-note p,
+.upgrade-card p,
+.upgrade-cost,
+.regional-contract-card small,
+.achievement-summary-actions > small,
+.achievement-card-top small,
+.achievement-reward,
+.butterfly-breeding-intro,
+.butterfly-breeding-note,
+.shop-title-copy p,
+.shop-cycle-info,
+.trade-card-head small,
+.warehouse-category-card p,
+.warehouse-upgrade-card p,
+.facility-card p,
+.warehouse-upgrade-card small,
+.facility-card small {
+  color: #344139;
+}
+
+.sidebar .mini-label,
+.sidebar-note .mini-label,
+.sidebar .nav-button small,
+.sidebar-note strong,
+.sidebar-note small,
+.command-copy .mini-label,
+.command-copy p,
+.command-section-title .mini-label,
+.command-section-title small,
+.loop-map button small,
+.strategy-heading .mini-label,
+.strategy-heading > small,
+.strategy-panel > p,
+.strategy-button small,
+.chapter-metrics small,
+.ecology-event small,
+.ecology-factor small,
+.ecology-advice-list span small,
+.mobile-sheet-link > span small,
+.p0-dialog small,
+.save-slot small,
+.save-dialog-footer small,
+.simplified-setting small,
+.survey-queue-card small {
+  color: #344139;
+}
+.sidebar .nav-button small {
+  color: #17251d;
+}
+
+/* Accent text on pale panels needs ink variants rather than luminous HUD colors. */
+main .stamp,
+main .guide-step,
+main .horizon-status,
+main .chapter-percent,
+main .big-countdown,
+main .trait-title strong,
+main .output-row strong,
+main .machine-flow .flow-arrow,
+main .recipe-flow,
+main .research-loop,
+main .text-button,
+.ecology-event > span,
+.warehouse-category-card > strong,
+.villager-trade-line i {
+  color: #3b2907 !important;
+}
+
+main .positive,
+.ecology-score > strong,
+.ecology-factor > b,
+.shop-wallet strong {
+  color: #173d13 !important;
+}
+
+.status-pill.online {
+  color: #173311;
+}
+.status-pill.ready {
+  color: #35260a;
+}
+.status-pill.blocked,
+.status-pill.missing {
+  color: #351814;
+}
+.status-pill.waiting,
+.status-pill.locked,
+.tag-muted {
+  color: #344139;
+}
+.tag-amber { color: #2e230e; }
+.tag-green { color: #173311; }
+.tag-teal { color: #123d39; }
+
+/* Inventory slots are deliberately darker so their light item labels clear 4.5:1. */
+.bee-slot,
+.tree-slot,
+.machine-slot,
+.species-card,
+.material-card {
+  background: #4b5650;
+}
+.bee-slot strong,
+.bee-slot small,
+.tree-slot strong,
+.tree-slot small,
+.machine-slot strong,
+.machine-slot small,
+.machine-slot em,
+.species-card strong,
+.species-card small,
+.species-card p,
+.material-card strong,
+.material-card small,
+.material-card p,
+.archive-species-copy > span,
+.archive-species-copy strong,
+.archive-species-copy small,
+.slot-label {
+  color: #f5f1df;
+}
+main .panel-inset .bee-slot > strong,
+main .panel-inset .bee-slot > small,
+main .panel-inset .tree-slot > strong,
+main .panel-inset .tree-slot > small,
+main .panel-inset .machine-slot > strong,
+main .panel-inset .machine-slot > small,
+main .panel-inset .machine-slot > em,
+main .panel-inset .species-card :where(strong, small, p),
+main .panel-inset .material-card :where(strong, small, p),
+main .panel-inset .archive-species-copy :where(strong, small),
+main .panel-inset .slot-label {
+  color: #f5f1df !important;
+}
+.archive-species-copy > span {
+  background: #344139;
+  border-color: #7f8d83;
+}
+.parent-select,
+.flower-control select,
+.butterfly-breeding-field select {
+  background: #46524b;
+  color: #f5f1df;
+}
+
+/* Mid-grey controls use a near-black ink instead of grey-on-grey. */
+.trait-title,
+.meter-label,
+.output-row small,
+.flower-control small,
+.pollination-status small,
+.apiary-production-config > small,
+.apiary-frame-grid small,
+.orchard-copy p,
+.orchard-stats small,
+.host-control small,
+.villager-trade-line small {
+  color: #1f2c25;
+}
+.trait-bars > div > span {
+  color: #1f2e26;
+}
+.mutation-path,
+.horizon-kicker,
+.slot-head small,
+.automation-reserve,
+.codex-entry-top small,
+.codex-lineage,
+.codex-traits-hidden,
+.zone-difficulty,
+.zone-progress-line,
+.production-selector,
+.machine-recipe-select,
+.orchard-control label {
+  color: #344139 !important;
+}
+.mission-row > span,
+.mission-row strong,
+.guide-step-row,
+.milestone-item-head span,
+.milestone-item small {
+  color: #26352d;
+}
+.mission-row.mission-current > span,
+.mission-row.mission-current strong,
+.mission-row.mission-current .check {
+  color: #3b2907;
+}
+.mission-row.done .check {
+  color: #f6f1df;
+  background: #315d29;
+}
+.environment-panel .mini-label,
+.environment-panel .log-count,
+.ecology-event small,
+.ecology-factor small,
+.ecology-advice-list span small {
+  color: #26352d !important;
+}
+.environment-metric-list > .environment-metric {
+  background: #3f4b44;
+}
+.environment-metric-head small,
+.environment-metric-head strong {
+  color: #f7f3e2 !important;
+}
+.environment-metric-list .environment-metric-head i {
+  background: #344139;
+}
+.item-icon {
+  background: #3f4a44;
+}
+.orchard-cycle b {
+  color: #f0bd4c !important;
+}
+.contract-meta strong {
+  color: #154a44 !important;
+}
+.contract-slot.missing .contract-slot-copy :where(small, strong) {
+  color: #2b100d !important;
+}
+.contract-slot.missing .contract-slot-copy strong {
+  color: #2b100d !important;
+}
+.contract-slot-copy small,
+.contract-meta,
+.contract-meta span,
+.ecology-advice-list span small,
+.ecology-advice-list > button > b,
+.zone-difficulty,
+.zone-progress-line,
+.mobile-bottom-nav .nav-button > small,
+.mobile-more-button > small,
+.loop-map button small {
+  color: #17251d !important;
+}
+.ecology-score > small {
+  color: #102f0d;
+}
+.ecology-advice-list > button > b {
+  color: #3b2907 !important;
+}
+.locked-machine,
+.locked-machine p,
+.locked-machine small {
+  color: #17251d !important;
+}
+.locked-machine span {
+  color: #3b2907 !important;
+}
+.loop-map button i {
+  background: #3f4b44;
+  color: #f5f1df;
+}
+.codex-entry.locked :where(h3, p, small, .codex-status, .codex-lineage, .codex-traits-hidden) {
+  color: #142019 !important;
+}
+.apiary-production-config .mini-label,
+.apiary-frame-panel .mini-label,
+.pollen-host-panel .mini-label,
+.pollination-status .mini-label,
+.flower-control .mini-label,
+.ecology-score .mini-label,
+.orchard-control label,
+.orchard-copy p,
+.mutation-path,
+.butterfly-breeding-note {
+  color: #1f2e26 !important;
+}
+.chapter-task small,
+.chapter-metrics small,
+.milestone-item-head span,
+.milestone-item small,
+.ecology-event small {
+  color: #1f2e26 !important;
+}
+.strategy-button,
+.strategy-button :where(strong, small) {
+  color: #17251d;
+}
+.strategy-button.active small {
+  color: #2d1f08;
+}
+.strategy-button small {
+  color: #17251d !important;
+}
+.strategy-button.active small {
+  color: #2d1f08 !important;
+}
+.orchard-control label > span {
+  color: #1f2e26 !important;
+}
+.tip-icon {
+  color: #234c3c;
+}
+.shop-wallet strong,
+.ecology-score > strong,
+.ecology-factor > b {
+  color: #102f0d !important;
+}
+.resource-icon.wood {
+  color: #dfb67e;
+}
+.automation-icon {
+  color: #2c2110 !important;
+}
+.upgrade-icon.storage {
+  color: #d7eee7;
+}
+.energy-core-card .upgrade-icon.energy {
+  color: #0b2f2a !important;
+}
+.trade-card-head small,
+.shop-cycle-info,
+.warehouse-category-card p,
+.warehouse-upgrade-card p,
+.facility-card p,
+.warehouse-upgrade-card small,
+.facility-card small {
+  color: #25332b;
+}
+
+/* Locked content remains visibly unavailable without fading its text away. */
+button:disabled,
+.small-button:disabled,
+.secondary-button:disabled,
+.achievement-card button:disabled,
+.regional-contract-card button:disabled {
+  opacity: 1 !important;
+  color: #243129 !important;
+  background: #aeb4ae !important;
+  filter: saturate(.55);
+}
+.codex-entry.locked,
+.achievement-card.locked,
+.trade-card.locked,
+.nav-button.page-locked,
+.codex-tabs button.page-locked,
+.strategy-button.locked {
+  opacity: 1;
+}
+.mini-action,
+.secondary-button,
+.small-button {
+  background: #aeb4ae;
+}
+.primary-button {
+  background: #c7a94d;
+}
+.codex-entry.locked,
+.achievement-card.locked,
+.trade-card.locked {
+  background: #9da39d;
+  border-style: dashed;
+}
+.codex-entry.locked :where(h3, p, small, .codex-status, .codex-lineage, .codex-traits-hidden) {
+  color: #26342c !important;
+}
+.codex-entry.locked .species-icon {
+  background: #3f4b44;
+  color: #f3efdd !important;
+}
+.strategy-button.locked {
+  color: #26342c;
+  background: #a6aba6;
+}
+
+/* Avoid reintroducing unreadable micro-copy in later feature modules. */
+.apiary-frame-grid small,
+.trade-card-head small,
+.villager-trade-line small,
+.trade-actions button,
+.trade-lock,
+.material-card small,
+.material-card p,
+.archive-species-copy > span,
+.archive-species-copy small,
+.codex-status,
+.lock-mark,
+.regional-contract-refresh,
+.achievement-summary-actions > small,
+.achievement-card-top small,
+.achievement-tier,
+.achievement-reward {
+  font-size: 10px;
+}
+.loop-map button i,
+#strategy-effect,
+#ecology-event-detail,
+.pollen-control button,
+.pollen-control select,
+.host-control select,
+.codex-traits-hidden {
+  font-size: 10px;
+}
+#chapter-number,
+.orchard-cycle span {
+  font-size: 10px;
+}
+#current-check,
+.locked-machine span {
+  color: #2b1d03 !important;
+}
+.apiary-frame-grid small,
+.material-card p,
+.villager-trade-line b,
+.regional-contract-card small,
+.achievement-reward {
+  line-height: 1.5;
+}
+.mobile-bottom-nav .nav-button > small,
+.mobile-more-button > small,
+.mobile-next-dock small,
+.mobile-next-dock button,
+.nav-button small,
+.field-rank span,
+.field-rank strong,
+.save-status {
+  font-size: 10px;
+}
+.resource-chip.resource-full strong { color: #f09a85; }
+
+/* Dialogs and the manual-survey board follow the same contrast floor. */
+.survey-brief-grid span,
+.result-summary span,
+.survey-reward-preview :where(.mini-label, p, small),
+.survey-mode small,
+.auto-count-control small,
+.simplified-setting small,
+.survey-status .mini-label,
+.survey-bag .mini-label,
+.result-note {
+  color: #26352d !important;
+}
+.survey-tile.path { background: #59645d; }
+.survey-tile.resource { background: #5f471a; }
+.survey-tile.camp { background: #345232; }
+
+@media (max-width: 520px) {
+  .main-content small,
+  .main-content .mini-label,
+  .main-content .tag,
+  .main-content .status-pill {
+    font-size: 11px;
+  }
+  .main-content p,
+  .main-content button,
+  .main-content select {
+    font-size: 12px;
+  }
+}
