@@ -1,0 +1,1290 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>林业谷地 · 2.5D 网格布局实验室</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #08150f;
+      --panel: #10251a;
+      --panel-2: #172f22;
+      --line: #3b6549;
+      --line-bright: #77a37f;
+      --cream: #efe5c8;
+      --muted: #a9bba9;
+      --honey: #d8a93d;
+      --honey-dark: #7a5916;
+      --moss: #85aa54;
+      --danger: #dd685e;
+      --shadow: #030a06;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { background: var(--ink); }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--cream);
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--ink);
+      background-size: 16px 16px;
+      font: 16px/1.5 "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    }
+
+    button, select, input, textarea { font: inherit; }
+
+    button, select, input[type="range"] { min-height: 42px; }
+
+    .shell {
+      width: min(1760px, calc(100% - 24px));
+      margin: 12px auto 40px;
+    }
+
+    .topbar,
+    .panel {
+      border: 2px solid var(--line);
+      background: var(--panel);
+      box-shadow: 4px 4px 0 var(--shadow);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+
+    .eyebrow {
+      margin: 0 0 5px;
+      color: #98bca1;
+      font: 800 12px/1.2 Consolas, monospace;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 0; font-size: clamp(22px, 2.4vw, 34px); }
+    h2 { margin-bottom: 12px; font-size: 21px; }
+    h3 { margin-bottom: 8px; font-size: 17px; }
+
+    .top-actions,
+    .control-row,
+    .mode-switch {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .lab-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .panel { padding: 14px; }
+    .map-panel { min-width: 0; }
+
+    .map-toolbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 12px;
+    }
+
+    .status-readout {
+      display: grid;
+      grid-template-columns: repeat(3, auto);
+      gap: 6px;
+      text-align: right;
+      font: 800 13px/1.35 Consolas, monospace;
+    }
+
+    .status-readout span {
+      padding: 5px 8px;
+      border: 1px solid #385a43;
+      background: #0a1810;
+    }
+
+    .map-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1667 / 943;
+      overflow: hidden;
+      border: 3px solid #030a06;
+      outline: 1px solid var(--line-bright);
+      background: #213b2a;
+      isolation: isolate;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    .map-background {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      image-rendering: pixelated;
+      pointer-events: none;
+    }
+
+
+    .terrain-adjustment {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      shape-rendering: crispEdges;
+    }
+
+    .lot-connector,
+    .lot-shadow,
+    .lot-pad,
+    .lot-inset {
+      vector-effect: non-scaling-stroke;
+      stroke-linejoin: miter;
+    }
+
+    .lot-connector { opacity: .92; }
+    .lot-shadow { fill: rgba(3, 10, 6, .45); }
+    .lot-pad { stroke-width: 4; }
+    .lot-inset {
+      fill: none;
+      stroke: rgba(255, 239, 183, .34);
+      stroke-width: 2;
+    }
+
+    .iso-grid {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .iso-grid.is-hidden { display: none; }
+
+    .grid-cell {
+      fill: rgba(188, 225, 171, .025);
+      stroke: rgba(210, 238, 196, .26);
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+      pointer-events: all;
+      cursor: crosshair;
+    }
+
+    .grid-cell:hover {
+      fill: rgba(216, 169, 61, .2);
+      stroke: rgba(255, 224, 137, .95);
+      stroke-width: 2;
+    }
+
+    .grid-cell.is-selected {
+      fill: rgba(216, 169, 61, .32);
+      stroke: #ffd36a;
+      stroke-width: 2.5;
+    }
+
+    .building-anchor,
+    .villager-anchor {
+      position: absolute;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+
+    .building-sprite {
+      position: absolute;
+      left: 0;
+      top: 0;
+      --anchor-y: -93%;
+      background-image: url("assets/map/test-batch/buildings/apiary/apiary-lv1-summer-test-v3.png");
+      background-repeat: no-repeat;
+      background-size: contain;
+      background-position: center;
+      image-rendering: pixelated;
+      transform-origin: 50% 90%;
+      transform: translate(-50%, var(--anchor-y)) scale(var(--building-scale, 1)) scaleY(var(--building-pitch, 1));
+      will-change: transform;
+    }
+
+    .building-sprite[data-state="0"] {
+      --anchor-y: -91%;
+      background-image: url("assets/map/test-batch/buildings/apiary/apiary-site-summer-test-v3.png");
+    }
+
+    .building-sprite[data-state="1"] {
+      --anchor-y: -93%;
+      background-image: url("assets/map/test-batch/buildings/apiary/apiary-lv1-summer-test-v3.png");
+    }
+
+    .building-sprite[data-state="2"] {
+      --anchor-y: -86%;
+      background-image: url("assets/map/test-batch/buildings/apiary/apiary-lv2-summer-test-v3.png");
+    }
+
+    .villager-sprite {
+      position: absolute;
+      left: 0;
+      top: 0;
+      background-image: url("assets/map/test-batch/characters/villager/villager-walk-4dir-test-v3.png");
+      background-repeat: no-repeat;
+      background-size: 600% 400%;
+      background-position: 0 0;
+      image-rendering: pixelated;
+      transform: translate(-50%, -88%);
+    }
+
+    .selection-pin {
+      position: absolute;
+      z-index: 950;
+      width: 32px;
+      height: 32px;
+      transform: translate(-50%, -50%);
+      border: 3px solid #ffe08a;
+      background: rgba(216,169,61,.2);
+      box-shadow: 0 0 0 2px rgba(7,15,10,.8);
+      pointer-events: none;
+    }
+
+    .selection-pin::before,
+    .selection-pin::after {
+      content: "";
+      position: absolute;
+      background: #ffe08a;
+    }
+
+    .selection-pin::before { left: 13px; top: -9px; width: 2px; height: 44px; }
+    .selection-pin::after { left: -9px; top: 13px; width: 44px; height: 2px; }
+
+    .saved-layer {
+      position: absolute;
+      inset: 0;
+      z-index: auto;
+      pointer-events: none;
+    }
+
+    .placed-building-anchor {
+      position: absolute;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+
+    .placed-building-sprite { pointer-events: none; }
+
+    .slot-marker {
+      position: absolute;
+      z-index: 1900;
+      width: 30px;
+      height: 30px;
+      min-height: 0;
+      padding: 0;
+      transform: translate(-50%, -110%);
+      border: 2px solid #11190f;
+      outline: 1px solid #ffe08a;
+      color: #171309;
+      background: var(--honey);
+      font: 900 13px/1 Consolas, monospace;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    .slot-marker:hover { background: #ffe08a; }
+
+    .map-stage.is-composite .terrain-adjustment,
+    .map-stage.is-composite .iso-grid,
+    .map-stage.is-composite #buildingAnchor,
+    .map-stage.is-composite .selection-pin,
+    .map-stage.is-composite .slot-marker {
+      display: none;
+    }
+
+    .map-stage:not(.has-edit-preview) #buildingAnchor,
+    .map-stage:not(.has-edit-preview) .selection-pin {
+      display: none;
+    }
+
+
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .legend b { color: var(--cream); }
+
+    .controls {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid #365541;
+    }
+
+    .control-row {
+      align-items: stretch;
+    }
+
+    .control-block {
+      display: grid;
+      grid-template-columns: auto minmax(120px, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      min-width: 250px;
+      flex: 1 1 280px;
+      padding: 8px;
+      border: 1px solid #365541;
+      background: #0b1b12;
+    }
+
+    .control-block label {
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .control-value {
+      min-width: 52px;
+      color: #f0c85f;
+      text-align: right;
+      font: 900 13px/1 Consolas, monospace;
+    }
+
+    .pixel-button,
+    .pixel-select {
+      border: 2px solid #07100a;
+      outline: 1px solid #6f8974;
+      color: var(--cream);
+      background: #2a4735;
+      box-shadow: inset 0 2px 0 rgba(255,255,255,.1), 2px 2px 0 #030a06;
+    }
+
+    .pixel-button {
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    .pixel-select { padding: 6px 34px 6px 10px; }
+
+    .pixel-button:hover,
+    .pixel-button[aria-pressed="true"],
+    .pixel-button.is-primary {
+      color: #171309;
+      background: var(--honey);
+      outline-color: #ffe08a;
+    }
+
+    .pixel-button.is-danger {
+      color: #ffd7d2;
+      background: #5b2925;
+      outline-color: #a85b54;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--honey);
+      cursor: pointer;
+    }
+
+    .side-stack { display: grid; gap: 12px; }
+
+    .rule-card,
+    .saved-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .metric {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      padding: 9px 0;
+      border-top: 1px solid #34513d;
+    }
+
+    .metric:first-child { border-top: 0; padding-top: 0; }
+    .metric span { color: var(--muted); }
+    .metric strong { color: #f2c95e; font-family: Consolas, monospace; }
+
+    .saved-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px;
+      border: 1px solid #375a43;
+      background: #0a1910;
+    }
+
+    .saved-item button {
+      min-height: 34px;
+      border: 1px solid #6e8a73;
+      color: var(--cream);
+      background: #294534;
+      cursor: pointer;
+    }
+
+    .saved-item small { display: block; color: var(--muted); }
+
+    .empty-note {
+      padding: 12px;
+      border: 1px dashed #52705a;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .export-box {
+      width: 100%;
+      min-height: 120px;
+      margin-top: 10px;
+      padding: 9px;
+      border: 1px solid #6d8b73;
+      color: #e9dfc3;
+      background: #07110b;
+      font: 13px/1.45 Consolas, monospace;
+      resize: vertical;
+    }
+
+    .help-list {
+      margin: 0;
+      padding-left: 20px;
+      color: var(--muted);
+    }
+
+    .help-list li + li { margin-top: 7px; }
+    .help-list b { color: var(--cream); }
+
+    .warning {
+      margin: 12px 0 0;
+      padding: 10px;
+      border-left: 4px solid var(--honey);
+      color: #e7d9b8;
+      background: #241e0d;
+      font-size: 14px;
+    }
+
+    @media (max-width: 1100px) {
+      .lab-layout { grid-template-columns: 1fr; }
+      .side-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .side-stack .panel:last-child { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 720px) {
+      body { font-size: 15px; }
+      .shell { width: min(100% - 10px, 1760px); margin-top: 5px; }
+      .topbar, .map-toolbar { align-items: flex-start; flex-direction: column; }
+      .panel, .topbar { padding: 10px; box-shadow: 2px 2px 0 var(--shadow); }
+      .status-readout { grid-template-columns: 1fr; width: 100%; text-align: left; }
+      .side-stack { grid-template-columns: 1fr; }
+      .side-stack .panel:last-child { grid-column: auto; }
+      .control-block { min-width: 100%; }
+      .pixel-button { flex: 1 1 auto; }
+      .legend { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">2.5D grid placement · prototype 01</p>
+        <h1>林业谷地网格布局实验室</h1>
+      </div>
+      <div class="top-actions">
+        <button class="pixel-button is-primary" id="toggleComposition" type="button" aria-pressed="true">进入定位编辑</button>
+        <button class="pixel-button" id="toggleGrid" type="button" aria-pressed="true">隐藏网格</button>
+        <button class="pixel-button" id="resetView" type="button">重置预览</button>
+      </div>
+    </header>
+
+    <section class="lab-layout">
+      <article class="panel map-panel">
+        <div class="map-toolbar">
+          <div>
+            <p class="eyebrow">Interactive composite</p>
+            <h2>完整布局与定位编辑</h2>
+          </div>
+          <div class="status-readout">
+            <span id="modeReadout">模式 BUILDING</span>
+            <span id="cellReadout">CELL 04 / 08</span>
+            <span id="screenReadout">SCREEN 700 / 244</span>
+          </div>
+        </div>
+
+        <div class="map-stage is-composite" id="mapStage">
+          <img class="map-background" src="assets/map/test-batch/base/valley-base-summer-test-v4.png" alt="与建筑像素风格统一的林业谷地夏季地图 v4">
+          <svg class="terrain-adjustment" id="terrainAdjustment" viewBox="0 0 1667 943" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <pattern id="reclaimedGrass" width="16" height="8" patternUnits="userSpaceOnUse">
+                <rect width="16" height="8" fill="#45643d"></rect>
+                <rect x="2" y="2" width="3" height="2" fill="#5f7d48"></rect>
+                <rect x="11" y="5" width="2" height="2" fill="#2f5335"></rect>
+                <rect x="7" y="1" width="1" height="3" fill="#83a653"></rect>
+              </pattern>
+            </defs>
+            <g id="terrainLots"></g>
+          </svg>
+          <svg class="iso-grid" id="isoGrid" viewBox="0 0 1667 943" preserveAspectRatio="none" aria-label="覆盖完整场景的2.5D建筑定位网格"></svg>
+          <div class="building-anchor" id="buildingAnchor" aria-hidden="true">
+            <div class="building-sprite" id="buildingSprite" data-building="apiary" data-state="1"></div>
+          </div>
+          <div class="villager-anchor" id="villagerAnchor" aria-hidden="true">
+            <div class="villager-sprite" id="villagerSprite"></div>
+          </div>
+          <div class="saved-layer" id="savedLayer" aria-label="布局v2的七座建筑"></div>
+          <div class="selection-pin" id="selectionPin" aria-hidden="true"></div>
+        </div>
+
+        <div class="legend">
+          <span><b>完整画面：</b>默认同时显示七座建筑并隐藏编辑标记</span>
+          <span><b>建筑模式：</b>选择设施后点击任意扩展网格定位</span>
+          <span><b>村民模式：</b>点击网格让村民逐格移动</span>
+          <span><b>层级：</b>按网格纵深自动排序</span>
+        </div>
+
+        <div class="controls">
+          <div class="control-row mode-switch">
+            <button class="pixel-button is-primary" id="buildingMode" type="button" aria-pressed="true">建筑定位模式</button>
+            <button class="pixel-button" id="npcMode" type="button" aria-pressed="false">村民移动模式</button>
+            <select class="pixel-select" id="buildingType" aria-label="建筑类型">
+              <option value="apiary" selected>古树蜂场</option>
+              <option value="station">中央工作站</option>
+              <option value="arbor">林木培育场</option>
+              <option value="processing">加工工坊</option>
+              <option value="warehouse">仓库能源站</option>
+              <option value="market">村民商店</option>
+              <option value="archive">生态档案馆</option>
+            </select>
+            <select class="pixel-select" id="buildingState" aria-label="建筑状态">
+              <option value="0">工地</option>
+              <option value="1" selected>LV1 基础</option>
+              <option value="2">LV2 扩建</option>
+              <option value="3">LV3 完整</option>
+            </select>
+            <button class="pixel-button" id="savePosition" type="button">保存当前建筑位</button>
+          </div>
+
+          <div class="control-row">
+            <div class="control-block">
+              <label for="buildingScale">建筑缩放</label>
+              <input id="buildingScale" type="range" min="70" max="130" step="1" value="100">
+              <output class="control-value" id="buildingScaleValue">100%</output>
+            </div>
+            <div class="control-block">
+              <label for="buildingPitch">纵向压缩</label>
+              <input id="buildingPitch" type="range" min="65" max="100" step="1" value="100">
+              <output class="control-value" id="buildingPitchValue">100%</output>
+            </div>
+            <div class="control-block">
+              <label for="anchorOffset">锚点微调</label>
+              <input id="anchorOffset" type="range" min="-36" max="36" step="1" value="0">
+              <output class="control-value" id="anchorOffsetValue">0px</output>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <aside class="side-stack">
+        <section class="panel">
+          <p class="eyebrow">Projection rules</p>
+          <h2>2.5D 投影标尺</h2>
+          <div class="rule-card">
+            <div class="metric"><span>核心网格</span><strong>25 × 25</strong></div>
+            <div class="metric"><span>扩展坐标</span><strong>-14…39</strong></div>
+            <div class="metric"><span>菱形半宽</span><strong>34 px</strong></div>
+            <div class="metric"><span>菱形半高</span><strong>18 px</strong></div>
+            <div class="metric"><span>建筑锚点</span><strong>BOTTOM</strong></div>
+            <div class="metric"><span>村民高度</span><strong>≈ 32 px</strong></div>
+            <div class="metric"><span>排序规则</span><strong>GRID Y</strong></div>
+          </div>
+          <p class="warning">扩展网格沿用同一投影公式并覆盖矿区、传送台和沙漠地块；旧布局的 0…24 坐标保持不变。</p>
+        </section>
+
+        <section class="panel">
+          <p class="eyebrow">Saved anchors</p>
+          <h2>建筑布局 v2</h2>
+          <div class="saved-list" id="savedList"></div>
+          <div class="control-row" style="margin-top: 10px;">
+            <button class="pixel-button" id="undoPosition" type="button">撤销最后一个</button>
+            <button class="pixel-button is-danger" id="clearPositions" type="button">清空</button>
+            <button class="pixel-button" id="restoreDefaultPositions" type="button">恢复布局v2</button>
+            <button class="pixel-button" id="exportLayout" type="button">导出 JSON</button>
+          </div>
+          <textarea class="export-box" id="exportBox" hidden readonly aria-label="建筑位置JSON"></textarea>
+        </section>
+
+        <section class="panel">
+          <p class="eyebrow">Movement logic</p>
+          <h2>操作说明</h2>
+          <ol class="help-list">
+            <li>选择建筑与可用等级，在<b>建筑定位模式</b>点击全场景扩展网格。</li>
+            <li>建筑以底部中心吸附；调整缩放、纵向压缩和锚点，使其贴合空地。</li>
+            <li>点击<b>保存当前建筑位</b>，位置会记录到浏览器本地。</li>
+            <li>切换到<b>村民移动模式</b>后点击目标格，村民会沿网格逐格移动。</li>
+            <li>村民序列帧由整数帧索引切换，不使用背景连续滚动动画。</li>
+          </ol>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var MAP_WIDTH = 1667;
+      var MAP_HEIGHT = 943;
+      var GRID_SIZE = 25;
+      var GRID_MIN = -14;
+      var GRID_MAX = 39;
+      var GRID_ORIGIN_X = 833.5;
+      var GRID_ORIGIN_Y = 28;
+      var TILE_HALF_WIDTH = 34;
+      var TILE_HALF_HEIGHT = 18;
+      var STORAGE_KEY = "forestry-map-layout-2_5d-v2";
+      var DEFAULT_POSITIONS = [
+        { id: 1787507821950, building: "processing", gx: 15, gy: 30, state: 1, scale: 1.3, pitch: 1, offsetY: 0 },
+        { id: 1787507838555, building: "warehouse", gx: 33, gy: 14, state: 1, scale: .79, pitch: 1, offsetY: 0 },
+        { id: 1787507858995, building: "station", gx: 8, gy: 7, state: 1, scale: 1.12, pitch: 1, offsetY: 0 },
+        { id: 1787507877316, building: "apiary", gx: 22, gy: 15, state: 1, scale: .76, pitch: 1, offsetY: 0 },
+        { id: 1787507889631, building: "market", gx: 25, gy: 21, state: 1, scale: .9, pitch: 1, offsetY: 0 },
+        { id: 1787507906738, building: "archive", gx: 13, gy: 21, state: 1, scale: .92, pitch: 1, offsetY: 0 },
+        { id: 1787507924972, building: "arbor", gx: 4, gy: 8, state: 1, scale: 1.11, pitch: 1, offsetY: 0 }
+      ];
+      var GENERIC_SITE = { src: "assets/map/test-batch/buildings/apiary/apiary-site-summer-test-v3.png", anchor: "-91%", aspect: 1024 / 1536, factor: .8 };
+      var BUILDING_TYPES = {
+        apiary: { name: "古树蜂场", baseWidth: 300, states: { 0: GENERIC_SITE, 1: { src: "assets/map/test-batch/buildings/apiary/apiary-lv1-summer-test-v3.png", anchor: "-93%", aspect: 1024 / 1536, factor: 1 }, 2: { src: "assets/map/test-batch/buildings/apiary/apiary-lv2-summer-test-v3.png", anchor: "-86%", aspect: 1024 / 1536, factor: 1.08 }, 3: { src: "assets/map/test-batch/buildings/apiary/apiary-lv3-summer-test-v3.png", anchor: "-96.5%", aspect: 1024 / 1536, factor: 1.14 } } },
+        station: { name: "中央工作站", baseWidth: 330, states: { 0: GENERIC_SITE, 1: { src: "assets/map/test-batch/buildings/station/station-lv1-summer-test-v1.png", anchor: "-96.4%", aspect: 1024 / 1536, factor: 1 } } },
+        arbor: { name: "林木培育场", baseWidth: 340, states: { 0: GENERIC_SITE, 1: { src: "assets/map/test-batch/buildings/arbor/arbor-lv1-summer-test-v1.png", anchor: "-97%", aspect: 1024 / 1536, factor: 1 } } },
+        processing: { name: "加工工坊", baseWidth: 330, states: { 0: GENERIC_SITE, 1: { src: "assets/map/test-batch/buildings/processing/processing-lv1-summer-test-v1.png", anchor: "-97.3%", aspect: 1199 / 1312, factor: 1 } } },
+        warehouse: { name: "仓库能源站", baseWidth: 340, states: { 0: GENERIC_SITE, 1: { src: "assets/map/test-batch/buildings/warehouse/warehouse-lv1-summer-test-v1.png", anchor: "-89.5%", aspect: 1199 / 1312, factor: 1 } } },
+        market: { name: "村民商店", baseWidth: 285, states: { 0: GENERIC_SITE, 1: { src: "assets/map/test-batch/buildings/market/market-lv1-summer-test-v1.png", anchor: "-96.3%", aspect: 1267 / 1241, factor: 1 } } },
+        archive: { name: "生态档案馆", baseWidth: 230, states: { 0: GENERIC_SITE, 1: { src: "assets/map/test-batch/buildings/archive/archive-lv1-summer-test-v1.png", anchor: "-95%", aspect: 1536 / 1024, factor: 1 } } }
+      };
+      var LOT_STYLES = {
+        processing: { halfW: 145, halfH: 58, fill: "#74756d", stroke: "#303832" },
+        warehouse: { halfW: 110, halfH: 46, fill: "#b58d53", stroke: "#5e482c" },
+        station: { halfW: 120, halfH: 50, fill: "#8a7652", stroke: "#3f4a36" },
+        apiary: { halfW: 84, halfH: 36, fill: "#796641", stroke: "#34452f" },
+        market: { halfW: 98, halfH: 42, fill: "#998b70", stroke: "#4a4334" },
+        archive: { halfW: 82, halfH: 35, fill: "#8b8e80", stroke: "#3f4940" },
+        arbor: { halfW: 125, halfH: 52, fill: "#6d7149", stroke: "#34472f" }
+      };
+
+      var stage = document.getElementById("mapStage");
+      var gridSvg = document.getElementById("isoGrid");
+      var buildingAnchor = document.getElementById("buildingAnchor");
+      var buildingSprite = document.getElementById("buildingSprite");
+      var villagerAnchor = document.getElementById("villagerAnchor");
+      var villagerSprite = document.getElementById("villagerSprite");
+      var selectionPin = document.getElementById("selectionPin");
+      var savedLayer = document.getElementById("savedLayer");
+      var terrainLots = document.getElementById("terrainLots");
+      var savedList = document.getElementById("savedList");
+      var modeReadout = document.getElementById("modeReadout");
+      var cellReadout = document.getElementById("cellReadout");
+      var screenReadout = document.getElementById("screenReadout");
+      var buildingModeButton = document.getElementById("buildingMode");
+      var npcModeButton = document.getElementById("npcMode");
+      var compositionButton = document.getElementById("toggleComposition");
+      var stateSelect = document.getElementById("buildingState");
+      var typeSelect = document.getElementById("buildingType");
+      var scaleInput = document.getElementById("buildingScale");
+      var pitchInput = document.getElementById("buildingPitch");
+      var offsetInput = document.getElementById("anchorOffset");
+      var scaleValue = document.getElementById("buildingScaleValue");
+      var pitchValue = document.getElementById("buildingPitchValue");
+      var offsetValue = document.getElementById("anchorOffsetValue");
+      var exportBox = document.getElementById("exportBox");
+
+      var mode = "building";
+      var compositionMode = true;
+      var selectedCell = { gx: 4, gy: 8 };
+      var buildingSettings = { building: "apiary", state: 1, scale: 1, pitch: 1, offsetY: 0 };
+      var savedPositions = loadSavedPositions();
+      var villager = {
+        gx: 12,
+        gy: 12,
+        screenX: 0,
+        screenY: 0,
+        path: [],
+        segment: null,
+        segmentStartedAt: 0,
+        row: 0,
+        frame: 0
+      };
+
+      function project(gx, gy) {
+        return {
+          x: GRID_ORIGIN_X + (gx - gy) * TILE_HALF_WIDTH,
+          y: GRID_ORIGIN_Y + (gx + gy) * TILE_HALF_HEIGHT
+        };
+      }
+
+      function setPercentPosition(element, point, offsetY) {
+        element.style.left = (point.x / MAP_WIDTH * 100) + "%";
+        element.style.top = ((point.y + (offsetY || 0)) / MAP_HEIGHT * 100) + "%";
+      }
+
+      function createGrid() {
+        var namespace = "http://www.w3.org/2000/svg";
+        var fragment = document.createDocumentFragment();
+        for (var gy = GRID_MIN; gy <= GRID_MAX; gy += 1) {
+          for (var gx = GRID_MIN; gx <= GRID_MAX; gx += 1) {
+            var center = project(gx, gy);
+            if (center.x + TILE_HALF_WIDTH < 0 || center.x - TILE_HALF_WIDTH > MAP_WIDTH || center.y + TILE_HALF_HEIGHT < 0 || center.y - TILE_HALF_HEIGHT > MAP_HEIGHT) continue;
+            var polygon = document.createElementNS(namespace, "polygon");
+            var points = [
+              center.x + "," + (center.y - TILE_HALF_HEIGHT),
+              (center.x + TILE_HALF_WIDTH) + "," + center.y,
+              center.x + "," + (center.y + TILE_HALF_HEIGHT),
+              (center.x - TILE_HALF_WIDTH) + "," + center.y
+            ].join(" ");
+            polygon.setAttribute("points", points);
+            polygon.setAttribute("class", "grid-cell");
+            polygon.setAttribute("data-gx", String(gx));
+            polygon.setAttribute("data-gy", String(gy));
+            polygon.addEventListener("click", onGridCellClick);
+            fragment.appendChild(polygon);
+          }
+        }
+        gridSvg.appendChild(fragment);
+      }
+
+      function diamondPoints(point, halfW, halfH, offsetY) {
+        var centerY = point.y - halfH + (offsetY || 0);
+        return [point.x + "," + (centerY - halfH), (point.x + halfW) + "," + centerY, point.x + "," + (centerY + halfH), (point.x - halfW) + "," + centerY].join(" ");
+      }
+
+      function renderTerrainAdjustments() {
+        var namespace = "http://www.w3.org/2000/svg";
+        terrainLots.textContent = "";
+        var reclaimed = document.createElementNS(namespace, "polygon");
+        reclaimed.setAttribute("class", "lot-pad reclaimed-lot");
+        reclaimed.setAttribute("points", diamondPoints({ x: 731.5, y: 730 }, 92, 38, 0));
+        reclaimed.setAttribute("fill", "url(#reclaimedGrass)");
+        reclaimed.setAttribute("fill-opacity", "1");
+        reclaimed.setAttribute("stroke", "#2d4732");
+        terrainLots.appendChild(reclaimed);
+        savedPositions.forEach(function (item) {
+          var style = LOT_STYLES[item.building];
+          if (!style) return;
+          var point = project(item.gx, item.gy);
+          var connector = document.createElementNS(namespace, "polygon");
+          connector.setAttribute("class", "lot-connector");
+          connector.setAttribute("points", (point.x - 20) + "," + (point.y - 4) + " " + (point.x + 20) + "," + (point.y - 4) + " " + (point.x + 28) + "," + (point.y + 16) + " " + (point.x - 28) + "," + (point.y + 16));
+          connector.setAttribute("fill", style.fill);
+          connector.setAttribute("stroke", style.stroke);
+          terrainLots.appendChild(connector);
+          var shadow = document.createElementNS(namespace, "polygon");
+          shadow.setAttribute("class", "lot-shadow");
+          shadow.setAttribute("points", diamondPoints(point, style.halfW + 7, style.halfH + 3, 7));
+          terrainLots.appendChild(shadow);
+          var pad = document.createElementNS(namespace, "polygon");
+          pad.setAttribute("class", "lot-pad");
+          pad.setAttribute("points", diamondPoints(point, style.halfW, style.halfH, 0));
+          pad.setAttribute("fill", style.fill);
+          pad.setAttribute("fill-opacity", ".9");
+          pad.setAttribute("stroke", style.stroke);
+          terrainLots.appendChild(pad);
+          var inset = document.createElementNS(namespace, "polygon");
+          inset.setAttribute("class", "lot-inset");
+          inset.setAttribute("points", diamondPoints(point, style.halfW - 10, style.halfH - 5, -2));
+          terrainLots.appendChild(inset);
+        });
+      }
+      function onGridCellClick(event) {
+        var gx = Number(event.currentTarget.getAttribute("data-gx"));
+        var gy = Number(event.currentTarget.getAttribute("data-gy"));
+        if (mode === "building") {
+          selectBuildingCell(gx, gy);
+        } else {
+          moveVillagerTo(gx, gy);
+        }
+      }
+
+      function selectBuildingCell(gx, gy) {
+        selectedCell = { gx: gx, gy: gy };
+        stage.classList.add("has-edit-preview");
+        updateSelectedGridCell();
+        updateBuildingPreview();
+        updateReadouts();
+      }
+
+      function updateSelectedGridCell() {
+        var current = gridSvg.querySelector(".grid-cell.is-selected");
+        if (current) current.classList.remove("is-selected");
+        var target = gridSvg.querySelector('[data-gx="' + selectedCell.gx + '"][data-gy="' + selectedCell.gy + '"]');
+        if (target) target.classList.add("is-selected");
+      }
+
+      function getBuildingDefinition() {
+        return BUILDING_TYPES[buildingSettings.building] || BUILDING_TYPES.apiary;
+      }
+
+      function getCurrentAsset() {
+        var definition = getBuildingDefinition();
+        return definition.states[buildingSettings.state] || definition.states[1] || GENERIC_SITE;
+      }
+
+      function syncStateOptions() {
+        var definition = getBuildingDefinition();
+        Array.prototype.forEach.call(stateSelect.options, function (option) {
+          option.disabled = !definition.states[Number(option.value)];
+        });
+        if (!definition.states[buildingSettings.state]) {
+          buildingSettings.state = definition.states[1] ? 1 : Number(Object.keys(definition.states)[0]);
+        }
+        stateSelect.value = String(buildingSettings.state);
+      }
+      function updateBuildingPreview() {
+        var point = project(selectedCell.gx, selectedCell.gy);
+        var asset = getCurrentAsset();
+        setPercentPosition(buildingAnchor, point, buildingSettings.offsetY);
+        setPercentPosition(selectionPin, point, buildingSettings.offsetY);
+        buildingAnchor.style.zIndex = String(100 + Math.round(point.y + buildingSettings.offsetY));
+        buildingSprite.setAttribute("data-building", buildingSettings.building);
+        buildingSprite.setAttribute("data-state", String(buildingSettings.state));
+        buildingSprite.style.backgroundImage = 'url("' + asset.src + '")';
+        buildingSprite.style.setProperty("--anchor-y", asset.anchor);
+        buildingSprite.style.setProperty("--building-scale", String(buildingSettings.scale));
+        buildingSprite.style.setProperty("--building-pitch", String(buildingSettings.pitch));
+        syncAssetScale();
+      }
+
+      function syncAssetScale() {
+        var stageScale = stage.getBoundingClientRect().width / MAP_WIDTH;
+        var definition = getBuildingDefinition();
+        var asset = getCurrentAsset();
+        var buildingWidth = definition.baseWidth * stageScale * asset.factor;
+        var buildingHeight = buildingWidth * asset.aspect;
+        buildingSprite.style.width = buildingWidth + "px";
+        buildingSprite.style.height = buildingHeight + "px";
+
+        var villagerCell = Math.max(18, 46 * stageScale);
+        villagerSprite.style.width = villagerCell + "px";
+        villagerSprite.style.height = villagerCell + "px";
+      }
+
+      function updateReadouts() {
+        var point = project(selectedCell.gx, selectedCell.gy);
+        if (compositionMode) {
+          modeReadout.textContent = "模式 COMPOSITE";
+          cellReadout.textContent = "LAYOUT V2";
+          screenReadout.textContent = savedPositions.length + " BUILDINGS";
+          return;
+        }
+        modeReadout.textContent = "模式 " + mode.toUpperCase();
+        cellReadout.textContent = "CELL " + pad(selectedCell.gx) + " / " + pad(selectedCell.gy);
+        screenReadout.textContent = "SCREEN " + Math.round(point.x) + " / " + Math.round(point.y + buildingSettings.offsetY);
+      }
+
+      function pad(value) {
+        var sign = value < 0 ? "-" : "";
+        return sign + String(Math.abs(value)).padStart(2, "0");
+      }
+
+      function setMode(nextMode) {
+        mode = nextMode;
+        var isBuilding = mode === "building";
+        buildingModeButton.classList.toggle("is-primary", isBuilding);
+        npcModeButton.classList.toggle("is-primary", !isBuilding);
+        buildingModeButton.setAttribute("aria-pressed", String(isBuilding));
+        npcModeButton.setAttribute("aria-pressed", String(!isBuilding));
+        selectionPin.style.borderColor = isBuilding ? "#ffe08a" : "#7bd6ff";
+        updateReadouts();
+      }
+
+      function setCompositionMode(nextMode) {
+        compositionMode = Boolean(nextMode);
+        stage.classList.toggle("is-composite", compositionMode);
+        compositionButton.classList.toggle("is-primary", compositionMode);
+        compositionButton.setAttribute("aria-pressed", String(compositionMode));
+        compositionButton.textContent = compositionMode ? "进入定位编辑" : "查看完整布局";
+        updateReadouts();
+      }
+
+      function directionRow(dx, dy) {
+        if (dx > 0) return 1;
+        if (dx < 0) return 3;
+        if (dy < 0) return 2;
+        return 0;
+      }
+
+      function setVillagerFrame(row, frame) {
+        villager.row = row;
+        villager.frame = frame;
+        var xPercent = frame * 20;
+        var yPercent = row * (100 / 3);
+        villagerSprite.style.backgroundPosition = xPercent + "% " + yPercent + "%";
+      }
+
+      function placeVillagerAt(point) {
+        villager.screenX = point.x;
+        villager.screenY = point.y;
+        setPercentPosition(villagerAnchor, point, 0);
+        villagerAnchor.style.zIndex = String(120 + Math.round(point.y));
+      }
+
+      function buildPath(targetGx, targetGy) {
+        var path = [];
+        var gx = villager.gx;
+        var gy = villager.gy;
+        var preferX = true;
+        while (gx !== targetGx || gy !== targetGy) {
+          if ((preferX && gx !== targetGx) || gy === targetGy) {
+            gx += Math.sign(targetGx - gx);
+          } else {
+            gy += Math.sign(targetGy - gy);
+          }
+          path.push({ gx: gx, gy: gy });
+          preferX = !preferX;
+        }
+        return path;
+      }
+
+      function moveVillagerTo(gx, gy) {
+        villager.path = buildPath(gx, gy);
+        villager.segment = null;
+        modeReadout.textContent = "模式 NPC · 目标 " + pad(gx) + "/" + pad(gy);
+      }
+
+      function startNextSegment(now) {
+        if (villager.path.length === 0) {
+          villager.segment = null;
+          setVillagerFrame(villager.row, 0);
+          return;
+        }
+        var next = villager.path.shift();
+        var dx = next.gx - villager.gx;
+        var dy = next.gy - villager.gy;
+        villager.segment = {
+          from: project(villager.gx, villager.gy),
+          to: project(next.gx, next.gy),
+          gx: next.gx,
+          gy: next.gy,
+          row: directionRow(dx, dy)
+        };
+        villager.segmentStartedAt = now;
+      }
+
+      function animateVillager(now) {
+        if (!villager.segment && villager.path.length > 0) startNextSegment(now);
+
+        if (villager.segment) {
+          var duration = 260;
+          var progress = Math.min(1, (now - villager.segmentStartedAt) / duration);
+          var eased = progress * progress * (3 - 2 * progress);
+          var point = {
+            x: villager.segment.from.x + (villager.segment.to.x - villager.segment.from.x) * eased,
+            y: villager.segment.from.y + (villager.segment.to.y - villager.segment.from.y) * eased
+          };
+          placeVillagerAt(point);
+          setVillagerFrame(villager.segment.row, Math.floor((now / 90) % 6));
+
+          if (progress >= 1) {
+            villager.gx = villager.segment.gx;
+            villager.gy = villager.segment.gy;
+            villager.segment = null;
+            startNextSegment(now);
+          }
+        }
+
+        window.requestAnimationFrame(animateVillager);
+      }
+
+      function saveCurrentPosition() {
+        var item = {
+          id: Date.now(),
+          building: buildingSettings.building,
+          gx: selectedCell.gx,
+          gy: selectedCell.gy,
+          state: buildingSettings.state,
+          scale: Number(buildingSettings.scale.toFixed(2)),
+          pitch: Number(buildingSettings.pitch.toFixed(2)),
+          offsetY: buildingSettings.offsetY
+        };
+        savedPositions.push(item);
+        persistSavedPositions();
+        renderSavedPositions();
+      }
+
+      function loadSavedPositions() {
+        try {
+          var raw = window.localStorage.getItem(STORAGE_KEY);
+          var parsed = raw ? JSON.parse(raw) : DEFAULT_POSITIONS;
+          return Array.isArray(parsed) ? parsed.map(function (item) { return Object.assign({}, item); }) : [];
+        } catch (error) {
+          return DEFAULT_POSITIONS.map(function (item) { return Object.assign({}, item); });
+        }
+      }
+
+      function persistSavedPositions() {
+        try {
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(savedPositions));
+        } catch (error) {
+          modeReadout.textContent = "本地保存不可用";
+        }
+      }
+
+      function restoreSavedItem(index) {
+        var item = savedPositions[index];
+        if (!item) return;
+        selectedCell = { gx: item.gx, gy: item.gy };
+        stage.classList.add("has-edit-preview");
+        buildingSettings.building = BUILDING_TYPES[item.building] ? item.building : "apiary";
+        typeSelect.value = buildingSettings.building;
+        buildingSettings.state = Number(item.state);
+        syncStateOptions();
+        buildingSettings.scale = item.scale;
+        buildingSettings.pitch = item.pitch;
+        buildingSettings.offsetY = item.offsetY;
+        stateSelect.value = String(buildingSettings.state);
+        scaleInput.value = String(Math.round(item.scale * 100));
+        pitchInput.value = String(Math.round(item.pitch * 100));
+        offsetInput.value = String(item.offsetY);
+        syncControlLabels();
+        setCompositionMode(false);
+        setMode("building");
+        updateSelectedGridCell();
+        updateBuildingPreview();
+        updateReadouts();
+      }
+
+      function renderSavedPositions() {
+        savedLayer.textContent = "";
+        savedList.textContent = "";
+        renderTerrainAdjustments();
+
+        if (savedPositions.length === 0) {
+          var empty = document.createElement("div");
+          empty.className = "empty-note";
+          empty.textContent = "当前没有建筑槽位，可点击恢复布局v2";
+          savedList.appendChild(empty);
+          return;
+        }
+
+        savedPositions.forEach(function (item, index) {
+          var point = project(item.gx, item.gy);
+          var definition = BUILDING_TYPES[item.building] || BUILDING_TYPES.apiary;
+          var asset = definition.states[item.state] || definition.states[1] || GENERIC_SITE;
+          var placedAnchor = document.createElement("div");
+          placedAnchor.className = "placed-building-anchor";
+          placedAnchor.setAttribute("data-layout-index", String(index));
+          setPercentPosition(placedAnchor, point, item.offsetY);
+          placedAnchor.style.zIndex = String(100 + Math.round(point.y + item.offsetY));
+          var placedSprite = document.createElement("div");
+          placedSprite.className = "building-sprite placed-building-sprite";
+          placedSprite.setAttribute("data-building", item.building);
+          placedSprite.setAttribute("data-state", String(item.state));
+          placedSprite.style.backgroundImage = 'url("' + asset.src + '")';
+          placedSprite.style.setProperty("--anchor-y", asset.anchor);
+          placedSprite.style.setProperty("--building-scale", String(item.scale));
+          placedSprite.style.setProperty("--building-pitch", String(item.pitch));
+          placedAnchor.appendChild(placedSprite);
+          savedLayer.appendChild(placedAnchor);
+          var marker = document.createElement("button");
+          marker.type = "button";
+          marker.className = "slot-marker";
+          marker.textContent = String(index + 1);
+          marker.title = "槽位 " + (index + 1) + " · CELL " + item.gx + "/" + item.gy;
+          setPercentPosition(marker, point, item.offsetY);
+          marker.addEventListener("click", function () { restoreSavedItem(index); });
+          savedLayer.appendChild(marker);
+
+          var row = document.createElement("div");
+          row.className = "saved-item";
+          var description = document.createElement("div");
+          var title = document.createElement("strong");
+          title.textContent = "槽位 " + (index + 1) + " · " + ((BUILDING_TYPES[item.building] || BUILDING_TYPES.apiary).name) + " · CELL " + pad(item.gx) + "/" + pad(item.gy);
+          var detail = document.createElement("small");
+          detail.textContent = "LV/状态 " + item.state + " · 缩放 " + Math.round(item.scale * 100) + "% · 压缩 " + Math.round(item.pitch * 100) + "% · Y " + item.offsetY;
+          description.appendChild(title);
+          description.appendChild(detail);
+          var locate = document.createElement("button");
+          locate.type = "button";
+          locate.textContent = "定位";
+          locate.addEventListener("click", function () { restoreSavedItem(index); });
+          row.appendChild(description);
+          row.appendChild(locate);
+          savedList.appendChild(row);
+        });
+        syncPlacedAssetScale();
+      }
+
+      function syncPlacedAssetScale() {
+        var stageScale = stage.getBoundingClientRect().width / MAP_WIDTH;
+        savedPositions.forEach(function (item, index) {
+          var placedAnchor = savedLayer.querySelector('[data-layout-index="' + index + '"]');
+          if (!placedAnchor) return;
+          var definition = BUILDING_TYPES[item.building] || BUILDING_TYPES.apiary;
+          var asset = definition.states[item.state] || definition.states[1] || GENERIC_SITE;
+          var sprite = placedAnchor.querySelector(".placed-building-sprite");
+          var width = definition.baseWidth * stageScale * asset.factor;
+          sprite.style.width = width + "px";
+          sprite.style.height = (width * asset.aspect) + "px";
+        });
+      }
+      function syncControlLabels() {
+        scaleValue.textContent = Math.round(buildingSettings.scale * 100) + "%";
+        pitchValue.textContent = Math.round(buildingSettings.pitch * 100) + "%";
+        offsetValue.textContent = buildingSettings.offsetY + "px";
+      }
+
+      function resetPreview() {
+        selectedCell = { gx: 4, gy: 8 };
+        stage.classList.remove("has-edit-preview");
+        buildingSettings = { building: "apiary", state: 1, scale: 1, pitch: 1, offsetY: 0 };
+        typeSelect.value = "apiary";
+        stateSelect.value = "1";
+        syncStateOptions();
+        scaleInput.value = "100";
+        pitchInput.value = "100";
+        offsetInput.value = "0";
+        villager.gx = 12;
+        villager.gy = 12;
+        villager.path = [];
+        villager.segment = null;
+        placeVillagerAt(project(villager.gx, villager.gy));
+        setVillagerFrame(0, 0);
+        syncControlLabels();
+        setMode("building");
+        setCompositionMode(true);
+        updateSelectedGridCell();
+        updateBuildingPreview();
+        updateReadouts();
+      }
+
+      compositionButton.addEventListener("click", function () { setCompositionMode(!compositionMode); });
+      buildingModeButton.addEventListener("click", function () { setCompositionMode(false); setMode("building"); });
+      npcModeButton.addEventListener("click", function () { setCompositionMode(false); setMode("npc"); });
+
+      document.getElementById("toggleGrid").addEventListener("click", function (event) {
+        setCompositionMode(false);
+        var hidden = gridSvg.classList.toggle("is-hidden");
+        event.currentTarget.textContent = hidden ? "显示网格" : "隐藏网格";
+        event.currentTarget.setAttribute("aria-pressed", String(!hidden));
+      });
+
+      document.getElementById("resetView").addEventListener("click", resetPreview);
+      document.getElementById("savePosition").addEventListener("click", saveCurrentPosition);
+
+      document.getElementById("undoPosition").addEventListener("click", function () {
+        if (savedPositions.length === 0) return;
+        savedPositions.pop();
+        persistSavedPositions();
+        renderSavedPositions();
+      });
+
+      document.getElementById("clearPositions").addEventListener("click", function () {
+        if (savedPositions.length === 0) return;
+        if (!window.confirm("清空所有建筑槽位？")) return;
+        savedPositions = [];
+        persistSavedPositions();
+        renderSavedPositions();
+      });
+
+
+      document.getElementById("restoreDefaultPositions").addEventListener("click", function () {
+        savedPositions = DEFAULT_POSITIONS.map(function (item) { return Object.assign({}, item); });
+        persistSavedPositions();
+        renderSavedPositions();
+      });
+      document.getElementById("exportLayout").addEventListener("click", function () {
+        var payload = {
+          version: 1,
+          projection: {
+            type: "orthographic-diamond-2.5d",
+            gridSize: GRID_SIZE,
+            origin: [GRID_ORIGIN_X, GRID_ORIGIN_Y],
+            gridRange: [GRID_MIN, GRID_MAX],
+            tileHalfSize: [TILE_HALF_WIDTH, TILE_HALF_HEIGHT],
+            mapSize: [MAP_WIDTH, MAP_HEIGHT]
+          },
+          buildings: savedPositions
+        };
+        var text = JSON.stringify(payload, null, 2);
+        exportBox.hidden = false;
+        exportBox.value = text;
+        exportBox.focus();
+        exportBox.select();
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).catch(function () {});
+        }
+      });
+
+      typeSelect.addEventListener("change", function () {
+        buildingSettings.building = typeSelect.value;
+        buildingSettings.state = 1;
+        syncStateOptions();
+        updateBuildingPreview();
+        updateReadouts();
+      });
+      stateSelect.addEventListener("change", function () {
+        buildingSettings.state = Number(stateSelect.value);
+        updateBuildingPreview();
+      });
+
+      scaleInput.addEventListener("input", function () {
+        buildingSettings.scale = Number(scaleInput.value) / 100;
+        syncControlLabels();
+        updateBuildingPreview();
+      });
+
+      pitchInput.addEventListener("input", function () {
+        buildingSettings.pitch = Number(pitchInput.value) / 100;
+        syncControlLabels();
+        updateBuildingPreview();
+      });
+
+      offsetInput.addEventListener("input", function () {
+        buildingSettings.offsetY = Number(offsetInput.value);
+        syncControlLabels();
+        updateBuildingPreview();
+        updateReadouts();
+      });
+
+      syncStateOptions();
+      createGrid();
+      renderSavedPositions();
+      placeVillagerAt(project(villager.gx, villager.gy));
+      setVillagerFrame(0, 0);
+      syncControlLabels();
+      updateSelectedGridCell();
+      updateBuildingPreview();
+      updateReadouts();
+      setMode("building");
+      syncAssetScale();
+
+      if (window.ResizeObserver) {
+        new ResizeObserver(function () { syncAssetScale(); syncPlacedAssetScale(); }).observe(stage);
+      } else {
+        window.addEventListener("resize", function () { syncAssetScale(); syncPlacedAssetScale(); });
+      }
+
+      window.requestAnimationFrame(animateVillager);
+    }());
+  </script>
+</body>
+</html>

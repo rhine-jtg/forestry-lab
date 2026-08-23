@@ -15,6 +15,7 @@ $outputPath = Join-Path $outputDirectory "Forestry-Lab.exe"
 $indexPath = Join-Path $projectRoot "index.html"
 $stylesPath = Join-Path $projectRoot "styles.css"
 $scriptPath = Join-Path $projectRoot "app.js"
+$npcPath = Join-Path $projectRoot "assets\npc\hivekeeper.gif"
 $fontPath = Join-Path $projectRoot "assets\fonts\fusion-pixel-10px-proportional-zh_hans.otf.woff2"
 $fontLicensePath = Join-Path $projectRoot "assets\fonts\OFL.txt"
 $arkFontLicensePath = Join-Path $projectRoot "assets\fonts\LICENSES\ark-pixel\OFL.txt"
@@ -34,6 +35,7 @@ $arguments = @(
     "/resource:$indexPath,ForestryLab.index.html",
     "/resource:$stylesPath,ForestryLab.styles.css",
     "/resource:$scriptPath,ForestryLab.app.js",
+    "/resource:$npcPath,ForestryLab.npc.hivekeeper.gif",
     "/resource:$fontPath,ForestryLab.font.woff2",
     "/resource:$fontLicensePath,ForestryLab.font.OFL.txt",
     "/resource:$arkFontLicensePath,ForestryLab.font.ark.OFL.txt",

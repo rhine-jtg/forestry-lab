@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>林业谷地 · 建筑图层控制</title>
+  <link rel="stylesheet" href="map-building-visibility-test.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">FORESTRY VALLEY · LAYER CONTROL</p>
+        <h1>建筑图层显隐测试</h1>
+        <p class="subtitle">逐栋检查建筑与道路、地块和环境的衔接关系</p>
+      </div>
+      <nav class="top-actions" aria-label="建筑图层快捷操作">
+        <button class="pixel-button is-primary" id="showAll" type="button">全部显示</button>
+        <button class="pixel-button" id="hideAll" type="button">全部隐藏</button>
+        <button class="pixel-button" id="invertAll" type="button">反选</button>
+      </nav>
+    </header>
+
+    <section class="workspace">
+      <article class="map-panel">
+        <div class="map-toolbar">
+          <div>
+            <p class="eyebrow">INTERACTIVE COMPOSITE</p>
+            <h2>夏季谷地布局</h2>
+          </div>
+          <div class="map-status" aria-live="polite">
+            <span>可见建筑</span>
+            <strong id="visibleCount">7 / 7</strong>
+          </div>
+        </div>
+
+        <div class="map-viewport" id="mapViewport">
+          <div class="map-stage" id="mapStage" aria-label="七栋建筑的独立图层预览">
+            <img
+              class="map-background"
+              id="mapBackground"
+              src="assets/map/test-batch/base/valley-base-summer-building-guided-test-v1.png"
+              alt="无建筑的林业谷地夏季背景"
+            >
+            <svg class="river-effects" id="riverEffects" viewBox="0 0 1667 943" aria-hidden="true">
+              <defs>
+                <linearGradient id="riverSheen" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#e3fff5" stop-opacity=".08"/>
+                  <stop offset=".48" stop-color="#b5f5e8" stop-opacity=".62"/>
+                  <stop offset="1" stop-color="#79c8c2" stop-opacity=".05"/>
+                </linearGradient>
+              </defs>
+              <path class="river-sheen" d="M1372 -42 C1398 88 1346 176 1392 250 C1438 330 1310 365 1266 438 C1218 520 1268 606 1228 700 C1194 786 1218 868 1286 986"/>
+              <g class="river-ripples">
+                <path d="M1365 35 C1378 109 1354 150 1364 200"/>
+                <path d="M1391 270 C1358 322 1308 348 1288 397"/>
+                <path d="M1254 468 C1234 530 1260 584 1239 634"/>
+                <path d="M1218 720 C1201 777 1218 831 1252 884"/>
+              </g>
+            </svg>
+            <div class="prop-layer" id="propLayer" aria-hidden="true"></div>
+            <div class="building-layer" id="buildingLayer"></div>
+            <div class="npc-layer" id="npcLayer" aria-label="谷地村民"></div>
+
+            <div class="scene-hud" aria-label="谷地状态">
+              <div class="resource-strip">
+                <span class="season-chip"><i>☀</i><b>夏季</b><small>DAY 12</small></span>
+                <span class="resource-chip is-energy"><i>ϟ</i><b>84 / 100</b><small>能源</small></span>
+                <span class="resource-chip is-honey"><i>⬢</i><b>2,370</b><small>蜂蜜</small></span>
+                <span class="resource-chip is-wood"><i>▰</i><b>4,860</b><small>木材</small></span>
+              </div>
+              <div class="weather-chip"><span>晴朗</span><strong>23°C</strong><small>授粉效率 +12%</small></div>
+            </div>
+
+            <nav class="scene-actionbar" aria-label="地图功能">
+              <button class="scene-action is-active" type="button" data-map-mode="overview" aria-pressed="true"><i>⌂</i><span>总览</span></button>
+              <button class="scene-action" type="button" data-map-mode="build" aria-pressed="false"><i>⚒</i><span>建设</span></button>
+              <button class="scene-action" type="button" data-map-mode="survey" aria-pressed="false"><i>⌖</i><span>调查</span></button>
+              <button class="scene-action" type="button" data-map-mode="archive" aria-pressed="false"><i>▤</i><span>档案</span></button>
+            </nav>
+            <div class="map-empty" id="mapEmpty" hidden>
+              <strong>建筑图层已全部隐藏</strong>
+              <span>可在右侧逐栋恢复显示</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="map-footer">
+          <span><i class="legend-dot is-visible"></i>显示</span>
+          <span><i class="legend-dot"></i>隐藏</span>
+          <span>点击“仅看”可单独检查一栋建筑</span>
+        </div>
+      </article>
+
+      <aside class="control-panel">
+        <div class="control-heading">
+          <div>
+            <p class="eyebrow">LAYER STACK</p>
+            <h2>独立建筑图层</h2>
+          </div>
+          <button class="icon-button" id="resetLayers" type="button" title="恢复默认显示" aria-label="恢复默认显示">↻</button>
+        </div>
+
+        <label class="background-toggle" for="backgroundVisible">
+          <span class="layer-index">BG</span>
+          <span class="layer-copy">
+            <strong>谷地背景</strong>
+            <small>道路、河流与环境</small>
+          </span>
+          <input id="backgroundVisible" type="checkbox" checked>
+          <span class="switch" aria-hidden="true"></span>
+        </label>
+
+        <section class="scene-layer-panel" aria-label="场景效果图层">
+          <div class="scene-layer-heading">
+            <span>SCENE LAYERS</span>
+            <small>场景附加层</small>
+          </div>
+          <div class="scene-layer-grid">
+            <button class="scene-toggle" type="button" data-scene-layer="water" aria-pressed="true"><i>≈</i><span>河流闪光</span></button>
+            <button class="scene-toggle" type="button" data-scene-layer="props" aria-pressed="true"><i>♧</i><span>静态小物</span></button>
+            <button class="scene-toggle" type="button" data-scene-layer="npcs" aria-pressed="true"><i>♟</i><span>村民角色</span></button>
+            <button class="scene-toggle" type="button" data-scene-layer="effects" aria-pressed="true"><i>✦</i><span>建筑动态</span></button>
+          </div>
+        </section>
+
+        <section class="adjustment-panel" id="adjustmentPanel" tabindex="0" aria-label="当前建筑位置微调">
+          <div class="adjustment-heading">
+            <span>
+              <small>CURRENT BUILDING</small>
+              <strong id="adjustmentName">林木培育场</strong>
+            </span>
+            <output id="offsetReadout">X +0 · Y +0</output>
+          </div>
+
+          <div class="state-control" aria-label="当前建筑阶段">
+            <span>建造阶段</span>
+            <div class="state-buttons" id="stateButtons">
+              <button class="state-button" type="button" data-state="0" aria-pressed="false">未建</button>
+              <button class="state-button is-active" type="button" data-state="1" aria-pressed="true">LV1</button>
+              <button class="state-button" type="button" data-state="2" aria-pressed="false">LV2</button>
+              <button class="state-button" type="button" data-state="3" aria-pressed="false">LV3</button>
+            </div>
+          </div>
+
+          <div class="step-control" aria-label="微调步长">
+            <span>步长</span>
+            <button class="step-button is-active" type="button" data-step="1" aria-pressed="true">1 px</button>
+            <button class="step-button" type="button" data-step="5" aria-pressed="false">5 px</button>
+            <button class="step-button" type="button" data-step="10" aria-pressed="false">10 px</button>
+          </div>
+
+          <div class="nudge-layout">
+            <div class="nudge-pad" aria-label="四向移动建筑">
+              <button class="nudge-button is-up" type="button" data-dx="0" data-dy="-1" aria-label="建筑向上移动">↑</button>
+              <button class="nudge-button is-left" type="button" data-dx="-1" data-dy="0" aria-label="建筑向左移动">←</button>
+              <button class="nudge-button is-reset" id="resetCurrentOffset" type="button" aria-label="当前建筑恢复基准定位">基准</button>
+              <button class="nudge-button is-right" type="button" data-dx="1" data-dy="0" aria-label="建筑向右移动">→</button>
+              <button class="nudge-button is-down" type="button" data-dx="0" data-dy="1" aria-label="建筑向下移动">↓</button>
+            </div>
+            <div class="coordinate-card">
+              <span>屏幕锚点</span>
+              <strong id="screenCoordinate">698 / 244</strong>
+              <button class="solo-button" id="resetAllOffsets" type="button">全部恢复基准</button>
+            </div>
+          </div>
+          <p class="keyboard-hint">选择建筑后可使用方向键；Shift + 方向键移动 4 倍步长。</p>
+          <div class="export-actions">
+            <button class="pixel-button is-primary" id="exportLayout" type="button">生成并复制 JSON</button>
+            <button class="pixel-button" id="downloadLayout" type="button">下载 JSON</button>
+            <output id="exportStatus" aria-live="polite">尚未导出</output>
+          </div>
+          <textarea class="export-box" id="exportBox" hidden readonly aria-label="建筑微调定位 JSON"></textarea>
+        </section>
+
+        <div class="layer-list" id="layerList"></div>
+
+        <details class="npc-catalog">
+          <summary>村民三视图素材 <span>3 组</span></summary>
+          <div class="npc-catalog-list">
+            <figure>
+              <figcaption>养蜂人</figcaption>
+              <img src="assets/map/test-batch/characters/villager/turnarounds/beekeeper-front.png" alt="养蜂人正面">
+              <img src="assets/map/test-batch/characters/villager/turnarounds/beekeeper-right.png" alt="养蜂人侧面">
+              <img src="assets/map/test-batch/characters/villager/turnarounds/beekeeper-back.png" alt="养蜂人背面">
+            </figure>
+            <figure>
+              <figcaption>植物学家</figcaption>
+              <img src="assets/map/test-batch/characters/villager/turnarounds/botanist-front.png" alt="植物学家正面">
+              <img src="assets/map/test-batch/characters/villager/turnarounds/botanist-right.png" alt="植物学家侧面">
+              <img src="assets/map/test-batch/characters/villager/turnarounds/botanist-back.png" alt="植物学家背面">
+            </figure>
+            <figure>
+              <figcaption>商人</figcaption>
+              <img src="assets/map/test-batch/characters/villager/turnarounds/merchant-front.png" alt="商人正面">
+              <img src="assets/map/test-batch/characters/villager/turnarounds/merchant-right.png" alt="商人侧面">
+              <img src="assets/map/test-batch/characters/villager/turnarounds/merchant-back.png" alt="商人背面">
+            </figure>
+          </div>
+        </details>
+
+        <section class="help-card">
+          <strong>检查方式</strong>
+          <p>关闭建筑后可检查其地块轮廓；使用“仅看”确认单栋建筑的比例、锚点和道路入口。</p>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script src="map-building-visibility-test.js"></script>
+</body>
+</html>

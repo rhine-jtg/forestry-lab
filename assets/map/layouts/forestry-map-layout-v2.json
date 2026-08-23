@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "projection": {
+    "type": "orthographic-diamond-2.5d",
+    "gridSize": 25,
+    "origin": [833.5, 28],
+    "gridRange": [-14, 39],
+    "tileHalfSize": [34, 18],
+    "mapSize": [1667, 943]
+  },
+  "buildings": [
+    { "id": 1787507821950, "building": "processing", "gx": 15, "gy": 30, "state": 1, "scale": 1.3, "pitch": 1, "offsetY": 0 },
+    { "id": 1787507838555, "building": "warehouse", "gx": 33, "gy": 14, "state": 1, "scale": 0.79, "pitch": 1, "offsetY": 0 },
+    { "id": 1787507858995, "building": "station", "gx": 8, "gy": 7, "state": 1, "scale": 1.12, "pitch": 1, "offsetY": 0 },
+    { "id": 1787507877316, "building": "apiary", "gx": 22, "gy": 15, "state": 1, "scale": 0.76, "pitch": 1, "offsetY": 0 },
+    { "id": 1787507889631, "building": "market", "gx": 25, "gy": 21, "state": 1, "scale": 0.9, "pitch": 1, "offsetY": 0 },
+    { "id": 1787507906738, "building": "archive", "gx": 13, "gy": 21, "state": 1, "scale": 0.92, "pitch": 1, "offsetY": 0 },
+    { "id": 1787507924972, "building": "arbor", "gx": 4, "gy": 8, "state": 1, "scale": 1.11, "pitch": 1, "offsetY": 0 }
+  ]
+}

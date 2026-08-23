@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>林业谷地 · 首批分层资源测试</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #0b1711;
+      --panel: #13271d;
+      --panel-2: #1b3326;
+      --line: #3d6349;
+      --cream: #eee5cc;
+      --muted: #aebcae;
+      --honey: #d8a93d;
+      --moss: #87aa55;
+      --danger: #e06057;
+      --shadow: #07100b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        var(--ink);
+      background-size: 16px 16px;
+      color: var(--cream);
+      font: 16px/1.55 "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    }
+
+    button { font: inherit; }
+
+    .shell {
+      width: min(1520px, calc(100% - 32px));
+      margin: 24px auto 48px;
+    }
+
+    .topbar,
+    .panel {
+      border: 2px solid var(--line);
+      background: var(--panel);
+      box-shadow: 5px 5px 0 var(--shadow);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 16px 18px;
+      margin-bottom: 16px;
+    }
+
+    .eyebrow {
+      margin: 0 0 4px;
+      color: #91b59a;
+      font: 700 12px/1.2 Consolas, monospace;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 0; font-size: clamp(22px, 3vw, 34px); }
+    h2 { margin-bottom: 12px; font-size: 21px; }
+    h3 { margin-bottom: 8px; font-size: 17px; }
+
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .badge {
+      border: 1px solid currentColor;
+      padding: 5px 9px;
+      font-weight: 800;
+      font-size: 13px;
+      background: #0c1912;
+    }
+
+    .pass { color: #a9d86e; }
+    .warn { color: #f2c65b; }
+    .fail { color: #ff7d72; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(330px, .92fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel { padding: 16px; }
+    .map-panel { min-width: 0; }
+
+    .map-stage {
+      position: relative;
+      overflow: hidden;
+      aspect-ratio: 1672 / 941;
+      border: 3px solid #08120d;
+      outline: 1px solid #67806c;
+      background: #263e2d;
+      isolation: isolate;
+    }
+
+    .map-stage > img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      image-rendering: pixelated;
+    }
+
+    .apiary-layer {
+      position: absolute;
+      z-index: 2;
+      left: 27%;
+      top: 2%;
+      width: 14%;
+      aspect-ratio: 591.333 / 887;
+      transform: translateX(-50%);
+      background-repeat: no-repeat;
+      background-size: 100% 100%;
+      background-position: center;
+      image-rendering: pixelated;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .apiary-layer.is-ready { opacity: 1; }
+
+    .walker {
+      --cell: 34px;
+      position: absolute;
+      z-index: 3;
+      left: 35%;
+      top: 31%;
+      width: var(--cell);
+      height: var(--cell);
+      transform: translate(-50%, -50%);
+      background: url("assets/map/test-batch/characters/villager/villager-walk-4dir-test-v2.png") 0 0 / calc(var(--cell) * 6) calc(var(--cell) * 4) no-repeat;
+      image-rendering: pixelated;
+      animation: walk .82s steps(6) infinite;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .walker.is-ready { opacity: 1; }
+
+    .walker[data-direction="east"] { background-position-y: calc(var(--cell) * -1); }
+    .walker[data-direction="north"] { background-position-y: calc(var(--cell) * -2); }
+    .walker[data-direction="west"] { background-position-y: calc(var(--cell) * -3); }
+
+    @keyframes walk {
+      to { background-position-x: calc(var(--cell) * -6); }
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding-right: 12px;
+      border-right: 1px solid var(--line);
+    }
+
+    .control-group:last-child { border-right: 0; }
+
+    .pixel-button {
+      min-height: 42px;
+      border: 2px solid #0a130e;
+      outline: 1px solid #758b79;
+      padding: 7px 12px;
+      color: var(--cream);
+      background: #2d4938;
+      box-shadow: inset 0 2px 0 rgba(255,255,255,.12), 2px 2px 0 #07100b;
+      cursor: pointer;
+    }
+
+    .pixel-button:hover,
+    .pixel-button[aria-pressed="true"] {
+      color: #15130b;
+      background: var(--honey);
+      outline-color: #f7d980;
+    }
+
+    .side-stack { display: grid; gap: 16px; }
+
+    .asset-preview {
+      width: 100%;
+      display: block;
+      border: 1px solid #6f8273;
+      background:
+        linear-gradient(45deg, #23342a 25%, transparent 25%),
+        linear-gradient(-45deg, #23342a 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #23342a 75%),
+        linear-gradient(-45deg, transparent 75%, #23342a 75%),
+        #18271e;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+      background-size: 16px 16px;
+      image-rendering: pixelated;
+    }
+
+    .status-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+    }
+
+    .status-row {
+      display: grid;
+      grid-template-columns: 84px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding-top: 10px;
+      border-top: 1px solid #34513d;
+    }
+
+    .status-row:first-child { padding-top: 0; border-top: 0; }
+    .status-row dt { font-weight: 900; }
+    .status-row dd { margin: 0; color: var(--muted); }
+
+    .notes {
+      grid-column: 1 / -1;
+      margin-top: 16px;
+    }
+
+    code {
+      color: #f0ca69;
+      font: 14px/1.4 Consolas, monospace;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 940px) {
+      .layout { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .summary { justify-content: flex-start; }
+      .walker { --cell: 32px; }
+    }
+
+    @media (max-width: 560px) {
+      body { font-size: 15px; }
+      .shell { width: min(100% - 16px, 1520px); margin-top: 8px; }
+      .topbar, .panel { padding: 12px; box-shadow: 3px 3px 0 var(--shadow); }
+      .map-stage { aspect-ratio: 4 / 3; }
+      .map-stage > img { object-fit: cover; object-position: 49% 50%; }
+      .apiary-layer { width: 23%; left: 27%; top: 1%; }
+      .walker { --cell: 30px; left: 35%; top: 31%; }
+      .status-row { grid-template-columns: 68px 1fr; }
+      .pixel-button { flex: 1 1 auto; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Layered map · batch 01</p>
+        <h1>林业谷地首批分层资源测试</h1>
+      </div>
+      <div class="summary" aria-label="测试结果摘要">
+        <span class="badge pass">底图 v3 · 降噪</span>
+        <span class="badge pass">蜂场 · 位置与角度修正</span>
+        <span class="badge pass">叠加 · 运行时透明化</span>
+        <span class="badge pass">弹窗通过</span>
+      </div>
+    </header>
+
+    <section class="layout">
+      <article class="panel map-panel">
+        <p class="eyebrow">Interactive composite</p>
+        <h2>地图分层合成</h2>
+        <div class="map-stage" aria-label="夏季底图、蜂场建筑和村民的分层合成测试">
+          <img src="assets/map/test-batch/base/valley-base-summer-test-v4.png" alt="与建筑像素风格统一的林业谷地夏季静态底图 v4">
+          <div class="apiary-layer" id="apiaryLayer" data-state="1" aria-hidden="true"></div>
+          <div class="walker" id="walker" data-direction="south" aria-hidden="true"></div>
+        </div>
+        <div class="controls">
+          <div class="control-group" aria-label="切换蜂场状态">
+            <button class="pixel-button state-button" type="button" data-state="0" aria-pressed="false">建设空地</button>
+            <button class="pixel-button state-button" type="button" data-state="1" aria-pressed="true">蜂场 LV1</button>
+            <button class="pixel-button state-button" type="button" data-state="2" aria-pressed="false">蜂场 LV2</button>
+          </div>
+          <div class="control-group" aria-label="切换村民方向">
+            <button class="pixel-button direction-button" type="button" data-direction="south" aria-pressed="true">向南</button>
+            <button class="pixel-button direction-button" type="button" data-direction="east" aria-pressed="false">向东</button>
+            <button class="pixel-button direction-button" type="button" data-direction="north" aria-pressed="false">向北</button>
+            <button class="pixel-button direction-button" type="button" data-direction="west" aria-pressed="false">向西</button>
+          </div>
+        </div>
+      </article>
+
+      <aside class="side-stack">
+        <article class="panel">
+          <p class="eyebrow">UI component</p>
+          <h2>地点详情弹窗</h2>
+          <img class="asset-preview" src="assets/map/test-batch/ui/location-popup-test-v1.png" alt="无文字的地点详情弹窗组件测试图">
+        </article>
+
+        <article class="panel">
+          <p class="eyebrow">Technical checks</p>
+          <h2>首轮检查</h2>
+          <dl class="status-list">
+            <div class="status-row">
+              <dt class="pass">底图</dt>
+              <dd>v3 · 1672×941；减少约 65% 微小草点与高光，改用更大的树冠、道路和地表色块。</dd>
+            </div>
+            <div class="status-row">
+              <dt class="warn">建筑</dt>
+              <dd id="buildingStatus">v3 · 正在把键控底转换为透明图层……</dd>
+            </div>
+            <div class="status-row">
+              <dt class="warn">村民</dt>
+              <dd id="villagerStatus">v2 体型 · 正在把白底转换为透明图层……</dd>
+            </div>
+            <div class="status-row">
+              <dt class="pass">弹窗</dt>
+              <dd>1536×1024；层级、对比度和按钮基线清楚，后续改由 HTML/CSS 重建。</dd>
+            </div>
+          </dl>
+        </article>
+      </aside>
+    </section>
+
+    <section class="panel notes">
+      <p class="eyebrow">Test boundary</p>
+      <h2>本页只验证资源生产流程</h2>
+      <p>本轮修正三项问题：底图降低高频噪点；蜂场改为更高俯视角并移动到左上林区空地；建筑与村民在浏览器中转换为真实透明像素后再叠加，不再使用导致发黑的混合模式。</p>
+      <p>详细记录：<code>forestry-world-map-first-batch-test.md</code></p>
+    </section>
+  </main>
+
+  <script src="map-layer-test.js"></script>
+</body>
+</html>

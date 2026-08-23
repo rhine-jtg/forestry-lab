@@ -24,6 +24,7 @@ internal static class ForestryLauncher
             WriteResource("ForestryLab.index.html", Path.Combine(cacheRoot, "index.html"));
             WriteResource("ForestryLab.styles.css", Path.Combine(cacheRoot, "styles.css"));
             WriteResource("ForestryLab.app.js", Path.Combine(cacheRoot, "app.js"));
+            WriteResource("ForestryLab.npc.hivekeeper.gif", Path.Combine(cacheRoot, "assets", "npc", "hivekeeper.gif"));
             WriteResource(
                 "ForestryLab.font.woff2",
                 Path.Combine(cacheRoot, "assets", "fonts", "fusion-pixel-10px-proportional-zh_hans.otf.woff2"));
@@ -167,6 +168,7 @@ internal static class ForestryLauncher
             case ".html": return "text/html; charset=utf-8";
             case ".css": return "text/css; charset=utf-8";
             case ".js": return "text/javascript; charset=utf-8";
+            case ".gif": return "image/gif";
             case ".woff2": return "font/woff2";
             case ".txt": return "text/plain; charset=utf-8";
             default: return "application/octet-stream";

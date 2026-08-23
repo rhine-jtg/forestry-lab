@@ -5,6 +5,7 @@
   "description": "Forestry Lab · 林业模拟器",
   "main": "desktop/main.cjs",
   "scripts": {
+    "check": "node scripts/check-project.mjs",
     "dist:win": "electron-builder --win portable --x64",
     "build:launcher": "powershell -ExecutionPolicy Bypass -File desktop/build-launcher.ps1"
   },
@@ -18,7 +19,8 @@
       "index.html",
       "styles.css",
       "app.js",
-      "assets/fonts/**/*"
+      "assets/fonts/**/*",
+      "assets/npc/**/*"
     ],
     "directories": {
       "output": "dist/desktop"

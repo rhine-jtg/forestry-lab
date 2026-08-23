@@ -171,6 +171,7 @@ const defaultState = {
 
 let toastTimer;
 let activeCodexTab = "archive";
+let activeNpcTopic = "greeting";
 
 const species = {
   forest: { name: "森林蜂", english: "Forest Bee", type: "基础蜂种", desc: "温和、稳定，适合森林环境。", icon: "●", color: "amber", traits: { speed: 52, lifespan: 68, fertility: 54 }, habitat: { forest: 1, plains: .85, swamp: .65, tropic: .55 } },
@@ -3878,6 +3879,7 @@ function renderCommandCenter() {
   setText("#command-title", action.title);
   setText("#command-detail", action.detail);
   setText("#mobile-command-title", action.title);
+  setText("#npc-contact-status", action.title);
   const commandButton = $("#command-action");
   if (commandButton) {
     commandButton.dataset.view = action.view;
@@ -3906,6 +3908,71 @@ function renderCommandCenter() {
   setText("#explore-cost-label", `手动 6–18 能源 · 自动 8–24 · ${strategy.short}策略`);
 }
 
+function getNpcConversation(topic = "greeting") {
+  const next = getRecommendedAction();
+  const ecology = getEcologyBreakdown();
+  const bee = species[getActiveBeeId()];
+  const flower = flowerSources[getActiveFlowerId()];
+  const habitat = zones[getActiveHabitatId()];
+  const flowerCount = getFlowerCount();
+  const habitatFit = Math.round(getHabitatSuitability() * 100);
+  if (topic === "apiary") {
+    if (state.apiaryReady > 0) return { text: `蜂箱里有 ${state.apiaryReady} 份产物可以收取。先腾出仓库空间，再让蜂群开始下一轮。`, detail: `当前蜂种：${bee.name} · 花源：${flower.name} ×${flowerCount} · 环境适配：${habitatFit}%`, action: { label: "前往收取", view: "apiary", target: "#collect-button" } };
+    if (flowerCount <= 0) return { text: `${bee.name}已经找不到${flower.name}了，蜂箱会暂停。去对应区域补充花源吧。`, detail: `当前环境：${habitat.name} · 环境适配：${habitatFit}% · 花源库存：0`, action: { label: "调查花源", view: "explore", target: `.explore-button[data-zone="${flower.zone}"]` } };
+    return { text: `${bee.name}正在稳定工作。环境越匹配、花源越充足，生产与授粉就越可靠。`, detail: `花源：${flower.name} ×${flowerCount} · 环境适配：${habitatFit}% · 生态评分：${ecology.score}`, action: { label: "查看蜂箱", view: "apiary", target: "#apiary-countdown" } };
+  }
+  if (topic === "lore") {
+    const weak = ecology.weak[0];
+    const tips = [
+      `每种蜂有自己的适生区域。蜂种、环境和花源同时匹配，才是稳定生产的基础。`,
+      `树场不只提供木材。健康树冠会改善花源与授粉网络，也会影响蝴蝶活动。`,
+      `杂交前先分析亲本。已知基因越完整，你越容易判断下一代的速度、寿命和产量。`,
+      `当前生态最弱的一环是“${weak?.name || "环境适配"}”。先补这一项，通常比只升级机器更有效。`
+    ];
+    const tip = tips[(state.productionCycles + state.explorations + state.breedings) % tips.length];
+    return { text: tip, detail: `林地记录：蜂种 ${knownDiscoveredBees().length} · 树种 ${knownDiscoveredTrees().length} · 蝶种 ${knownDiscoveredButterflies().length}` };
+  }
+  if (topic === "next") return { text: next.detail, detail: `建议目标：${next.title} · 当前生态评分：${ecology.score}`, action: { label: next.label, view: next.view, target: next.target } };
+  if (getGuideStep() < guideSteps.length) return { text: `先跟着工作站教程走，我会保证关键培育步骤能够一次完成。现在最重要的是：${next.title}。`, detail: next.detail, action: { label: next.label, view: next.view, target: next.target } };
+  if (state.apiaryReady > 0) return { text: `嗡——蜂箱已经有产物了。现在收取，能让生产循环继续运转。`, detail: `可收取产物：${state.apiaryReady} · 生态评分：${ecology.score}`, action: { label: "前往收取", view: "apiary", target: "#collect-button" } };
+  return { text: `欢迎回来，林业师。工作站生态评分是 ${ecology.score}，我建议先处理“${next.title}”。`, detail: next.detail, action: { label: next.label, view: next.view, target: next.target } };
+}
+function renderNpcDialogue(topic = activeNpcTopic) {
+  activeNpcTopic = topic;
+  const conversation = getNpcConversation(topic);
+  setText("#npc-dialog-text", conversation.text);
+  setText("#npc-dialog-detail", conversation.detail || "");
+  const actionButton = $("#npc-dialog-action");
+  if (actionButton) {
+    actionButton.hidden = !conversation.action;
+    actionButton.dataset.view = conversation.action?.view || "";
+    actionButton.dataset.target = conversation.action?.target || "";
+    actionButton.textContent = conversation.action ? `${conversation.action.label} →` : "";
+  }
+  $$("#npc-dialog-choices [data-npc-topic]").forEach((button) => {
+    const active = button.dataset.npcTopic === topic;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+
+function openNpcDialog(topic = "greeting") {
+  const modal = $("#npc-dialog-modal");
+  if (!modal) return;
+  closeMobileMore();
+  renderNpcDialogue(topic);
+  modal.classList.add("visible");
+  modal.setAttribute("aria-hidden", "false");
+  window.setTimeout(() => $("#npc-dialog-close")?.focus(), 80);
+}
+
+function closeNpcDialog(restoreFocus = true) {
+  const modal = $("#npc-dialog-modal");
+  if (!modal) return;
+  modal.classList.remove("visible");
+  modal.setAttribute("aria-hidden", "true");
+  if (restoreFocus) window.setTimeout(() => $("#npc-contact-button")?.focus(), 40);
+}
 function getEcologyRecommendation(factor) {
   if (factor.id === "flowers") return { view: "explore", target: `.explore-button[data-zone="${flowerSources[getActiveFlowerId()].zone}"]`, label: "补充花源" };
   if (factor.id === "habitat") return { view: "apiary", target: "#habitat-select", label: "调整环境" };
@@ -5551,6 +5618,24 @@ function bindEvents() {
     const button = $(selector);
     if (button) button.addEventListener("click", () => navigateWithFocus(button.dataset.view, button.dataset.target));
   });
+  $("#npc-contact-button")?.addEventListener("click", () => openNpcDialog("greeting"));
+  $("#npc-dialog-close")?.addEventListener("click", () => closeNpcDialog());
+  $("#npc-dialog-modal")?.addEventListener("click", (event) => {
+    if (event.target === event.currentTarget) closeNpcDialog();
+  });
+  $("#npc-dialog-choices")?.addEventListener("click", (event) => {
+    const topic = event.target.closest("[data-npc-topic]")?.dataset.npcTopic;
+    if (!topic) return;
+    if (topic === "close") return closeNpcDialog();
+    renderNpcDialogue(topic);
+  });
+  $("#npc-dialog-action")?.addEventListener("click", (event) => {
+    const button = event.currentTarget;
+    const view = button.dataset.view;
+    const target = button.dataset.target;
+    closeNpcDialog(false);
+    if (view) navigateWithFocus(view, target);
+  });
   $$('[data-loop-view]').forEach((button) => button.addEventListener("click", () => navigateWithFocus(button.dataset.loopView)));
   $$(".strategy-button").forEach((button) => button.addEventListener("click", () => selectStrategy(button.dataset.strategy)));
   const ecologyAdvice = $("#ecology-advice-list");
@@ -5577,6 +5662,7 @@ function bindEvents() {
     if (event.key !== "Escape") return;
     if (state.expedition) { finishManualSurvey(true); return; }
     if ($("#survey-result-modal")?.classList.contains("visible")) { closeSurveyResult(); switchView("explore"); return; }
+    if ($("#npc-dialog-modal")?.classList.contains("visible")) { closeNpcDialog(); return; }
     closeMobileMore();
     closeStartDialog();
     closeSurveyConfirm();
@@ -5768,6 +5854,7 @@ function bindEvents() {
 window.handleForestryBack = function handleForestryBack() {
   if (state.expedition) { finishManualSurvey(true); return true; }
   if ($("#survey-result-modal")?.classList.contains("visible")) { closeSurveyResult(); switchView("explore"); return true; }
+  if ($("#npc-dialog-modal")?.classList.contains("visible")) { closeNpcDialog(); return true; }
   if ($("#survey-confirm-modal")?.classList.contains("visible")) { closeSurveyConfirm(); return true; }
   if ($("#start-dialog")?.classList.contains("visible")) { closeStartDialog(); return true; }
   if (document.body.classList.contains("mobile-sheet-open")) { closeMobileMore(); return true; }

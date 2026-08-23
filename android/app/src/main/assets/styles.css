@@ -2017,3 +2017,42 @@ button:disabled,
     font-size: 12px;
   }
 }
+/* Interactive Hivekeeper NPC */
+.npc-contact-card { width: 100%; min-width: 0; display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 9px; margin-top: 12px; padding: 7px; border: 2px solid #5e685f; background: #929a93; color: #213027; text-align: left; cursor: pointer; box-shadow: inset 1px 1px #cbd0c8, inset -1px -1px #626b65; }
+.npc-contact-card:hover, .npc-contact-card:focus-visible { border-color: #765a1f; background: #a5a791; outline: 2px solid #e1b541; outline-offset: 2px; }
+.npc-contact-portrait { position: relative; width: 56px; height: 56px; display: grid; place-items: center; overflow: hidden; border: 2px solid #d2a52f; background: #231f2a; box-shadow: inset 0 0 0 2px #493d27; }
+.npc-contact-portrait img { width: 100%; height: 100%; display: block; object-fit: contain; image-rendering: pixelated; }
+.npc-contact-copy { min-width: 0; display: grid; gap: 3px; }
+.npc-contact-copy small { color: #4a5c51; font-size: 9px; letter-spacing: .08em; }
+.npc-contact-copy strong { overflow: hidden; color: #18281f; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.npc-contact-copy > span { overflow: hidden; color: #425149; font-size: 10px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.npc-contact-card > b { color: #6c4e13; font-size: 10px; white-space: nowrap; }
+@media (min-width: 900px) and (max-width: 1279px) { .npc-contact-card { grid-column: 1 / -1; margin-top: 0; } }
+@media (max-width: 899px) { .npc-contact-card { grid-template-columns: 50px minmax(0, 1fr) auto; margin-top: 9px; } .npc-contact-portrait { width: 50px; height: 50px; } }
+.npc-dialog { width: min(700px, 100%); background: #b9bcb7; }
+.npc-dialog .p0-dialog-head { background: #aeb3ad; }
+.npc-dialog-body { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 16px; align-items: start; padding: 18px 20px 14px; }
+.npc-dialog-portrait { width: 132px; aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; border: 3px solid #c79b28; outline: 2px solid #4d3d1f; background: #231f2a; box-shadow: 5px 5px 0 rgba(22, 31, 25, .28), inset 0 0 0 2px #584729; }
+.npc-dialog-portrait img { width: 100%; height: 100%; display: block; object-fit: contain; image-rendering: pixelated; }
+.npc-speech { position: relative; min-height: 132px; padding: 15px 16px; border: 2px solid #58655d; background: #e1e0cf; color: #17271e; box-shadow: inset 2px 2px #f6f2d7, inset -2px -2px #989c91; }
+.npc-speech::before { content: ""; position: absolute; top: 24px; left: -12px; width: 12px; height: 18px; background: linear-gradient(135deg, transparent 0 48%, #58655d 49% 61%, #e1e0cf 62%); }
+.npc-speaker { display: block; color: #71551a; font-size: 11px; font-weight: 900; letter-spacing: .1em; }
+.npc-speech p { min-height: 42px; margin: 9px 0 0; color: #1c2c23; font-size: 14px; line-height: 1.75; }
+.npc-dialog-detail { margin-top: 9px; padding-top: 9px; border-top: 1px solid #8e978f; color: #3b4a41; font-size: 11px; line-height: 1.55; }
+.npc-dialog-detail:empty { display: none; }
+.npc-dialog-action { min-height: 40px; margin-top: 12px; padding: 7px 14px; font-size: 12px; }
+.npc-dialog-action[hidden] { display: none; }
+.npc-dialog-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 0 20px 20px; }
+.npc-dialog-choices button { min-width: 0; min-height: 54px; display: grid; gap: 4px; align-content: center; padding: 8px 11px; border: 2px solid #606b63; background: #969d97; color: #1c2c23; text-align: left; cursor: pointer; box-shadow: inset 1px 1px #d0d3ce, inset -1px -1px #676f69; }
+.npc-dialog-choices button:hover, .npc-dialog-choices button:focus-visible { border-color: #70531a; background: #c8ae57; outline: 2px solid #e8bf43; outline-offset: 1px; }
+.npc-dialog-choices strong { color: #17271e; font-size: 12px; }
+.npc-dialog-choices small { color: #435249; font-size: 10px; line-height: 1.4; }
+@media (max-width: 760px) { .npc-dialog-body { grid-template-columns: 88px minmax(0, 1fr); gap: 12px; padding: 14px 14px 11px; } .npc-dialog-portrait { width: 88px; } .npc-speech { min-height: 88px; padding: 12px; } .npc-speech p { font-size: 13px; } .npc-dialog-choices { padding: 0 14px 14px; } }
+@media (max-width: 480px) { .npc-dialog .p0-dialog-head { padding: 12px 14px; } .npc-dialog .p0-dialog-head h2 { font-size: 17px; } .npc-dialog-body { grid-template-columns: 68px minmax(0, 1fr); gap: 9px; padding: 11px 10px 9px; } .npc-dialog-portrait { width: 68px; border-width: 2px; } .npc-speech { min-height: 68px; padding: 10px; } .npc-speech::before { top: 16px; } .npc-speaker { font-size: 10px; } .npc-speech p { min-height: 0; margin-top: 6px; font-size: 12px; line-height: 1.6; } .npc-dialog-detail { font-size: 10px; } .npc-dialog-choices { grid-template-columns: 1fr; padding: 0 10px 10px; } .npc-dialog-choices button { min-height: 48px; } }
+.npc-dialog-choices button.active { border-color: #70531a; background: #c8ae57; }
+/* Keep processing cards structurally aligned in locked and active states. */
+.machine-card { display: flex; flex-direction: column; }
+.machine-card > .full-button { margin-top: auto; }
+.machine-recipe-static > strong { min-height: 36px; display: flex; align-items: center; padding: 6px 9px; border: 2px solid #35473e; background: #879089; color: #102019; font-size: 11px; font-weight: 400; letter-spacing: 0; }
+/* Center shared breeding-parent selectors inside their specimen slots. */
+.parent-select { align-self: center; }

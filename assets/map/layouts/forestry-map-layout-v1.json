@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "projection": {
+    "type": "orthographic-diamond-2.5d",
+    "gridSize": 25,
+    "origin": [833.5, 28],
+    "tileHalfSize": [34, 18],
+    "mapSize": [1667, 943]
+  },
+  "buildings": [
+    {
+      "id": 1787499911239,
+      "building": "apiary",
+      "gx": 3,
+      "gy": 6,
+      "state": 1,
+      "scale": 1,
+      "pitch": 1,
+      "offsetY": 0
+    },
+    {
+      "id": 1787499925664,
+      "building": "apiary",
+      "gx": 8,
+      "gy": 7,
+      "state": 1,
+      "scale": 1,
+      "pitch": 1,
+      "offsetY": 0
+    },
+    {
+      "id": 1787499927630,
+      "building": "apiary",
+      "gx": 13,
+      "gy": 21,
+      "state": 1,
+      "scale": 1,
+      "pitch": 1,
+      "offsetY": 0
+    },
+    {
+      "id": 1787499929315,
+      "building": "apiary",
+      "gx": 18,
+      "gy": 21,
+      "state": 1,
+      "scale": 1,
+      "pitch": 1,
+      "offsetY": 0
+    },
+    {
+      "id": 1787499933090,
+      "building": "apiary",
+      "gx": 22,
+      "gy": 15,
+      "state": 1,
+      "scale": 1,
+      "pitch": 1,
+      "offsetY": 0
+    }
+  ]
+}

@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Forestry UI Frameworks · 三套框架对比</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="ui-frameworks.css" />
+  </head>
+  <body class="framework-page">
+    <main class="framework-lab-shell">
+      <header class="framework-lab-header">
+        <div>
+          <span class="framework-kicker">FORESTRY LAB / UI FRAMEWORK REVIEW</span>
+          <h1>三套林业工坊 UI 框架</h1>
+          <p>同一套玩法信息，用三种空间组织方式呈现。切换方案后可直接比较桌面端与竖屏排布。</p>
+        </div>
+        <div class="framework-selection" aria-live="polite">
+          <span>当前候选</span>
+          <strong id="framework-picked">未选择</strong>
+        </div>
+      </header>
+
+      <nav class="framework-switcher" aria-label="选择 UI 框架">
+        <button class="framework-switch is-active" type="button" data-framework-choice="a" aria-pressed="true">
+          <span class="framework-switch-index">A</span>
+          <span><strong>林场指挥台</strong><small>信息密度 / 任务引导</small></span>
+        </button>
+        <button class="framework-switch" type="button" data-framework-choice="b" aria-pressed="false">
+          <span class="framework-switch-index">B</span>
+          <span><strong>生产链工作台</strong><small>配置决策 / 上下游</small></span>
+        </button>
+        <button class="framework-switch" type="button" data-framework-choice="c" aria-pressed="false">
+          <span class="framework-switch-index">C</span>
+          <span><strong>生态地图站</strong><small>区域探索 / 沉浸氛围</small></span>
+        </button>
+      </nav>
+
+      <section class="framework-summary" aria-live="polite">
+        <span class="framework-summary-mark" id="framework-summary-mark">A</span>
+        <div><strong id="framework-summary-title">林场指挥台</strong><p id="framework-summary-copy">最接近现有版本，强调下一步行动、系统状态和稳定的多页面管理。</p></div>
+        <button class="framework-pick" type="button" data-pick-framework="a">暂选框架 A</button>
+      </section>
+
+      <section class="framework-stage" aria-label="三个 UI 框架预览">
+        <section class="framework-screen framework-screen-a is-visible" data-framework-screen="a" aria-label="框架 A 林场指挥台">
+          <div class="fw-a-shell">
+            <header class="fw-a-topbar">
+              <div class="fw-brand"><span>F</span><div><small>FORESTRY LAB</small><strong>林地工坊</strong></div></div>
+              <div class="fw-a-resource-row"><span class="fw-resource fw-resource-energy">⚡ <b>78</b><small>/ 100</small></span><span class="fw-resource fw-resource-honey">⬡ <b>25</b></span><span class="fw-resource fw-resource-wood">♣ <b>63</b></span><span class="fw-resource fw-resource-emerald">◆ <b>12</b></span></div>
+              <span class="fw-save-state"><i></i> 已自动保存</span>
+            </header>
+            <div class="fw-a-layout">
+              <aside class="fw-a-sidebar">
+                <div class="fw-side-label">WORKBENCH / 工作台</div>
+                <button class="fw-nav is-active" type="button"><span>⌂</span><b>总览</b><small>OVERVIEW</small></button>
+                <button class="fw-nav" type="button"><span>⌖</span><b>野外调查</b><small>SURVEY</small></button>
+                <button class="fw-nav" type="button"><span>⬡</span><b>蜜蜂育种</b><small>APIARY</small></button>
+                <button class="fw-nav" type="button"><span>♣</span><b>树木与果园</b><small>ARBOR</small></button>
+                <button class="fw-nav" type="button"><span>⚙</span><b>生产加工</b><small>PRODUCTION</small></button>
+                <div class="fw-side-goal"><span class="fw-side-label">CURRENT GOAL</span><strong>建立第一条生态网络</strong><div class="fw-meter"><i style="width: 64%"></i></div><small>完成 3 次稳定生产，开放温室模块。</small></div>
+              </aside>
+              <div class="fw-a-main">
+                <div class="fw-page-heading"><div><span class="fw-eyebrow">FIELD COMMAND / A-01</span><h2>生产概览</h2></div><span class="fw-live-tag">生态系统运行中</span></div>
+                <article class="fw-a-next"><span class="fw-next-number">01</span><div><span class="fw-eyebrow">NEXT BEST ACTION</span><h3>收取离心机产物</h3><p>释放仓库空间后，启动下一轮蜂巢分离。</p></div><button class="fw-button fw-button-gold" type="button" data-pick-framework="a">执行行动 →</button></article>
+                <div class="fw-a-status-grid">
+                  <article class="fw-status-card"><div class="fw-status-head"><span class="fw-status-icon bee-status"><span class="pixel-sprite pixel-bee bee-forest" aria-hidden="true"><i class="bee-crown"></i><i class="bee-wing wing-left"></i><i class="bee-wing wing-right"></i><i class="bee-body"></i><i class="bee-tail"></i></span></span><b class="fw-status-good">可收取</b></div><h3>蜂箱 A-01</h3><p>森林蜂 · 蜂巢 ×2</p><div class="fw-meter"><i style="width: 86%"></i></div></article>
+                  <article class="fw-status-card"><div class="fw-status-head"><span class="fw-status-icon machine-status">⚙</span><b class="fw-status-wait">运行中</b></div><h3>离心机 C-01</h3><p>蜂蜜 + 蜂蜡 · 剩余 04s</p><div class="fw-meter fw-meter-teal"><i style="width: 64%"></i></div></article>
+                  <article class="fw-status-card"><div class="fw-status-head"><span class="fw-status-icon tree-status"><span class="pixel-sprite pixel-tree tree-oak" aria-hidden="true"><i class="tree-shadow"></i><i class="tree-trunk"></i><i class="tree-crown crown-left"></i><i class="tree-crown crown-center"></i><i class="tree-crown crown-right"></i><i class="tree-accent"></i></span></span><b class="fw-status-good">稳定</b></div><h3>树场 T-01</h3><p>橡树 · 木材 9 · 树脂 2</p><div class="fw-meter fw-meter-green"><i style="width: 48%"></i></div></article>
+                  <article class="fw-status-card"><div class="fw-status-head"><span class="fw-status-icon ecology-status">♧</span><b class="fw-status-alert">承压</b></div><h3>林地生态</h3><p>花源 3 · 湿度偏低</p><div class="fw-meter fw-meter-red"><i style="width: 58%"></i></div></article>
+                </div>
+                <section class="fw-a-board"><div class="fw-section-head"><div><span class="fw-eyebrow">TODAY'S WORK PLAN</span><h3>本轮经营计划</h3></div><span class="fw-muted">可并行 3 项</span></div><div class="fw-plan-grid"><div class="fw-plan-item is-done"><i>✓</i><span><b>完成蜂巢分离</b><small>蜂蜜 ×2 · 蜂蜡 ×2</small></span><em>完成</em></div><div class="fw-plan-item is-current"><i>02</i><span><b>补充花源并稳定生态</b><small>野花还需 ×2 · 消耗能源 1</small></span><em>推荐</em></div><div class="fw-plan-item"><i>03</i><span><b>交付林地调查补给</b><small>奖励绿宝石 ×4 · 声望 +1</small></span><em>可选</em></div></div></section>
+              </div>
+              <aside class="fw-a-rail"><div class="fw-rail-head"><span class="fw-eyebrow">CORE LOOP</span><b>当前循环</b></div><div class="fw-loop"><span class="is-done">01 <b>调查</b><small>采集样本</small></span><i>↓</i><span class="is-current">02 <b>配置</b><small>花源 / 蜂种</small></span><i>↓</i><span>03 <b>生产</b><small>等待结算</small></span><i>↓</i><span>04 <b>交付</b><small>换取升级</small></span></div><div class="fw-rail-box"><span class="fw-eyebrow">QUEUE</span><strong>生产队列</strong><div><i class="fw-queue-dot"></i><span>离心机 C-01<small>04s · 可收取</small></span></div><div><i class="fw-queue-dot fw-queue-green"></i><span>树场 T-01<small>18s · 生长中</small></span></div></div><button class="fw-button fw-button-outline fw-full" type="button" data-pick-framework="a">打开完整队列</button></aside>
+            </div>
+          </div>
+        </section>
+
+        <section class="framework-screen framework-screen-b" data-framework-screen="b" aria-label="框架 B 生产链工作台" hidden>
+          <div class="fw-b-shell">
+            <header class="fw-b-topbar"><div class="fw-brand"><span>F</span><div><small>PRODUCTION DESK / P-03</small><strong>生产链工作台</strong></div></div><div class="fw-b-top-status"><span>当前周期 <b>03</b></span><span>能源 <b>78 / 100</b></span><span>仓库 <b>64%</b></span></div><button class="fw-button fw-button-gold" type="button" data-pick-framework="b">暂选框架 B</button></header>
+            <div class="fw-b-layout">
+              <aside class="fw-b-left"><span class="fw-eyebrow">WORK PLAN</span><h2>生态工坊</h2><p>把一次收获变成稳定的生产链。</p><div class="fw-b-goal-list"><div class="is-current"><i>01</i><span><b>补足蜂巢</b><small>调查森林边缘</small></span><em>进行中</em></div><div><i>02</i><span><b>启动离心机</b><small>蜂蜜 + 蜂蜡</small></span><em>待命</em></div><div><i>03</i><span><b>交付订单</b><small>获得绿宝石</small></span><em>待命</em></div></div><div class="fw-b-energy"><span class="fw-eyebrow">ENERGY BUDGET</span><strong>78 <small>/ 100</small></strong><div class="fw-meter"><i style="width:78%"></i></div><p>本轮建议保留 24 点给探索。</p></div></aside>
+              <div class="fw-b-workbench"><div class="fw-page-heading"><div><span class="fw-eyebrow">CHAIN BUILDER / 生产链编排</span><h2>森林蜂 → 蜂蜜 → 生态订单</h2></div><span class="fw-live-tag fw-live-gold">链路可启动</span></div><section class="fw-b-pipeline"><div class="fw-pipeline-node is-ready"><span class="fw-pipeline-index">01</span><span class="fw-pipeline-icon"><span class="pixel-sprite pixel-bee bee-forest" aria-hidden="true"><i class="bee-crown"></i><i class="bee-wing wing-left"></i><i class="bee-wing wing-right"></i><i class="bee-body"></i><i class="bee-tail"></i></span></span><b>森林蜂箱</b><small>输入：野花 ×3</small><strong>可启动</strong></div><i class="fw-pipeline-arrow">→</i><div class="fw-pipeline-node is-running"><span class="fw-pipeline-index">02</span><span class="fw-pipeline-icon fw-pipeline-hive">⬡</span><b>蜂巢分离</b><small>产出：蜂蜜 + 蜂蜡</small><strong>64% · 04s</strong></div><i class="fw-pipeline-arrow">→</i><div class="fw-pipeline-node is-locked"><span class="fw-pipeline-index">03</span><span class="fw-pipeline-icon">◆</span><b>村民订单</b><small>需要：蜂蜜 ×4</small><strong>待输入</strong></div></section><section class="fw-b-config"><div class="fw-section-head"><div><span class="fw-eyebrow">ACTIVE CONFIGURATION</span><h3>配置当前蜂箱</h3></div><span class="fw-muted">修改后影响下一轮</span></div><div class="fw-b-config-grid"><article class="fw-config-block"><span class="fw-config-label">生产蜂种</span><div class="fw-config-choice is-selected"><span class="fw-config-icon"><span class="pixel-sprite pixel-bee bee-forest" aria-hidden="true"><i class="bee-crown"></i><i class="bee-wing wing-left"></i><i class="bee-wing wing-right"></i><i class="bee-body"></i><i class="bee-tail"></i></span></span><span><b>森林蜂</b><small>基础蜂种 · 蜂蜜 + 蜂蜡</small></span><i>✓</i></div><div class="fw-config-choice"><span class="fw-config-icon fw-config-empty">?</span><span><b>培育蜂</b><small>完成一次杂交后解锁</small></span><i>锁定</i></div></article><article class="fw-config-block"><span class="fw-config-label">工作条件</span><div class="fw-condition-list"><div><span>花源</span><b class="fw-good-text">野花 ×3</b><em>充足</em></div><div><span>环境</span><b>森林边缘</b><em>+9%</em></div><div><span>框架</span><b>浸渍框架</b><em>耐久 68%</em></div><div><span>能源</span><b>2 点 / 轮</b><em>可负担</em></div></div></article><article class="fw-config-block fw-config-preview"><span class="fw-config-label">结果预览</span><div class="fw-result-main"><span class="fw-result-icon">⬡</span><span><small>预计每轮产出</small><b>蜂巢 ×2</b></span></div><div class="fw-result-deltas"><span>速度 <b>+12%</b></span><span>生态 <b>+4</b></span><span>概率 <b>100%</b></span></div><button class="fw-button fw-button-gold fw-full" type="button" data-pick-framework="b">启动生产 →</button></article></div></section><section class="fw-b-bottom"><div><span class="fw-eyebrow">PROCESS QUEUE</span><h3>队列与瓶颈</h3></div><div class="fw-b-queue"><div><i class="fw-queue-dot"></i><span><b>离心机 C-01</b><small>输入已满足 · 剩余 04s</small></span><strong>64%</strong></div><div><i class="fw-queue-dot fw-queue-amber"></i><span><b>村民订单 O-05</b><small>等待蜂蜜 ×2</small></span><strong>2 / 4</strong></div></div></section></div>
+              <aside class="fw-b-right"><span class="fw-eyebrow">DECISION PANEL</span><h2>本轮策略</h2><p>你可以优先产量、生态或现金流。</p><div class="fw-strategy is-selected"><span>♧</span><div><b>生态稳定</b><small>调查能源 -1 · 树场速度 +10%</small></div><i>当前</i></div><div class="fw-strategy"><span>⬡</span><div><b>基因培育</b><small>突变率 +8% · 生产速度 -5%</small></div><i>选择</i></div><div class="fw-strategy"><span>◆</span><div><b>快速周转</b><small>出售价格 +10% · 花源消耗 +1</small></div><i>选择</i></div><div class="fw-b-advice"><span>!</span><div><b>系统建议</b><p>先收取离心机，释放仓库空间，再执行快速周转。</p></div></div><button class="fw-button fw-button-outline fw-full" type="button" data-pick-framework="b">查看策略影响</button></aside>
+            </div>
+          </div>
+        </section>
+
+        <section class="framework-screen framework-screen-c" data-framework-screen="c" aria-label="框架 C 生态地图站" hidden>
+          <div class="fw-c-shell">
+            <header class="fw-c-topbar"><div class="fw-brand fw-brand-light"><span>F</span><div><small>FIELD RANK R3</small><strong>森林生态站</strong></div></div><div class="fw-c-resources"><span>⚡ 78/100</span><span>◆ 12</span><span>仓库 64%</span></div><button class="fw-button fw-button-gold" type="button" data-pick-framework="c">暂选框架 C</button></header>
+            <div class="fw-c-map-wrap"><div class="fw-c-map-label"><span class="fw-eyebrow">HABITAT MAP / 当前林地</span><h2>森林边缘</h2><p>温和 · 湿度 64 · 花源充足</p></div><div class="fw-c-sun"></div><div class="fw-c-moon"></div><div class="fw-c-hill fw-c-hill-back"></div><div class="fw-c-hill fw-c-hill-front"></div><div class="fw-c-tree fw-c-tree-a"></div><div class="fw-c-tree fw-c-tree-b"></div><div class="fw-c-tree fw-c-tree-c"></div><div class="fw-c-flower fw-c-flower-a">✦</div><div class="fw-c-flower fw-c-flower-b">✿</div><div class="fw-c-bee"><span class="pixel-sprite pixel-bee bee-forest" aria-hidden="true"><i class="bee-crown"></i><i class="bee-wing wing-left"></i><i class="bee-wing wing-right"></i><i class="bee-body"></i><i class="bee-tail"></i></span></div><button class="fw-c-zone fw-c-zone-apiary" type="button"><span class="fw-c-zone-icon"><span class="pixel-sprite pixel-bee bee-forest" aria-hidden="true"><i class="bee-crown"></i><i class="bee-wing wing-left"></i><i class="bee-wing wing-right"></i><i class="bee-body"></i><i class="bee-tail"></i></span></span><span><b>蜂箱 A-01</b><small>可收取 · 蜂巢 ×2</small></span></button><button class="fw-c-zone fw-c-zone-orchard" type="button"><span class="fw-c-zone-icon fw-c-zone-tree"><span class="pixel-sprite pixel-tree tree-oak" aria-hidden="true"><i class="tree-shadow"></i><i class="tree-trunk"></i><i class="tree-crown crown-left"></i><i class="tree-crown crown-center"></i><i class="tree-crown crown-right"></i><i class="tree-accent"></i></span></span><span><b>果园 O-01</b><small>花期中 · 还需 18s</small></span></button><button class="fw-c-zone fw-c-zone-survey" type="button"><span class="fw-c-zone-icon">⌖</span><span><b>调查营地</b><small>能源消耗 6 · 可探索</small></span></button><div class="fw-c-road fw-c-road-a"></div><div class="fw-c-road fw-c-road-b"></div></div>
+            <aside class="fw-c-inspector"><div class="fw-c-inspector-head"><div><span class="fw-eyebrow">SELECTED HABITAT</span><h2>蜂箱 A-01</h2></div><span class="fw-live-tag">可收取</span></div><div class="fw-c-selected"><span class="fw-c-selected-icon"><span class="pixel-sprite pixel-bee bee-forest" aria-hidden="true"><i class="bee-crown"></i><i class="bee-wing wing-left"></i><i class="bee-wing wing-right"></i><i class="bee-body"></i><i class="bee-tail"></i></span></span><div><strong>森林蜂群</strong><p>使用野花 · 当前生态 71</p><div class="fw-meter"><i style="width:86%"></i></div><small>下一轮蜂巢 · 86%</small></div></div><div class="fw-c-effects"><div><span>花源</span><b>野花 ×3</b><small>充足</small></div><div><span>环境</span><b>森林边缘</b><small>适配 +9%</small></div><div><span>产物</span><b>蜂巢 ×2</b><small>可收取</small></div></div><button class="fw-button fw-button-gold fw-full" type="button" data-pick-framework="c">打开蜂箱 →</button><button class="fw-button fw-button-outline fw-full" type="button">查看生态影响</button></aside>
+            <nav class="fw-c-bottom-nav" aria-label="生态站导航"><button class="is-active" type="button"><span>⌂</span><small>林地</small></button><button type="button"><span>⌖</span><small>调查</small></button><button type="button"><span>⬡</span><small>生产</small></button><button type="button"><span>◆</span><small>商店</small></button><button type="button"><span>▤</span><small>图鉴</small></button></nav>
+            <div class="fw-c-next"><span class="fw-next-number">01</span><div><span class="fw-eyebrow">NEXT IN HABITAT</span><strong>收取蜂巢，释放蜂箱空间</strong></div><button class="fw-button fw-button-gold" type="button" data-pick-framework="c">执行 →</button></div>
+          </div>
+        </section>
+      </section>
+
+      <footer class="framework-lab-footer"><span>UI REVIEW BUILD · 03</span><span>不接入玩法数据，仅用于布局选择</span><span>WEB / ANDROID READY</span></footer>
+    </main>
+    <script>
+      const frameworkMeta = {
+        a: { title: "林场指挥台", copy: "最接近现有版本，强调下一步行动、系统状态和稳定的多页面管理。", pick: "暂选框架 A" },
+        b: { title: "生产链工作台", copy: "把蜂箱、加工、订单和策略放进同一条生产链，适合强调经营决策。", pick: "暂选框架 B" },
+        c: { title: "生态地图站", copy: "把林地作为主舞台，用区域节点和底部导航强化探索与生态氛围。", pick: "暂选框架 C" }
+      };
+      const switches = [...document.querySelectorAll("[data-framework-choice]")];
+      const screens = [...document.querySelectorAll("[data-framework-screen]")];
+      const pickButtons = [...document.querySelectorAll("[data-pick-framework]")];
+      const summaryMark = document.querySelector("#framework-summary-mark");
+      const summaryTitle = document.querySelector("#framework-summary-title");
+      const summaryCopy = document.querySelector("#framework-summary-copy");
+      const picked = document.querySelector("#framework-picked");
+      const summaryPick = document.querySelector(".framework-summary [data-pick-framework]");
+      let selectedFramework = "a";
+
+      function showFramework(id) {
+        selectedFramework = id;
+        const meta = frameworkMeta[id];
+        switches.forEach((button) => {
+          const active = button.dataset.frameworkChoice === id;
+          button.classList.toggle("is-active", active);
+          button.setAttribute("aria-pressed", String(active));
+        });
+        screens.forEach((screen) => {
+          const active = screen.dataset.frameworkScreen === id;
+          screen.classList.toggle("is-visible", active);
+          screen.hidden = !active;
+        });
+        summaryMark.textContent = id.toUpperCase();
+        summaryTitle.textContent = meta.title;
+        summaryCopy.textContent = meta.copy;
+        summaryPick.dataset.pickFramework = id;
+        summaryPick.textContent = meta.pick;
+      }
+
+      switches.forEach((button) => button.addEventListener("click", () => showFramework(button.dataset.frameworkChoice)));
+      pickButtons.forEach((button) => button.addEventListener("click", () => {
+        const id = button.dataset.pickFramework;
+        showFramework(id);
+        picked.textContent = `${id.toUpperCase()} · ${frameworkMeta[id].title}`;
+      }));
+    </script>
+  </body>
+</html>
