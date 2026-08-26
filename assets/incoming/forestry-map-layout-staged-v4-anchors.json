@@ -1,0 +1,719 @@
+{
+  "version": 4,
+  "projection": {
+    "type": "orthographic-diamond-2.5d",
+    "gridSize": 25,
+    "origin": [
+      833.5,
+      28
+    ],
+    "gridRange": [
+      -14,
+      39
+    ],
+    "tileHalfSize": [
+      34,
+      18
+    ],
+    "mapSize": [
+      1667,
+      943
+    ]
+  },
+  "background": "assets/map/test-batch/base/valley-forest-background-v2.png",
+  "backgroundDisplay": {
+    "mapSize": [
+      1058,
+      1487
+    ],
+    "coordinateScale": 0.6346730653869226,
+    "coordinateOffset": [
+      0,
+      680
+    ],
+    "fit": "contain"
+  },
+  "sceneLayers": {
+    "water": false,
+    "props": false,
+    "npcs": false,
+    "effects": false
+  },
+  "buildings": [
+    {
+      "id": 1787507924972,
+      "building": "arbor",
+      "gx": 4,
+      "gy": 8,
+      "state": 3,
+      "baseScale": 1.11,
+      "stageSize": 1.12,
+      "scale": 1.24,
+      "transformScale": 1,
+      "mirrorX": false,
+      "mirrorY": false,
+      "pitch": 1,
+      "offsetX": -19,
+      "offsetY": -150,
+      "visible": true,
+      "variants": [
+        {
+          "state": 0,
+          "offsetX": -49,
+          "offsetY": -172,
+          "baseScale": 1.11,
+          "stageSize": 0.78,
+          "scale": 0.87,
+          "transformScale": 1,
+          "mirrorX": false,
+          "mirrorY": false
+        },
+        {
+          "state": 1,
+          "offsetX": -41,
+          "offsetY": -159,
+          "baseScale": 1.11,
+          "stageSize": 1,
+          "scale": 1.11,
+          "transformScale": 1,
+          "mirrorX": false,
+          "mirrorY": false
+        },
+        {
+          "state": 2,
+          "offsetX": -24,
+          "offsetY": -148,
+          "baseScale": 1.11,
+          "stageSize": 1.06,
+          "scale": 1.18,
+          "transformScale": 1,
+          "mirrorX": false,
+          "mirrorY": false
+        },
+        {
+          "state": 3,
+          "offsetX": -19,
+          "offsetY": -150,
+          "baseScale": 1.11,
+          "stageSize": 1.12,
+          "scale": 1.24,
+          "transformScale": 1,
+          "mirrorX": false,
+          "mirrorY": false
+        }
+      ]
+    },
+    {
+      "id": 1787507858995,
+      "building": "station",
+      "gx": 8,
+      "gy": 7,
+      "state": 2,
+      "baseScale": 1.12,
+      "stageSize": 1.06,
+      "scale": 1.31,
+      "transformScale": 1.1,
+      "mirrorX": false,
+      "mirrorY": false,
+      "pitch": 1,
+      "offsetX": 24,
+      "offsetY": -101,
+      "visible": true,
+      "variants": [
+        {
+          "state": 0,
+          "offsetX": 6,
+          "offsetY": -77,
+          "baseScale": 1.12,
+          "stageSize": 0.78,
+          "scale": 0.92,
+          "transformScale": 1.05,
+          "mirrorX": false,
+          "mirrorY": false
+        },
+        {
+          "state": 1,
+          "offsetX": 31,
+          "offsetY": -92,
+          "baseScale": 1.12,
+          "stageSize": 1,
+          "scale": 1.12,
+          "transformScale": 1,
+          "mirrorX": false,
+          "mirrorY": false
+        },
+        {
+          "state": 2,
+          "offsetX": 24,
+          "offsetY": -101,
+          "baseScale": 1.12,
+          "stageSize": 1.06,
+          "scale": 1.31,
+          "transformScale": 1.1,
+          "mirrorX": false,
+          "mirrorY": false
+        },
+        {
+          "state": 3,
+          "offsetX": 15,
+          "offsetY": -92,
+          "baseScale": 1.12,
+          "stageSize": 1.12,
+          "scale": 1.51,
+          "transformScale": 1.2,
+          "mirrorX": false,
+          "mirrorY": false
+        }
+      ]
+    },
+    {
+      "id": 1787507906738,
+      "building": "archive",
+      "gx": 13,
+      "gy": 21,
+      "state": 3,
+      "baseScale": 0.92,
+      "stageSize": 1.12,
+      "scale": 1.18,
+      "transformScale": 1.15,
+      "mirrorX": false,
+      "mirrorY": false,
+      "pitch": 1,
+      "offsetX": -9,
+      "offsetY": -97,
+      "visible": true,
+      "variants": [
+        {
+          "state": 0,
+          "offsetX": -2,
+          "offsetY": -87,
+          "baseScale": 0.92,
+          "stageSize": 0.78,
+          "scale": 0.79,
+          "transformScale": 1.1,
+          "mirrorX": false,
+          "mirrorY": false
+        },
+        {
+          "state": 1,
+          "offsetX": 0,
+          "offsetY": -82,
+          "baseScale": 0.92,
+          "stageSize": 1,
+          "scale": 0.92,
+          "transformScale": 1,
+          "mirrorX": false,
+          "mirrorY": false
+        },
+        {
+          "state": 2,
+          "offsetX": -8,
+          "offsetY": -94,
+          "baseScale": 0.92,
+          "stageSize": 1.06,
+          "scale": 1.17,
+          "transformScale": 1.2,
+          "mirrorX": false,
+          "mirrorY": false
+        },
+        {
+          "state": 3,
+          "offsetX": -9,
+          "offsetY": -97,
+          "baseScale": 0.92,
+          "stageSize": 1.12,
+          "scale": 1.18,
+          "transformScale": 1.15,
+          "mirrorX": false,
+          "mirrorY": false
+        }
+      ]
+    },
+    {
+      "id": 1787507877316,
+      "building": "apiary",
+      "gx": 22,
+      "gy": 15,
+      "state": 3,
+      "baseScale": 0.76,
+      "stageSize": 1.16,
+      "scale": 1.41,
+      "transformScale": 1.6,
+      "mirrorX": false,
+      "mirrorY": false,
+      "pitch": 1,
+      "offsetX": -26,
+      "offsetY": -72,
+      "visible": true,
+      "variants": [
+        {
+          "state": 0,
+          "offsetX": -13,
+          "offsetY": -72,
+          "baseScale": 0.76,
+          "stageSize": 0.8,
+          "scale": 0.61,
+          "transformScale": 1,
+          "mirrorX": false,
+          "mirrorY": false
+        },
+        {
+          "state": 1,
+          "offsetX": -10,
+          "offsetY": -80,
+          "baseScale": 0.76,
+          "stageSize": 1,
+          "scale": 0.76,
+          "transformScale": 1,
+          "mirrorX": true,
+          "mirrorY": false
+        },
+        {
+          "state": 2,
+          "offsetX": -17,
+          "offsetY": -62,
+          "baseScale": 0.76,
+          "stageSize": 1.08,
+          "scale": 1.07,
+          "transformScale": 1.3,
+          "mirrorX": true,
+          "mirrorY": false
+        },
+        {
+          "state": 3,
+          "offsetX": -26,
+          "offsetY": -72,
+          "baseScale": 0.76,
+          "stageSize": 1.16,
+          "scale": 1.41,
+          "transformScale": 1.6,
+          "mirrorX": false,
+          "mirrorY": false
+        }
+      ]
+    },
+    {
+      "id": 1787507821950,
+      "building": "processing",
+      "gx": 15,
+      "gy": 30,
+      "state": 3,
+      "baseScale": 1.3,
+      "stageSize": 1.12,
+      "scale": 1.24,
+      "transformScale": 0.85,
+      "mirrorX": true,
+      "mirrorY": false,
+      "pitch": 1,
+      "offsetX": -20,
+      "offsetY": -60,
+      "visible": true,
+      "variants": [
+        {
+          "state": 0,
+          "offsetX": 9,
+          "offsetY": -51,
+          "baseScale": 1.3,
+          "stageSize": 0.78,
+          "scale": 0.91,
+          "transformScale": 0.9,
+          "mirrorX": true,
+          "mirrorY": false
+        },
+        {
+          "state": 1,
+          "offsetX": -5,
+          "offsetY": -61,
+          "baseScale": 1.3,
+          "stageSize": 1,
+          "scale": 1.04,
+          "transformScale": 0.8,
+          "mirrorX": true,
+          "mirrorY": false
+        },
+        {
+          "state": 2,
+          "offsetX": -11,
+          "offsetY": -56,
+          "baseScale": 1.3,
+          "stageSize": 1.06,
+          "scale": 1.17,
+          "transformScale": 0.85,
+          "mirrorX": true,
+          "mirrorY": false
+        },
+        {
+          "state": 3,
+          "offsetX": -20,
+          "offsetY": -60,
+          "baseScale": 1.3,
+          "stageSize": 1.12,
+          "scale": 1.24,
+          "transformScale": 0.85,
+          "mirrorX": true,
+          "mirrorY": false
+        }
+      ]
+    },
+    {
+      "id": 1787507889631,
+      "building": "market",
+      "gx": 25,
+      "gy": 21,
+      "state": 3,
+      "baseScale": 0.9,
+      "stageSize": 1.12,
+      "scale": 1.01,
+      "transformScale": 1,
+      "mirrorX": false,
+      "mirrorY": false,
+      "pitch": 1,
+      "offsetX": -15,
+      "offsetY": -63,
+      "visible": true,
+      "variants": [
+        {
+          "state": 0,
+          "offsetX": -27,
+          "offsetY": -55,
+          "baseScale": 0.9,
+          "stageSize": 0.78,
+          "scale": 0.77,
+          "transformScale": 1.1,
+          "mirrorX": false,
+          "mirrorY": false
+        },
+        {
+          "state": 1,
+          "offsetX": -23,
+          "offsetY": -53,
+          "baseScale": 0.9,
+          "stageSize": 1,
+          "scale": 0.9,
+          "transformScale": 1,
+          "mirrorX": false,
+          "mirrorY": false
+        },
+        {
+          "state": 2,
+          "offsetX": -21,
+          "offsetY": -61,
+          "baseScale": 0.9,
+          "stageSize": 1.06,
+          "scale": 0.95,
+          "transformScale": 1,
+          "mirrorX": false,
+          "mirrorY": false
+        },
+        {
+          "state": 3,
+          "offsetX": -15,
+          "offsetY": -63,
+          "baseScale": 0.9,
+          "stageSize": 1.12,
+          "scale": 1.01,
+          "transformScale": 1,
+          "mirrorX": false,
+          "mirrorY": false
+        }
+      ]
+    },
+    {
+      "id": 1787507838555,
+      "building": "warehouse",
+      "gx": 33,
+      "gy": 14,
+      "state": 3,
+      "baseScale": 0.79,
+      "stageSize": 1.12,
+      "scale": 0.88,
+      "transformScale": 1,
+      "mirrorX": true,
+      "mirrorY": false,
+      "pitch": 1,
+      "offsetX": -14,
+      "offsetY": -15,
+      "visible": true,
+      "variants": [
+        {
+          "state": 0,
+          "offsetX": -35,
+          "offsetY": -29,
+          "baseScale": 0.79,
+          "stageSize": 0.78,
+          "scale": 0.62,
+          "transformScale": 1,
+          "mirrorX": true,
+          "mirrorY": false
+        },
+        {
+          "state": 1,
+          "offsetX": -24,
+          "offsetY": -30,
+          "baseScale": 0.79,
+          "stageSize": 1,
+          "scale": 0.79,
+          "transformScale": 1,
+          "mirrorX": true,
+          "mirrorY": false
+        },
+        {
+          "state": 2,
+          "offsetX": -24,
+          "offsetY": -29,
+          "baseScale": 0.79,
+          "stageSize": 1.06,
+          "scale": 0.84,
+          "transformScale": 1,
+          "mirrorX": true,
+          "mirrorY": false
+        },
+        {
+          "state": 3,
+          "offsetX": -14,
+          "offsetY": -15,
+          "baseScale": 0.79,
+          "stageSize": 1.12,
+          "scale": 0.88,
+          "transformScale": 1,
+          "mirrorX": true,
+          "mirrorY": false
+        }
+      ]
+    }
+  ],
+  "components": {
+    "props": [
+      {
+        "id": "logs",
+        "type": "prop",
+        "x": 47,
+        "y": 670,
+        "offsetX": -633,
+        "offsetY": -85,
+        "scale": 1.2,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      },
+      {
+        "id": "cargo-crates",
+        "type": "prop",
+        "x": 1266,
+        "y": 806,
+        "offsetX": -62,
+        "offsetY": 296,
+        "scale": 1.25,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      },
+      {
+        "id": "tied-barrels",
+        "type": "prop",
+        "x": 727,
+        "y": 433,
+        "offsetX": -501,
+        "offsetY": -197,
+        "scale": 1.25,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      },
+      {
+        "id": "signpost",
+        "type": "prop",
+        "x": 749,
+        "y": 653,
+        "offsetX": -171,
+        "offsetY": 175,
+        "scale": 2.25,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      },
+      {
+        "id": "apiary-boxes",
+        "type": "prop",
+        "x": 1137,
+        "y": 433,
+        "offsetX": 22,
+        "offsetY": 68,
+        "scale": 1.4,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      },
+      {
+        "id": "flower-cart",
+        "type": "prop",
+        "x": 1151,
+        "y": 749,
+        "offsetX": 91,
+        "offsetY": 99,
+        "scale": 1.25,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      },
+      {
+        "id": "bench",
+        "type": "prop",
+        "x": 789,
+        "y": 512,
+        "offsetX": 27,
+        "offsetY": -16,
+        "scale": 1.55,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      },
+      {
+        "id": "street-lantern",
+        "type": "prop",
+        "x": 948,
+        "y": 509,
+        "offsetX": -4,
+        "offsetY": -27,
+        "scale": 1,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      },
+      {
+        "id": "seedling-tray",
+        "type": "prop",
+        "x": 331,
+        "y": 240,
+        "offsetX": -94,
+        "offsetY": -152,
+        "scale": 1.55,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      },
+      {
+        "id": "honey-basket",
+        "type": "prop",
+        "x": 743,
+        "y": 607,
+        "offsetX": -425,
+        "offsetY": 187,
+        "scale": 1.4,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      },
+      {
+        "id": "notice-board",
+        "type": "prop",
+        "x": 825,
+        "y": 584,
+        "offsetX": -3,
+        "offsetY": 118,
+        "scale": 1.6,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      },
+      {
+        "id": "sapling-handcart",
+        "type": "prop",
+        "x": 616,
+        "y": 813,
+        "offsetX": 48,
+        "offsetY": 206,
+        "scale": 1.1,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      },
+      {
+        "id": "stone-well",
+        "type": "prop",
+        "x": 666,
+        "y": 714,
+        "offsetX": 146,
+        "offsetY": 166,
+        "scale": 1.5,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      },
+      {
+        "id": "supply-tent",
+        "type": "prop",
+        "x": 1505,
+        "y": 601,
+        "offsetX": 55,
+        "offsetY": -93,
+        "scale": 1.1,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      },
+      {
+        "id": "copper-pump",
+        "type": "prop",
+        "x": 1213,
+        "y": 662,
+        "offsetX": -49,
+        "offsetY": -4,
+        "scale": 1.65,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      },
+      {
+        "id": "botanical-picnic-table",
+        "type": "prop",
+        "x": 758,
+        "y": 869,
+        "offsetX": 303,
+        "offsetY": 285,
+        "scale": 1.1,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      }
+    ],
+    "npcs": [
+      {
+        "id": "beekeeper",
+        "type": "npc",
+        "x": 1434,
+        "y": 549,
+        "offsetX": 844,
+        "offsetY": 189,
+        "scale": 1,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      },
+      {
+        "id": "botanist",
+        "type": "npc",
+        "x": 248,
+        "y": 389,
+        "offsetX": -612,
+        "offsetY": -83,
+        "scale": 1,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      },
+      {
+        "id": "merchant",
+        "type": "npc",
+        "x": 1112,
+        "y": 539,
+        "offsetX": 2,
+        "offsetY": -63,
+        "scale": 1,
+        "mirrorX": false,
+        "mirrorY": false,
+        "visible": true
+      }
+    ]
+  }
+}

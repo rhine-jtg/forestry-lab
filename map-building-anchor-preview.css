@@ -1,0 +1,107 @@
+.anchor-preview-shell { width: min(1960px, calc(100% - 24px)); }
+
+.anchor-preview-layout { grid-template-columns: minmax(0, 1fr) 390px; }
+.anchor-inspector { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; padding-right: 3px; }
+
+.anchor-map-heading { align-items: flex-start; }
+.anchor-toolbar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.global-stage-switch { display: flex; flex-wrap: wrap; gap: 3px; }
+.global-stage-switch button,
+.anchor-toggle {
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid #52695a;
+  color: #c3d1c2;
+  background: #15271c;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.global-stage-switch button:hover,
+.global-stage-switch button:focus-visible,
+.anchor-toggle:hover,
+.anchor-toggle:focus-visible { border-color: var(--preview-honey); color: var(--preview-cream); outline: none; }
+.global-stage-switch button[aria-pressed="true"],
+.anchor-toggle.is-active { border-color: #e5b84d; color: #241906; background: #d3a640; }
+
+.anchor-map-stage { aspect-ratio: 1058 / 1487; }
+.anchor-map-stage .preview-map-extension { width: 100%; height: 100%; object-fit: contain; }
+.anchor-map-stage .building-anchor { z-index: 10; }
+.anchor-map-stage .building-sprite { pointer-events: none; cursor: default; }
+.anchor-map-stage .building-anchor.is-focused .building-sprite {
+  filter: drop-shadow(0 0 2px #fff5bd) drop-shadow(0 0 8px #e7b23e);
+}
+
+.projection-grid {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity .12s steps(2, end);
+  pointer-events: none;
+}
+.projection-grid.is-visible { opacity: 1; }
+.projection-grid line { stroke: rgba(246, 208, 92, .28); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.projection-grid line.is-major { stroke: rgba(255, 239, 180, .55); stroke-width: 1.4; }
+
+.anchor-marker {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 20;
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border: 2px solid #fff0a5;
+  background: #d59d26;
+  box-shadow: 0 0 0 2px #142117, 0 0 8px rgba(255,211,92,.85);
+  opacity: 1;
+}
+.anchor-marker::before,
+.anchor-marker::after { content: ""; position: absolute; left: 50%; top: 50%; background: #fff4c4; transform: translate(-50%, -50%); }
+.anchor-marker::before { width: 22px; height: 1px; }
+.anchor-marker::after { width: 1px; height: 22px; }
+.anchors-hidden .anchor-marker { opacity: 0; }
+.anchor-map-stage .building-anchor.is-focused .anchor-marker { background: #fff0a5; box-shadow: 0 0 0 3px #241907, 0 0 12px #ffd75f; }
+
+.anchor-legend {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  transform: rotate(45deg);
+  border: 2px solid #fff0a5;
+  background: #d59d26;
+}
+
+.anchor-readout { display: grid; gap: 7px; margin: 11px 0 0; }
+.anchor-readout div { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 6px; border-bottom: 1px solid rgba(131,169,134,.2); }
+.anchor-readout dt { color: var(--preview-muted); font-size: 11px; }
+.anchor-readout dd { margin: 0; color: var(--preview-honey); font-size: 11px; text-align: right; }
+.selected-anchor-card { border-color: #9b7525; }
+.selected-anchor-card output { color: var(--preview-honey); }
+
+.anchor-preview-layout .preview-list-copy small { white-space: normal; line-height: 1.35; }
+.anchor-preview-layout .preview-list-item { grid-template-columns: 32px minmax(0, 1fr); }
+.anchor-preview-layout .preview-list-select { align-items: center; }
+
+@media (max-width: 1180px) {
+  .anchor-preview-layout { grid-template-columns: minmax(0, 1fr) 340px; }
+}
+
+@media (max-width: 980px) {
+  .anchor-preview-layout { grid-template-columns: 1fr; }
+  .anchor-inspector { position: static; max-height: none; overflow: visible; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .anchor-inspector > :last-child { grid-column: 1 / -1; }
+}
+
+@media (max-width: 700px) {
+  .anchor-preview-shell { width: calc(100% - 12px); }
+  .anchor-map-heading { gap: 10px; }
+  .anchor-toolbar { width: 100%; justify-content: flex-start; }
+  .global-stage-switch { width: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .global-stage-switch button { padding-inline: 2px; }
+  .anchor-inspector { grid-template-columns: 1fr; }
+  .anchor-inspector > :last-child { grid-column: auto; }
+}

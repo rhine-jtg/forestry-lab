@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>林业谷地 · 建筑锚点预览</title>
+  <link rel="stylesheet" href="map-building-visibility-test.css?v=10">
+  <link rel="stylesheet" href="map-layout-staged-v4-preview.css?v=10">
+  <link rel="stylesheet" href="map-building-anchor-preview.css?v=1">
+</head>
+<body>
+  <main class="preview-shell anchor-preview-shell">
+    <header class="preview-header">
+      <div>
+        <p class="eyebrow">FORESTRY VALLEY · BUILDING ANCHORS</p>
+        <h1>建筑锚点预览</h1>
+        <p class="preview-subtitle">从新导出的 v4 布局提取 7 栋建筑、4 个等级的独立锚点、缩放与镜像数据。</p>
+      </div>
+      <div class="preview-actions">
+        <span class="layout-badge" id="layoutBadge">读取中</span>
+        <a class="preview-button" href="map-building-visibility-test.html?v=14">定位编辑器</a>
+        <a class="preview-button" href="map-layout-staged-v4-preview.html?v=13">完整展示页</a>
+      </div>
+    </header>
+
+    <section class="preview-layout anchor-preview-layout">
+      <article class="preview-map-card">
+        <div class="preview-map-heading anchor-map-heading">
+          <div>
+            <p class="eyebrow">ANCHOR COMPOSITE</p>
+            <h2>夏季谷地 · 建筑布局</h2>
+          </div>
+          <div class="anchor-toolbar" aria-label="建筑等级与辅助标记">
+            <div class="global-stage-switch" role="group" aria-label="统一切换建筑等级">
+              <button type="button" data-global-stage="layout" aria-pressed="true">导出状态</button>
+              <button type="button" data-global-stage="0" aria-pressed="false">未建设</button>
+              <button type="button" data-global-stage="1" aria-pressed="false">LV1</button>
+              <button type="button" data-global-stage="2" aria-pressed="false">LV2</button>
+              <button type="button" data-global-stage="3" aria-pressed="false">LV3</button>
+            </div>
+            <button class="anchor-toggle is-active" id="toggleAnchors" type="button" aria-pressed="true">锚点</button>
+            <button class="anchor-toggle" id="toggleGrid" type="button" aria-pressed="false">投影网格</button>
+          </div>
+        </div>
+
+        <div class="preview-map-viewport">
+          <div class="preview-map-stage anchor-map-stage" id="mapStage" aria-label="建筑锚点布局预览">
+            <img class="preview-map-extension" id="mapBackground" alt="林业谷地夏季背景">
+            <svg class="projection-grid" id="projectionGrid" aria-hidden="true"></svg>
+            <div class="preview-building-layer" id="buildingLayer" aria-label="建筑锚点图层"></div>
+            <div class="preview-scene-label">
+              <span>BUILDING ANCHORS</span>
+              <b>7 BUILDINGS · 28 VARIANTS</b>
+            </div>
+          </div>
+        </div>
+
+        <footer class="preview-map-footer">
+          <span><i class="legend-swatch is-building"></i>建筑</span>
+          <span><i class="anchor-legend"></i>当前锚点</span>
+          <span class="map-coordinate" id="projectionReadout">投影数据读取中</span>
+        </footer>
+      </article>
+
+      <aside class="preview-inspector anchor-inspector">
+        <section class="inspector-card inspector-summary">
+          <div class="inspector-card-heading">
+            <div>
+              <p class="eyebrow">EXTRACTED DATA</p>
+              <h2>锚点摘要</h2>
+            </div>
+            <span class="status-dot" id="loadStatus" aria-live="polite">读取中</span>
+          </div>
+          <dl class="layout-meta">
+            <div><dt>建筑</dt><dd id="buildingCount">—</dd></div>
+            <div><dt>等级锚点</dt><dd id="variantCount">—</dd></div>
+            <div><dt>背景画布</dt><dd id="backgroundSize">—</dd></div>
+            <div><dt>坐标偏移</dt><dd id="coordinateOffset">—</dd></div>
+          </dl>
+          <p class="inspector-note">十字菱形标记的是建筑精确锚点；切换等级时会同步使用该等级独立的偏移、缩放和镜像。</p>
+        </section>
+
+        <section class="inspector-card selected-anchor-card">
+          <div class="inspector-section-heading">
+            <span><small>SELECTED ANCHOR</small><strong id="selectedName">请选择建筑</strong></span>
+            <output id="selectedStage">—</output>
+          </div>
+          <dl class="anchor-readout">
+            <div><dt>网格坐标</dt><dd id="selectedGrid">—</dd></div>
+            <div><dt>基础投影</dt><dd id="selectedProjected">—</dd></div>
+            <div><dt>等级偏移</dt><dd id="selectedOffset">—</dd></div>
+            <div><dt>背景锚点</dt><dd id="selectedAnchor">—</dd></div>
+            <div><dt>缩放 / 镜像</dt><dd id="selectedTransform">—</dd></div>
+          </dl>
+        </section>
+
+        <section class="inspector-card">
+          <div class="inspector-section-heading">
+            <span><small>BUILDING VARIANTS</small><strong>建筑与等级</strong></span>
+            <output id="buildingRange">—</output>
+          </div>
+          <p class="level-switch-hint">点击建筑名称定位锚点；点击等级按钮预览该等级的独立布局。</p>
+          <div class="preview-list" id="buildingList"></div>
+        </section>
+      </aside>
+    </section>
+
+    <div class="preview-error" id="previewError" hidden>
+      <strong>锚点布局读取失败</strong>
+      <span id="previewErrorMessage"></span>
+    </div>
+  </main>
+  <script src="map-building-anchor-preview.js?v=2"></script>
+</body>
+</html>

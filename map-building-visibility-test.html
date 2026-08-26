@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>林业谷地 · 建筑图层控制</title>
-  <link rel="stylesheet" href="map-building-visibility-test.css">
+  <link rel="stylesheet" href="map-building-visibility-test.css?v=10">
 </head>
 <body>
   <main class="shell">
@@ -35,14 +35,14 @@
         </div>
 
         <div class="map-viewport" id="mapViewport">
-          <div class="map-stage" id="mapStage" aria-label="七栋建筑的独立图层预览">
+          <div class="map-stage" id="mapStage" aria-label="七栋建筑与组件的独立图层预览，可拖动定位">
             <img
               class="map-background"
               id="mapBackground"
-              src="assets/map/test-batch/base/valley-base-summer-building-guided-test-v1.png"
-              alt="无建筑的林业谷地夏季背景"
+              src="assets/map/test-batch/base/valley-forest-background-v2.png"
+              alt="完整纵向林业谷地夏季背景"
             >
-            <svg class="river-effects" id="riverEffects" viewBox="0 0 1667 943" aria-hidden="true">
+            <svg class="river-effects" id="riverEffects" viewBox="0 0 1058 1487" aria-hidden="true">
               <defs>
                 <linearGradient id="riverSheen" x1="0" y1="0" x2="1" y2="1">
                   <stop offset="0" stop-color="#e3fff5" stop-opacity=".08"/>
@@ -50,12 +50,14 @@
                   <stop offset="1" stop-color="#79c8c2" stop-opacity=".05"/>
                 </linearGradient>
               </defs>
-              <path class="river-sheen" d="M1372 -42 C1398 88 1346 176 1392 250 C1438 330 1310 365 1266 438 C1218 520 1268 606 1228 700 C1194 786 1218 868 1286 986"/>
-              <g class="river-ripples">
-                <path d="M1365 35 C1378 109 1354 150 1364 200"/>
-                <path d="M1391 270 C1358 322 1308 348 1288 397"/>
-                <path d="M1254 468 C1234 530 1260 584 1239 634"/>
-                <path d="M1218 720 C1201 777 1218 831 1252 884"/>
+              <g transform="translate(0 545) scale(.634673)">
+                <path class="river-sheen" d="M1372 -42 C1398 88 1346 176 1392 250 C1438 330 1310 365 1266 438 C1218 520 1268 606 1228 700 C1194 786 1218 868 1286 986"/>
+                <g class="river-ripples">
+                  <path d="M1365 35 C1378 109 1354 150 1364 200"/>
+                  <path d="M1391 270 C1358 322 1308 348 1288 397"/>
+                  <path d="M1254 468 C1234 530 1260 584 1239 634"/>
+                  <path d="M1218 720 C1201 777 1218 831 1252 884"/>
+                </g>
               </g>
             </svg>
             <div class="prop-layer" id="propLayer" aria-hidden="true"></div>
@@ -88,7 +90,7 @@
         <div class="map-footer">
           <span><i class="legend-dot is-visible"></i>显示</span>
           <span><i class="legend-dot"></i>隐藏</span>
-          <span>点击“仅看”可单独检查一栋建筑</span>
+          <span>拖动地图上的建筑或组件即可定位（全图范围）</span>
         </div>
       </article>
 
@@ -124,22 +126,56 @@
           </div>
         </section>
 
-        <section class="adjustment-panel" id="adjustmentPanel" tabindex="0" aria-label="当前建筑位置微调">
+        <section class="component-editor" aria-label="静态组件与村民控制">
+          <div class="component-editor-heading">
+            <span>
+              <small>COMPONENT TRANSFORMS</small>
+              <strong>组件缩放与镜像</strong>
+            </span>
+            <output>19 个</output>
+          </div>
+          <div class="component-filter" aria-label="组件类型筛选">
+            <button class="filter-button is-active" type="button" data-component-filter="all" aria-pressed="true">全部</button>
+            <button class="filter-button" type="button" data-component-filter="prop" aria-pressed="false">小物</button>
+            <button class="filter-button" type="button" data-component-filter="npc" aria-pressed="false">村民</button>
+          </div>
+          <div class="component-list" id="componentList"></div>
+        </section>
+
+        <section class="adjustment-panel" id="adjustmentPanel" tabindex="0" aria-label="当前目标位置与变换微调">
           <div class="adjustment-heading">
             <span>
-              <small>CURRENT BUILDING</small>
+              <small id="adjustmentKind">CURRENT TARGET · 建筑</small>
               <strong id="adjustmentName">林木培育场</strong>
             </span>
             <output id="offsetReadout">X +0 · Y +0</output>
           </div>
 
           <div class="state-control" aria-label="当前建筑阶段">
-            <span>建造阶段</span>
+            <span>建造阶段 · 独立定位</span>
             <div class="state-buttons" id="stateButtons">
               <button class="state-button" type="button" data-state="0" aria-pressed="false">未建</button>
               <button class="state-button is-active" type="button" data-state="1" aria-pressed="true">LV1</button>
               <button class="state-button" type="button" data-state="2" aria-pressed="false">LV2</button>
               <button class="state-button" type="button" data-state="3" aria-pressed="false">LV3</button>
+            </div>
+          </div>
+
+          <div class="transform-control" aria-label="当前目标缩放与镜像">
+            <div class="transform-heading">
+              <span>缩放与镜像</span>
+              <output id="scaleReadout">100%</output>
+            </div>
+            <div class="scale-row">
+              <input id="scaleRange" type="range" min="0.25" max="2.5" step="0.05" value="1" aria-label="当前目标缩放比例">
+              <button class="mini-button" id="resetCurrentTransform" type="button">重置变换</button>
+            </div>
+            <div class="mirror-row" aria-label="镜像方式">
+              <span>镜像</span>
+              <button class="mirror-button is-active" type="button" data-mirror="none" aria-pressed="true">正常</button>
+              <button class="mirror-button" type="button" data-mirror="x" aria-pressed="false">水平</button>
+              <button class="mirror-button" type="button" data-mirror="y" aria-pressed="false">垂直</button>
+              <button class="mirror-button" type="button" data-mirror="both" aria-pressed="false">双向</button>
             </div>
           </div>
 
@@ -151,20 +187,20 @@
           </div>
 
           <div class="nudge-layout">
-            <div class="nudge-pad" aria-label="四向移动建筑">
-              <button class="nudge-button is-up" type="button" data-dx="0" data-dy="-1" aria-label="建筑向上移动">↑</button>
-              <button class="nudge-button is-left" type="button" data-dx="-1" data-dy="0" aria-label="建筑向左移动">←</button>
-              <button class="nudge-button is-reset" id="resetCurrentOffset" type="button" aria-label="当前建筑恢复基准定位">基准</button>
-              <button class="nudge-button is-right" type="button" data-dx="1" data-dy="0" aria-label="建筑向右移动">→</button>
-              <button class="nudge-button is-down" type="button" data-dx="0" data-dy="1" aria-label="建筑向下移动">↓</button>
+            <div class="nudge-pad" aria-label="四向移动当前目标">
+              <button class="nudge-button is-up" type="button" data-dx="0" data-dy="-1" aria-label="当前目标向上移动">↑</button>
+              <button class="nudge-button is-left" type="button" data-dx="-1" data-dy="0" aria-label="当前目标向左移动">←</button>
+              <button class="nudge-button is-reset" id="resetCurrentOffset" type="button" aria-label="当前目标恢复基准定位">基准</button>
+              <button class="nudge-button is-right" type="button" data-dx="1" data-dy="0" aria-label="当前目标向右移动">→</button>
+              <button class="nudge-button is-down" type="button" data-dx="0" data-dy="1" aria-label="当前目标向下移动">↓</button>
             </div>
             <div class="coordinate-card">
               <span>屏幕锚点</span>
               <strong id="screenCoordinate">698 / 244</strong>
-              <button class="solo-button" id="resetAllOffsets" type="button">全部恢复基准</button>
+              <button class="solo-button" id="resetAllOffsets" type="button">全部建筑恢复基准</button>
             </div>
           </div>
-          <p class="keyboard-hint">选择建筑后可使用方向键；Shift + 方向键移动 4 倍步长。</p>
+          <p class="keyboard-hint">拖动或使用方向键均可覆盖整张地图；Shift + 方向键移动 4 倍步长。</p>
           <div class="export-actions">
             <button class="pixel-button is-primary" id="exportLayout" type="button">生成并复制 JSON</button>
             <button class="pixel-button" id="downloadLayout" type="button">下载 JSON</button>
@@ -201,12 +237,12 @@
 
         <section class="help-card">
           <strong>检查方式</strong>
-          <p>关闭建筑后可检查其地块轮廓；使用“仅看”确认单栋建筑的比例、锚点和道路入口。</p>
+          <p>先在列表或地图上选中目标；等级切换后会进入该等级独立配置，拖动建筑、组件即可改变定位。</p>
         </section>
       </aside>
     </section>
   </main>
 
-  <script src="map-building-visibility-test.js"></script>
+  <script src="map-building-visibility-test.js?v=14"></script>
 </body>
 </html>

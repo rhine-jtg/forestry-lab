@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>林业谷地 · v4 布局预览</title>
+  <link rel="stylesheet" href="map-building-visibility-test.css?v=10">
+  <link rel="stylesheet" href="map-layout-staged-v4-preview.css?v=10">
+</head>
+<body>
+  <main class="preview-shell">
+    <header class="preview-header">
+      <div>
+        <p class="eyebrow">FORESTRY VALLEY · STAGED LAYOUT V4</p>
+        <h1>林业谷地 · 完整布局预览</h1>
+        <p class="preview-subtitle">根据导出的 2.5D 网格定位合成，建筑、场景组件与 NPC 均使用当前独立变换。</p>
+      </div>
+      <div class="preview-actions">
+        <span class="layout-badge" id="layoutBadge">加载中</span>
+        <a class="preview-button" href="map-building-visibility-test.html">返回定位编辑器</a>
+      </div>
+    </header>
+
+    <section class="preview-layout">
+      <article class="preview-map-card">
+        <div class="preview-map-heading">
+          <div>
+            <p class="eyebrow">INTERACTIVE COMPOSITE</p>
+            <h2>夏季谷地 · 当前布局</h2>
+          </div>
+          <div class="preview-stat-strip" aria-label="布局统计">
+            <span><b id="buildingCount">—</b><small>建筑</small></span>
+            <span><b id="propCount">—</b><small>小物</small></span>
+            <span><b id="npcCount">—</b><small>NPC</small></span>
+          </div>
+        </div>
+
+        <div class="preview-map-viewport">
+          <div class="preview-map-stage" id="mapStage" aria-label="林业谷地 v4 完整布局">
+            <img class="preview-map-extension" id="mapBackgroundExtension" alt="" aria-hidden="true">
+            <div class="preview-map-canvas" id="mapCanvas">
+              <img class="preview-map-background" id="mapBackground" alt="林业谷地夏季背景">
+              <svg class="preview-river-effects" id="riverEffects" viewBox="0 0 1058 1487" aria-hidden="true">
+              <defs>
+                <linearGradient id="previewRiverSheen" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#e3fff5" stop-opacity=".08"/>
+                  <stop offset=".48" stop-color="#b5f5e8" stop-opacity=".62"/>
+                  <stop offset="1" stop-color="#79c8c2" stop-opacity=".05"/>
+                </linearGradient>
+              </defs>
+              <g transform="translate(0 545) scale(.634673)">
+                <path class="preview-river-sheen" d="M1372 -42 C1398 88 1346 176 1392 250 C1438 330 1310 365 1266 438 C1218 520 1268 606 1228 700 C1194 786 1218 868 1286 986"/>
+                <g class="preview-river-ripples">
+                  <path d="M1365 35 C1378 109 1354 150 1364 200"/>
+                  <path d="M1391 270 C1358 322 1308 348 1288 397"/>
+                  <path d="M1254 468 C1234 530 1260 584 1239 634"/>
+                  <path d="M1218 720 C1201 777 1218 831 1252 884"/>
+                </g>
+              </g>
+              </svg>
+              <div class="preview-prop-layer" id="propLayer" aria-label="场景小物"></div>
+              <div class="preview-building-layer" id="buildingLayer" aria-label="建筑"></div>
+              <div class="preview-npc-layer" id="npcLayer" aria-label="村民 NPC"></div>
+              <div class="preview-scene-label">
+                <span>FORESTRY VALLEY</span>
+                <b>SUMMER · LAYOUT V4</b>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <footer class="preview-map-footer">
+          <span><i class="legend-swatch is-building"></i>建筑</span>
+          <span><i class="legend-swatch is-prop"></i>场景小物</span>
+          <span><i class="legend-swatch is-npc"></i>NPC</span>
+          <span class="map-coordinate" id="projectionReadout">投影标尺：加载中</span>
+        </footer>
+      </article>
+
+      <aside class="preview-inspector" aria-label="导入布局信息">
+        <section class="inspector-card inspector-summary">
+          <div class="inspector-card-heading">
+            <div>
+              <p class="eyebrow">IMPORTED LAYOUT</p>
+              <h2>定位摘要</h2>
+            </div>
+            <span class="status-dot" id="loadStatus" aria-live="polite">读取中</span>
+          </div>
+          <dl class="layout-meta">
+            <div><dt>投影</dt><dd id="projectionType">—</dd></div>
+            <div><dt>画布</dt><dd id="mapSize">—</dd></div>
+            <div><dt>背景</dt><dd id="backgroundName">—</dd></div>
+            <div><dt>图层</dt><dd id="layerSummary">—</dd></div>
+          </dl>
+          <p class="inspector-note">本页为只读合成预览。要继续拖动、缩放或镜像，请返回定位编辑器。</p>
+        </section>
+
+        <section class="inspector-card">
+          <div class="inspector-section-heading">
+            <span>
+              <small>BUILDING STACK</small>
+              <strong>建筑定位</strong>
+            </span>
+            <output id="buildingRange">—</output>
+          </div>
+          <p class="level-switch-hint">点击每栋建筑下方的等级按钮，预览该等级的独立定位与缩放。</p>
+          <div class="preview-list" id="buildingList"></div>
+        </section>
+
+        <section class="inspector-card">
+          <div class="inspector-section-heading">
+            <span>
+              <small>SCENE COMPONENTS</small>
+              <strong>组件与 NPC</strong>
+            </span>
+            <output id="componentRange">—</output>
+          </div>
+          <div class="component-summary" id="componentSummary"></div>
+        </section>
+      </aside>
+    </section>
+
+    <div class="preview-error" id="previewError" hidden>
+      <strong>布局文件读取失败</strong>
+      <span id="previewErrorMessage"></span>
+    </div>
+  </main>
+
+  <script src="map-layout-staged-v4-preview.js?v=11"></script>
+</body>
+</html>
