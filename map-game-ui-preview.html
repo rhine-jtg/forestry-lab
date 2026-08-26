@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>林业谷地 · 地图主界面 UI 预览</title>
+  <link rel="stylesheet" href="map-game-ui-preview.css?v=3">
+</head>
+<body>
+  <div class="game-shell" id="gameShell">
+    <header class="top-hud" aria-label="工坊状态与资源">
+      <button class="workshop-brand" type="button" data-action="workshop">
+        <span class="brand-mark">FL</span>
+        <span class="brand-copy"><small>林业谷地 · R3</small><strong>青苔林业站</strong></span>
+      </button>
+
+      <div class="resource-strip" aria-label="关键资源">
+        <button class="resource-cell is-money" type="button" data-action="shop">
+          <span class="resource-icon">◆</span><span><small>绿宝石</small><strong>1,248</strong></span>
+        </button>
+        <button class="resource-cell is-energy" type="button" data-building-jump="warehouse">
+          <span class="resource-icon">ϟ</span><span><small>能源</small><strong>86 / 100</strong></span>
+        </button>
+        <button class="resource-cell is-storage" type="button" data-building-jump="warehouse">
+          <span class="resource-icon">▣</span><span><small>仓库</small><strong>63 / 120</strong></span>
+        </button>
+        <button class="resource-cell is-honey" type="button" data-building-jump="apiary">
+          <span class="resource-icon">⬢</span><span><small>蜂蜜</small><strong>25</strong></span>
+        </button>
+        <button class="resource-cell is-timber" type="button" data-building-jump="arbor">
+          <span class="resource-icon">▰</span><span><small>木材</small><strong>83</strong></span>
+        </button>
+      </div>
+
+      <div class="system-strip">
+        <button class="environment-cell" type="button" data-action="ecology">
+          <span class="weather-icon">☀</span><span><small>初夏 · 晴</small><strong>生态 74</strong></span>
+        </button>
+        <span class="save-state"><i></i>已自动保存</span>
+        <button class="square-button" id="systemButton" type="button" aria-label="打开系统菜单">☰</button>
+      </div>
+    </header>
+
+    <main class="map-viewport" id="mapViewport">
+      <div class="map-backdrop" aria-hidden="true"></div>
+      <div class="map-camera" id="mapCamera">
+        <img class="map-background" id="mapBackground" alt="林业谷地夏季地图">
+        <div class="building-layer" id="buildingLayer" aria-label="谷地建筑"></div>
+      </div>
+
+      <div class="map-toolbar" aria-label="地图筛选">
+        <button type="button" data-filter="all" aria-pressed="true">全部</button>
+        <button type="button" data-filter="production" aria-pressed="false">生产</button>
+        <button type="button" data-filter="ecology" aria-pressed="false">生态</button>
+        <button type="button" data-filter="task" aria-pressed="false">任务</button>
+      </div>
+
+      <div class="camera-tools" aria-label="地图镜头">
+        <button type="button" data-zoom="in" aria-label="放大地图">＋</button>
+        <button type="button" data-zoom="out" aria-label="缩小地图">－</button>
+        <button type="button" data-zoom="reset" aria-label="恢复地图镜头">⌂</button>
+        <span class="camera-hint" aria-hidden="true">拖动地图</span>
+      </div>
+
+      <button class="event-chip" type="button" data-action="event">
+        <span class="event-glyph">!</span>
+        <span><small>谷地事件 · 08:42</small><strong>野花进入盛放期</strong></span>
+      </button>
+
+      <section class="building-quick-card" id="buildingQuickCard" aria-live="polite">
+        <button class="quick-close" id="quickClose" type="button" aria-label="关闭建筑信息">×</button>
+        <div class="quick-heading">
+          <span class="quick-icon" id="quickIcon">⬢</span>
+          <span><small id="quickCategory">APICULTURE</small><strong id="quickName">古树蜂场</strong></span>
+          <span class="quick-state" id="quickState">可收取</span>
+        </div>
+        <p id="quickSummary">草原蜂群完成本轮生产，花源稳定。</p>
+        <div class="quick-output"><span id="quickOutput">蜂蜜 4 · 蜂蜡 1</span><b id="quickProgress">100%</b></div>
+        <div class="quick-progress" aria-hidden="true"><i id="quickProgressBar"></i></div>
+        <div class="quick-actions">
+          <button class="secondary-action" id="quickSecondary" type="button">查看影响</button>
+          <button class="primary-action" id="quickPrimary" type="button">收取并查看 →</button>
+        </div>
+      </section>
+
+      <section class="deep-workspace" id="deepWorkspace" aria-hidden="true" aria-labelledby="workspaceTitle">
+        <header class="workspace-header">
+          <button class="workspace-back" id="workspaceBack" type="button" aria-label="返回地图">←</button>
+          <span class="workspace-icon" id="workspaceIcon">⬢</span>
+          <span class="workspace-heading">
+            <small id="workspaceEyebrow">FACILITY WORKSPACE</small>
+            <strong id="workspaceTitle">古树蜂场</strong>
+            <em id="workspaceSubtitle">生产、生态与培育状态</em>
+          </span>
+          <span class="workspace-status" id="workspaceStatus">运行中</span>
+          <button class="workspace-close" id="workspaceClose" type="button" aria-label="关闭工作台">×</button>
+        </header>
+        <nav class="workspace-tabbar" id="workspaceTabs" aria-label="工作台页面"></nav>
+        <div class="workspace-body" id="workspaceContent"></div>
+        <footer class="workspace-footer">
+          <span><i></i>所有修改将随自动保存写入当前工坊</span>
+          <button type="button" id="workspaceMapReturn">返回地图位置</button>
+        </footer>
+      </section>
+
+      <section class="confirm-modal" id="confirmModal" aria-hidden="true" aria-labelledby="confirmTitle">
+        <div class="confirm-heading">
+          <span class="confirm-icon" id="confirmIcon">!</span>
+          <span><small>SECONDARY CONFIRMATION</small><strong id="confirmTitle">确认操作</strong></span>
+        </div>
+        <p id="confirmMessage">请确认本次操作的消耗与收益。</p>
+        <dl class="confirm-costs" id="confirmCosts"></dl>
+        <div class="confirm-actions">
+          <button type="button" id="confirmCancel">取消</button>
+          <button class="confirm-primary" type="button" id="confirmAccept">确认 →</button>
+        </div>
+      </section>
+
+      <aside class="system-drawer" id="systemDrawer" aria-label="系统菜单" aria-hidden="true">
+        <div class="drawer-heading"><span><small>SYSTEM</small><strong>工坊菜单</strong></span><button id="systemClose" type="button" aria-label="关闭系统菜单">×</button></div>
+        <button type="button" data-action="save">存档与载入 <span>最近保存 18:42</span></button>
+        <button type="button" data-action="settings">画面与声音 <span>低耗模式：关闭</span></button>
+        <button type="button" data-action="guide">新手教程 <span>基础引导已完成</span></button>
+        <button type="button" data-action="about">关于与资料 <span>Wiki · GitHub</span></button>
+      </aside>
+
+      <div class="ui-scrim" id="uiScrim" hidden></div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </main>
+
+    <footer class="bottom-ui">
+      <button class="objective-bar" type="button" data-building-jump="apiary">
+        <span class="objective-index">06</span>
+        <span class="objective-copy"><small>CURRENT OBJECTIVE</small><strong>为古树蜂场补充野花</strong></span>
+        <span class="objective-progress"><b>2 / 4</b><i><em></em></i></span>
+        <span class="objective-locate">定位 →</span>
+      </button>
+
+      <nav class="bottom-nav" aria-label="游戏主导航">
+        <button class="is-active" type="button" data-nav="map"><span>◆</span><strong>地图</strong></button>
+        <button type="button" data-nav="survey"><span>⌖</span><strong>调查</strong></button>
+        <button type="button" data-nav="queue"><span>▤</span><strong>队列</strong><i>3</i></button>
+        <button type="button" data-nav="contracts"><span>☷</span><strong>委托</strong><i>1</i></button>
+        <button type="button" data-nav="storage"><span>▣</span><strong>仓库</strong></button>
+        <button type="button" data-nav="more"><span>•••</span><strong>更多</strong></button>
+      </nav>
+    </footer>
+  </div>
+  <script src="map-game-ui-preview.js?v=3"></script>
+</body>
+</html>

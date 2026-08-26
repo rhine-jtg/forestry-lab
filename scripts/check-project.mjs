@@ -25,6 +25,7 @@ function checkJavaScript() {
     "app.js",
     "map-building-visibility-test.js",
     "map-building-anchor-preview.js",
+    "map-game-ui-preview.js",
     "map-layer-test.js",
     "desktop/main.cjs",
     "android/app/src/main/assets/app.js",
@@ -124,7 +125,7 @@ async function checkHttp() {
   });
   try {
     const address = server.address();
-    const pages = ["/", "/ui-lab.html", "/ui-frameworks.html", "/map-grid-layout-test.html", "/map-layer-test.html", "/map-building-visibility-test.html", "/map-building-anchor-preview.html"];
+    const pages = ["/", "/ui-lab.html", "/ui-frameworks.html", "/map-grid-layout-test.html", "/map-layer-test.html", "/map-building-visibility-test.html", "/map-building-anchor-preview.html", "/map-game-ui-preview.html"];
     for (const page of pages) {
       if (page !== "/" && !existsSync(join(root, page.slice(1)))) continue;
       const response = await fetch(`http://127.0.0.1:${address.port}${page}`);
