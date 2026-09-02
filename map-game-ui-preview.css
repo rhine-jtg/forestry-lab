@@ -144,11 +144,11 @@ button:focus-visible { outline: 2px solid #fff1a8; outline-offset: 2px; }
   pointer-events: none;
 }
 .building-anchor.is-selected .building-sprite { filter: drop-shadow(0 0 2px #fff3b1) drop-shadow(0 0 9px #e5ad35); }
-.building-hit { position: absolute; left: 0; top: 0; width: 86px; height: 64px; transform: translate(-50%, -70%); border: 0; color: transparent; background: transparent; pointer-events: auto; cursor: pointer; }
-.building-anchor.is-selected .building-hit { border: 2px solid rgba(255,223,111,.92); background: rgba(233,179,55,.08); }
+.building-hit { position: absolute; left: 0; top: 0; width: 0; height: 0; padding: 0; transform-origin: 50% 90%; transform: translate(-50%, var(--anchor-y, -90%)) scaleX(var(--mirror-x, 1)) scaleY(var(--mirror-y, 1)) scale(var(--building-scale, 1)); border: 0; color: transparent; background: transparent; pointer-events: auto; cursor: pointer; }
+.building-anchor.is-selected .building-hit { outline: 0; background: transparent; }
 .building-label { position: absolute; left: 0; top: 8px; display: none; transform: translateX(-50%); padding: 4px 7px; border: 1px solid #e2b540; color: #241906; background: #f0cb62; box-shadow: 2px 2px 0 #06100a; font-size: 11px; white-space: nowrap; }
 .building-anchor.is-selected .building-label { display: block; }
-.building-badge { position: absolute; left: 17px; top: -47px; display: grid; min-width: 20px; height: 20px; place-items: center; border: 1px solid #f4d06d; color: #1e1607; background: #e6b949; box-shadow: 2px 2px 0 #07110c; font-size: 10px; }
+.building-badge { display: none; }
 .building-badge.is-running { border-color: #8ebc72; background: #8fbc67; }
 .building-badge.is-task { border-color: #c4aeed; background: #8f77ba; }
 
@@ -439,6 +439,7 @@ button:focus-visible { outline: 2px solid #fff1a8; outline-offset: 2px; }
 .region-copy strong { display: block; font-size: 12px; }
 .region-copy small { display: block; margin-top: 2px; color: var(--game-muted); font-size: 9px; }
 .region-cost { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; color: var(--game-honey); font-size: 9px; }
+.region-copy em { display: block; margin-top: 5px; color: #9fb8a4; font-size: 9px; font-style: normal; line-height: 1.35; }
 .region-card .deep-button { grid-column: 1 / -1; width: 100%; min-height: 34px; }
 
 .inventory-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 5px; }
@@ -468,6 +469,7 @@ button:focus-visible { outline: 2px solid #fff1a8; outline-offset: 2px; }
 .confirm-costs dt { color: var(--game-muted); font-size: 10px; }
 .confirm-costs dd { margin: 0; color: var(--game-honey); font-size: 11px; }
 .confirm-actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 7px; margin-top: 12px; }
+.confirm-actions.has-auto { grid-template-columns: 1fr 1fr 1.4fr; }
 .confirm-actions button { min-height: 40px; padding: 7px; }
 
 @media (max-width: 760px) {
@@ -497,6 +499,8 @@ button:focus-visible { outline: 2px solid #fff1a8; outline-offset: 2px; }
   .inventory-grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
   .upgrade-path { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .confirm-modal { width: calc(100% - 18px); }
+  .confirm-actions.has-auto { grid-template-columns: 1fr 1fr; }
+  .confirm-actions.has-auto .confirm-primary { grid-column: 1 / -1; }
 }
 
 @media (max-width: 390px) {
