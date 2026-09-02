@@ -499,10 +499,6 @@
     return Math.max(min, Math.min(max, value));
   }
 
-  function mapRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-
   function mapFormatResource(key, amount) {
     var api = window.ForestryGame;
     var names = (api && api.resourceNames) || {};
@@ -748,12 +744,12 @@
           <section class="deep-section">
             <div class="section-heading"><span><small>MACHINE FLOOR</small><strong>机器台</strong></span><output>1 / 4 已建成 · ${mapState.machineCycles} 次完成</output></div>
             <div class="machine-grid">
-              <div class="machine-card"><span class="machine-glyph">◎</span><span><strong>离心机 C-01</strong><small>蜂蜜脾 1 → 蜂蜜 1 · 蜂蜡 1</small></span><output>待命</output></div>
+              <div class="machine-card"><span class="machine-glyph">◎</span><span><strong>离心机 C-01</strong><small>蜂蜜脾 1 → 蜂蜜 1 · 蜂蜡 1</small></span><output>${mapState.machineReady ? "可收取" : mapState.machineActive ? ("运行 " + Math.round(mapState.machineProgress) + "%") : "待命"}</output></div>
               <div class="machine-card"><span class="machine-glyph">♧</span><span><strong>榨汁机 S-01</strong><small>完成第一次离心后解锁</small></span><output>锁定</output></div>
               <div class="machine-card"><span class="machine-glyph">≈</span><span><strong>发酵机 F-01</strong><small>完成 3 种蜂与委托后解锁</small></span><output>锁定</output></div>
               <div class="machine-card"><span class="machine-glyph">⌁</span><span><strong>蒸馏机 ST-01</strong><small>完成一次发酵后解锁</small></span><output>锁定</output></div>
             </div>
-            <div class="deep-action-row"><button class="deep-button is-primary" data-deep-action="collect">收取离心产物 →</button></div>
+            <div class="deep-action-row"><button class="deep-button is-primary" data-deep-action="collect">${mapState.machineReady ? "收取离心产物 →" : mapState.machineActive ? "离心进行中" : "启动离心机 →"}</button></div>
           </section>
           <section class="deep-section">
             <div class="section-heading"><span><small>POWER & PRESSURE</small><strong>工坊负载</strong></span><output>能源 ${mapState.energy} / ${mapState.energyCapacity}</output></div>
@@ -767,18 +763,13 @@
       return `
         <div class="deep-grid">
           <section class="deep-section">
-            <div class="section-heading"><span><small>DAILY TRADES</small><strong>村民今日交易</strong></span><output>学徒货架</output></div>
-            <div class="trade-list">
-              <div class="trade-row"><span>✿</span><div><strong>野花补给 ×8</strong><small>稳定基础花源 · 当前 ${mapGetResource("wildflower")}</small></div><output>1 ◆</output></div>
-              <div class="trade-row"><span>▰</span><div><strong>通用木材 ×6</strong><small>基础建设材料</small></div><output>1 ◆</output></div>
-              <div class="trade-row"><span>⬢</span><div><strong>蜂蜜 ×2</strong><small>离心分离产物</small></div><output>1 ◆</output></div>
-              <div class="trade-row"><span>▣</span><div><strong>蜂蜡 ×3</strong><small>框架与加工耗材</small></div><output>1 ◆</output></div>
-            </div>
+            <div class="section-heading"><span><small>DAILY TRADES</small><strong>村民今日交易</strong></span><output>${mapState.shopTierName || "学徒货架"}</output></div>
+            <div class="trade-list">${(ACTUAL_CONTENT.shop || []).slice(0, 4).map(function (offer) { return "<div class=\"trade-row\"><span>" + (offer.icon || "◆") + "</span><div><strong>" + offer.name + "</strong><small>" + offer.note + "</small></div><output>" + offer.price + " ◆</output></div>"; }).join("")}</div>
             <div class="deep-action-row"><button class="deep-button is-primary" data-deep-action="trade">购买野花补给 →</button></div>
           </section>
           <section class="deep-section">
-            <div class="section-heading"><span><small>MARKET STATUS</small><strong>交易概览</strong></span><output>林地学徒</output></div>
-            <div class="metric-grid">${metric("绿宝石", String(mapState.resources.emerald), "可用余额")}${metric("基础货架", "4 类", "野花、木材、蜂蜜、蜂蜡")}${metric("能源补给", "5 ◆", "可购买 +20 能源")}</div>
+            <div class="section-heading"><span><small>MARKET STATUS</small><strong>交易概览</strong></span><output>${(mapState.rank && mapState.rank.name) || "林地学徒"}</output></div>
+            <div class="metric-grid">${metric("绿宝石", String(mapState.resources.emerald), "可用余额")}${metric("货架等级", mapState.shopTierName || "学徒货架", "T" + (mapState.shopTier || 1))}${metric("野花库存", String(mapGetResource("wildflower")), "蜂箱花源")}</div>
           </section>
         </div>`;
     }
@@ -793,7 +784,7 @@
             </div>
             <div class="deep-action-row"><button class="deep-button is-primary" data-deep-action="archive">归档新谱系 →</button></div>
           </section>
-          <section class="deep-section"><div class="section-heading"><span><small>RESEARCH NOTES</small><strong>研究摘要</strong></span><output>待分析 5</output></div><div class="condition-list">${condition("蜂类记录", "2 / 11", 18, "is-honey")}${condition("树木记录", "2 / 14", 14, "")}${condition("蝴蝶记录", "1 / 6", 17, "is-cyan")}</div></section>
+          <section class="deep-section"><div class="section-heading"><span><small>RESEARCH NOTES</small><strong>研究摘要</strong></span><output>待分析 5</output></div><div class="condition-list">${condition("蜂类记录", mapState.species.bees.length + " / 11", Math.round(mapState.species.bees.length / 11 * 100), "is-honey")}${condition("树木记录", mapState.species.trees.length + " / 14", Math.round(mapState.species.trees.length / 14 * 100), "")}${condition("蝴蝶记录", mapState.species.butterflies.length + " / 6", Math.round(mapState.species.butterflies.length / 6 * 100), "is-cyan")}</div></section>
         </div>`;
     }
 
@@ -804,7 +795,7 @@
     return `
       <div class="deep-grid">
         <section class="deep-section"><div class="section-heading"><span><small>CURRENT CONTRACT</small><strong>林地调查补给</strong></span><output>教程后开放</output></div><div class="contract-list"><div class="contract-row"><span>01</span><div><strong>林地调查补给</strong><small>需要：蜂蜜脾 1 · 木材 5</small></div><output>未开放</output></div><div class="contract-row"><span>02</span><div><strong>初建蜂房</strong><small>需要：野花 2 · 蜂蜜脾 1</small></div><output>等待前置</output></div></div><div class="deep-action-row"><button class="deep-button" data-deep-action="contract">查看委托条件 →</button></div></section>
-        <section class="deep-section"><div class="section-heading"><span><small>WORKSHOP STATUS</small><strong>谷地运行摘要</strong></span><output>林地学徒</output></div><div class="metric-grid">${metric("建筑", "7", "蜂箱、树场与基础工作站")}${metric("教程", "0 / 14", "当前初始阶段")}${metric("区域", "1 / 8", "仅森林边缘可调查")}</div></section>
+        <section class="deep-section"><div class="section-heading"><span><small>WORKSHOP STATUS</small><strong>谷地运行摘要</strong></span><output>${(mapState.rank && (mapState.rank.rank + " · " + mapState.rank.name)) || "R1"}</output></div><div class="metric-grid">${metric("建筑", "7", "蜂箱、树场与基础工作站")}${metric("教程", mapState.guideStep + " / " + mapState.guideTotal, mapState.guideTitle || "当前目标")}${metric("区域", ACTUAL_CONTENT.zones.filter(function (z) { return z.unlocked; }).length + " / 8", "真实解锁状态")}</div></section>
       </div>`;
   }
 
@@ -833,7 +824,7 @@
       return `
         <div class="deep-grid">
           <section class="deep-section is-span"><div class="section-heading"><span><small>FACILITY LEVEL</small><strong>${def.name}进程</strong></span><output>功能入口</output></div><div class="metric-grid">${metric("当前状态", "已建成", "随教程与委托开放")}${metric("可升级项", "暂无", "该建筑不使用设施等级")}${metric("长期进程", "R1", "继续完成主线委托")}</div></section>
-          <section class="deep-section is-span"><div class="section-heading"><span><small>UNLOCK PATH</small><strong>下一步目标</strong></span><output>继续探索</output></div><div class="condition-list">${condition("新手教程", "0 / 14", 0, "")}${condition("区域解锁", "1 / 8", 12, "is-cyan")}${condition("物种档案", "5 / 31", 16, "is-honey")}</div></section>
+          <section class="deep-section is-span"><div class="section-heading"><span><small>UNLOCK PATH</small><strong>下一步目标</strong></span><output>继续探索</output></div><div class="condition-list">${condition("新手教程", mapState.guideStep + " / " + mapState.guideTotal, Math.round(mapState.guideStep / Math.max(1, mapState.guideTotal) * 100), "")}${condition("区域解锁", ACTUAL_CONTENT.zones.filter(function (z) { return z.unlocked; }).length + " / 8", Math.round(ACTUAL_CONTENT.zones.filter(function (z) { return z.unlocked; }).length / 8 * 100), "is-cyan")}${condition("物种档案", (mapState.species.bees.length + mapState.species.trees.length + mapState.species.butterflies.length) + " / 31", Math.round((mapState.species.bees.length + mapState.species.trees.length + mapState.species.butterflies.length) / 31 * 100), "is-honey")}</div></section>
         </div>`;
     }
     var level = mapState.levels[def.id] || upgrade.level;
@@ -872,7 +863,7 @@
     var autoRow = mapState.autoSurvey ? '<div class="queue-row"><span>⌖</span><div><strong>' + zoneById(mapState.autoSurvey.zoneId).name + ' · 自动调查</strong><small>完成倒计时</small></div><output>' + mapState.autoSurvey.remaining + ' 秒</output></div>' : '';
     return `
       <div class="deep-grid is-even">
-        <section class="deep-section"><div class="section-heading"><span><small>ACTIVE QUEUES</small><strong>运行中的工作</strong></span><output>${activeCount} 项</output></div><div class="queue-list"><div class="queue-row"><span>⬢</span><div><strong>养蜂箱 A-01 · 森林蜂</strong><small>${mapState.breeding ? "培育蜂杂交倒计时" : "蜂蜜脾生产进度"}</small></div><output>${mapState.breeding ? mapState.breeding.remaining + " 秒" : mapState.apiaryReady > 0 ? "可收取" : Math.round(mapState.apiaryProgress) + "%"}</output></div><div class="queue-row"><span>♣</span><div><strong>树场 T-01 · 橡树</strong><small>${mapState.treeBreeding ? "落叶松培育倒计时" : "木材生产进度"}</small></div><output>${mapState.treeBreeding ? mapState.treeBreeding.remaining + " 秒" : mapState.treeReady > 0 ? "可收取" : Math.round(mapState.treeProgress) + "%"}</output></div><div class="queue-row"><span>◎</span><div><strong>离心机 C-01</strong><small>等待蜂蜜脾输入 · 已完成 ${mapState.machineCycles} 次</small></div><output>${mapState.resources.rawComb > 0 ? "可加工" : "待命"}</output></div>${autoRow}</div><div class="deep-action-row"><button class="deep-button" data-deep-action="collect-all">收取可用产物 →</button></div></section>
+        <section class="deep-section"><div class="section-heading"><span><small>ACTIVE QUEUES</small><strong>运行中的工作</strong></span><output>${activeCount} 项</output></div><div class="queue-list"><div class="queue-row"><span>⬢</span><div><strong>养蜂箱 A-01 · 森林蜂</strong><small>${mapState.breeding ? "培育蜂杂交倒计时" : "蜂蜜脾生产进度"}</small></div><output>${mapState.breeding ? mapState.breeding.remaining + " 秒" : mapState.apiaryReady > 0 ? "可收取" : Math.round(mapState.apiaryProgress) + "%"}</output></div><div class="queue-row"><span>♣</span><div><strong>树场 T-01 · 橡树</strong><small>${mapState.treeBreeding ? "落叶松培育倒计时" : "木材生产进度"}</small></div><output>${mapState.treeBreeding ? mapState.treeBreeding.remaining + " 秒" : mapState.treeReady > 0 ? "可收取" : Math.round(mapState.treeProgress) + "%"}</output></div><div class="queue-row"><span>◎</span><div><strong>离心机 C-01</strong><small>${mapState.machineReady ? "产物可收取" : mapState.machineActive ? "离心运行中" : "等待蜂蜜脾输入"} · 已完成 ${mapState.machineCycles} 次</small></div><output>${mapState.machineReady ? "可收取" : mapState.machineActive ? (Math.round(mapState.machineProgress) + "%") : (mapState.resources.rawComb > 0 ? "可加工" : "待命")}</output></div>${autoRow}</div><div class="deep-action-row"><button class="deep-button" data-deep-action="collect-all">收取可用产物 →</button></div></section>
         <section class="deep-section"><div class="section-heading"><span><small>BLOCKED WORK</small><strong>等待解锁</strong></span><output>3 项</output></div><div class="queue-list"><div class="queue-row"><span>!</span><div><strong>榨汁机 S-01</strong><small>完成第一次离心后解锁</small></div><output>锁定</output></div><div class="queue-row"><span>!</span><div><strong>发酵机 F-01</strong><small>完成 3 种蜂与委托后解锁</small></div><output>锁定</output></div><div class="queue-row"><span>!</span><div><strong>蒸馏机 ST-01</strong><small>完成一次发酵后解锁</small></div><output>锁定</output></div></div></section>
       </div>`;
   }
@@ -890,24 +881,23 @@
   function storageContent() {
     var r = mapState.resources;
     var energyCapacity = mapState.energyCapacity;
-    var regularTotal = r.honey + r.wax + r.wood + r.rawComb;
     return `
       <div class="deep-grid">
-        <section class="deep-section"><div class="section-heading"><span><small>STORAGE INVENTORY</small><strong>仓库物资</strong></span><output>常规 ${regularTotal} / 999</output></div><div class="inventory-grid"><div class="inventory-item"><span>⬢</span><strong>蜂蜜</strong><small>${r.honey}</small></div><div class="inventory-item"><span>▣</span><strong>蜂蜡</strong><small>${r.wax}</small></div><div class="inventory-item"><span>▰</span><strong>木材</strong><small>${r.wood}</small></div><div class="inventory-item"><span>♣</span><strong>橡树苗</strong><small>${mapState.saplings.oak || 0}</small></div><div class="inventory-item"><span>♣</span><strong>白桦苗</strong><small>${mapState.saplings.birch || 0}</small></div><div class="inventory-item"><span>✿</span><strong>野花</strong><small>${mapState.flowers.wildflower || 0}</small></div><div class="inventory-item"><span>≈</span><strong>种子油</strong><small>${r.oil}</small></div><div class="inventory-item"><span>◈</span><strong>生物质</strong><small>${r.biomass}</small></div><div class="inventory-item"><span>♛</span><strong>蜂种记录</strong><small>${mapState.species.bees.length} / 11</small></div><div class="inventory-item"><span>✧</span><strong>蝶种记录</strong><small>${mapState.species.butterflies.length} / 6</small></div></div></section>
-        <section class="deep-section"><div class="section-heading"><span><small>POWER CORE</small><strong>能源核心</strong></span><output>${mapState.energy} / ${energyCapacity}</output></div><div class="condition-list">${condition("当前能源", Math.round(mapState.energy / energyCapacity * 100) + "%", Math.round(mapState.energy / energyCapacity * 100), "is-cyan")}${condition("恢复速度", "+" + (ACTUAL_CONTENT.energyCore.recovery + Math.max(0, mapState.levels.energyCore - 1)) + " / min", 36, "")}${condition("工业负载", "0%", 0, "is-honey")}</div><div class="metric-grid" style="margin-top:10px">${metric("核心等级", "LV" + mapState.levels.energyCore, "上限 " + energyCapacity)}${metric("下级上限", String(energyCapacity + 25), "升级后容量")}${metric("升级材料", ACTUAL_CONTENT.energyCore.cost, "首次离心后可升级")}</div><div class="deep-action-row"><button class="deep-button" data-deep-action="fuel">投入生物燃料</button><button class="deep-button is-primary" data-deep-action="upgrade-confirm">升级能源核心 →</button></div></section>
+        <section class="deep-section"><div class="section-heading"><span><small>STORAGE INVENTORY</small><strong>仓库物资</strong></span><output>常规 ${mapState.regularTotal} / ${mapState.regularCapacity}</output></div><div class="inventory-grid"><div class="inventory-item"><span>⬢</span><strong>蜂蜜</strong><small>${r.honey}</small></div><div class="inventory-item"><span>▣</span><strong>蜂蜡</strong><small>${r.wax}</small></div><div class="inventory-item"><span>▰</span><strong>木材</strong><small>${r.wood}</small></div><div class="inventory-item"><span>♣</span><strong>橡树苗</strong><small>${mapState.saplings.oak || 0}</small></div><div class="inventory-item"><span>♣</span><strong>白桦苗</strong><small>${mapState.saplings.birch || 0}</small></div><div class="inventory-item"><span>✿</span><strong>野花</strong><small>${mapState.flowers.wildflower || 0}</small></div><div class="inventory-item"><span>≈</span><strong>种子油</strong><small>${r.oil}</small></div><div class="inventory-item"><span>◈</span><strong>生物质</strong><small>${r.biomass}</small></div><div class="inventory-item"><span>♛</span><strong>蜂种记录</strong><small>${mapState.species.bees.length} / 11</small></div><div class="inventory-item"><span>✧</span><strong>蝶种记录</strong><small>${mapState.species.butterflies.length} / 6</small></div></div></section>
+        <section class="deep-section"><div class="section-heading"><span><small>POWER CORE</small><strong>能源核心</strong></span><output>${mapState.energy} / ${energyCapacity}</output></div><div class="condition-list">${condition("当前能源", Math.round(mapState.energy / energyCapacity * 100) + "%", Math.round(mapState.energy / energyCapacity * 100), "is-cyan")}${condition("恢复速度", "+" + mapState.energyRecovery + " / min", 36, "")}${condition("工业负载", "0%", 0, "is-honey")}</div><div class="metric-grid" style="margin-top:10px">${metric("核心等级", "LV" + mapState.levels.energyCore, "上限 " + energyCapacity)}${metric("下级上限", String(ACTUAL_CONTENT.energyCore.nextCapacity || energyCapacity), "升级后容量")}${metric("升级材料", ACTUAL_CONTENT.energyCore.cost, "首次离心后可升级")}</div><div class="deep-action-row"><button class="deep-button" data-deep-action="fuel">投入生物燃料</button><button class="deep-button is-primary" data-deep-action="upgrade-confirm">升级能源核心 →</button></div></section>
       </div>`;
   }
 
   function workspaceDefinition(type, id) {
     if (type === "facility") {
       var def = buildingById(id);
-      return { icon: def.icon, eyebrow: def.categoryLabel, title: def.name, subtitle: "主游戏初始状态 · 生产、生态、配置与升级", status: def.state, tabs: [{ id: "overview", label: "运行概览" }, { id: "config", label: "配置与影响" }, { id: "upgrade", label: "设施升级" }] };
+      return { icon: def.icon, eyebrow: def.categoryLabel, title: def.name, subtitle: "真实存档驱动 · 生产、生态、配置与升级", status: def.state, tabs: [{ id: "overview", label: "运行概览" }, { id: "config", label: "配置与影响" }, { id: "upgrade", label: "设施升级" }] };
     }
     var definitions = {
       survey: { icon: "⌖", eyebrow: "WORLD SURVEY", title: "野外调查", subtitle: "8 个区域 · 消耗、收益与调查队", status: "能源 " + mapState.energy, tabs: [{ id: "regions", label: "调查区域" }, { id: "team", label: "调查准备" }, { id: "records", label: "区域记录" }] },
       queue: { icon: "▤", eyebrow: "PRODUCTION QUEUE", title: "生产队列", subtitle: "蜂箱、树场与设备解锁状态", status: mapState.autoSurvey ? "1 自动" : "0 运行", tabs: [{ id: "active", label: "运行中" }, { id: "blocked", label: "待处理" }, { id: "history", label: "完成记录" }] },
-      contracts: { icon: "☷", eyebrow: "CONTRACTS & GOALS", title: "委托与长期进程", subtitle: "15 条主线 · 教程、区域与成就", status: "0 可交付", tabs: [{ id: "main", label: "主线委托" }, { id: "ecology", label: "生态委托" }, { id: "achievements", label: "成就" }] },
-      storage: { icon: "▣", eyebrow: "STORAGE & POWER", title: "仓库与能源", subtitle: "分类容量、能源核心与耗材", status: (mapState.resources.honey + mapState.resources.wax + mapState.resources.wood + mapState.resources.rawComb) + " / 999", tabs: [{ id: "all", label: "全部物资" }, { id: "materials", label: "材料" }, { id: "samples", label: "样本" }] }
+      contracts: { icon: "☷", eyebrow: "CONTRACTS & GOALS", title: "委托与长期进程", subtitle: "15 条主线 · 教程、区域与成就", status: mapState.contractsCompleted + " 已完成", tabs: [{ id: "main", label: "主线委托" }, { id: "ecology", label: "生态委托" }, { id: "achievements", label: "成就" }] },
+      storage: { icon: "▣", eyebrow: "STORAGE & POWER", title: "仓库与能源", subtitle: "分类容量、能源核心与耗材", status: mapState.regularTotal + " / " + mapState.regularCapacity, tabs: [{ id: "all", label: "全部物资" }, { id: "materials", label: "材料" }, { id: "samples", label: "样本" }] }
     };
     return definitions[type] || definitions.queue;
   }
@@ -1065,13 +1055,16 @@
     updateCamera();
     refreshMapGameplay(true);
     selectBuilding(selectedBuildingId, false);
-    ensureGameApi().subscribe(function () { refreshMapGameplay(true); });
-    window.addEventListener("forestry-game-toast", function (event) {
-      if (event.detail && event.detail.message) showToast(event.detail.message);
-    });
-    window.addEventListener("forestry-game-update", function (event) {
-      if (event.detail && event.detail.reason === "survey-result") claimPendingSurveyIfAny();
-    });
+    if (!window.__forestryMapPreviewBound) {
+      window.__forestryMapPreviewBound = true;
+      ensureGameApi().subscribe(function () { refreshMapGameplay(true); });
+      window.addEventListener("forestry-game-toast", function (event) {
+        if (event.detail && event.detail.message) showToast(event.detail.message);
+      });
+      window.addEventListener("forestry-game-update", function (event) {
+        if (event.detail && event.detail.reason === "survey-result") claimPendingSurveyIfAny();
+      });
+    }
     if (window.ResizeObserver) new ResizeObserver(function () { syncSpriteSizes(); updateCamera(); }).observe(mapCamera);
   }
 
