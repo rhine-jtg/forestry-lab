@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>林业谷地 · 地图主界面 UI 预览</title>
-    <link rel="stylesheet" href="map-game-ui-preview.css?v=11">
+    <link rel="stylesheet" href="map-game-ui-preview.css?v=12">
 </head>
 <body>
   <div class="game-shell" id="gameShell">
@@ -36,7 +36,7 @@
         <button class="environment-cell" type="button" data-action="ecology">
           <span class="weather-icon">☀</span><span><small>稳定天气</small><strong>生态 72</strong></span>
         </button>
-        <span class="save-state"><i></i>默认状态快照</span>
+        <span class="save-state"><i></i>主游戏存档</span>
         <button class="square-button" id="systemButton" type="button" aria-label="打开系统菜单">☰</button>
       </div>
     </header>
@@ -147,6 +147,8 @@
       </nav>
     </footer>
   </div>
-    <script src="map-game-ui-preview.js?v=11"></script>
+    <script>window.__FORESTRY_MAP_PREVIEW__ = true;</script>
+    <script src="app.js?v=20260902.map1"></script>
+    <script src="map-game-ui-preview.js?v=12"></script>
 </body>
 </html>

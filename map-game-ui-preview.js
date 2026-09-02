@@ -21,8 +21,8 @@
     ];
   }
 
-  // Snapshot of the playable game's default state. The map preview stays isolated
-  // from app.js, but its labels, costs and unlocks follow the same data model.
+  // Static labels / zone catalog for the map shell. Live resources and loops come
+  // from window.ForestryGame (app.js map-preview runtime).
   var ACTUAL_CONTENT = {
     rank: "R1 · 林地学徒",
     brand: "林业谷地 · R1",
@@ -75,75 +75,91 @@
     }
   };
 
-  var MAP_SAVE_KEY = "forestry-map-game-state-v1";
-  var MAP_ZONE_REWARDS = {
-    forest: [{ key: "wood", min: 8, max: 14 }, { key: "wildflower", min: 3, max: 6 }, { key: "rawComb", min: 0, max: 2 }, { key: "oakSapling", min: 0, max: 2 }],
-    plains: [{ key: "wood", min: 6, max: 10 }, { key: "clover", min: 4, max: 8 }, { key: "rawComb", min: 0, max: 2 }, { key: "oil", min: 0, max: 2 }],
-    swamp: [{ key: "wood", min: 5, max: 9 }, { key: "wildflower", min: 3, max: 6 }, { key: "resin", min: 1, max: 3 }, { key: "jungleSapling", min: 0, max: 1 }],
-    desert: [{ key: "wood", min: 2, max: 5 }, { key: "wildflower", min: 4, max: 8 }, { key: "oil", min: 2, max: 4 }, { key: "rawComb", min: 0, max: 2 }],
-    tropic: [{ key: "wood", min: 6, max: 12 }, { key: "tropical", min: 3, max: 6 }, { key: "resin", min: 2, max: 5 }, { key: "teakSapling", min: 0, max: 2 }],
-    snow: [{ key: "wood", min: 8, max: 14 }, { key: "wildflower", min: 2, max: 5 }, { key: "resin", min: 1, max: 3 }, { key: "pineSapling", min: 0, max: 2 }],
-    cave: [{ key: "wildflower", min: 5, max: 9 }, { key: "resin", min: 2, max: 4 }, { key: "oil", min: 1, max: 3 }, { key: "rawComb", min: 0, max: 1 }],
-    end: [{ key: "tropical", min: 2, max: 4 }, { key: "biomass", min: 3, max: 6 }, { key: "rawComb", min: 0, max: 2 }, { key: "biofuel", min: 0, max: 1 }]
+  var MAP_UPGRADE_TARGET = {
+    apiary: "apiary",
+    arbor: "treeFarm",
+    processing: "centrifuge",
+    warehouse: "warehouse",
+    energyCore: "energyCore"
   };
 
-  var MAP_UPGRADE_COSTS = {
-    apiary: { honey: 20, wax: 8, wood: 15 },
-    arbor: { wood: 25, oil: 4 },
-    processing: { honey: 18, wax: 6, oil: 3 },
-    warehouse: { emerald: 40, wood: 128, wax: 24, oil: 8 },
-    energyCore: { wood: 18, wax: 4, oil: 2 }
-  };
-
-  function createMapState() {
-    return {
-      resources: { emerald: 12, honey: 24, wax: 10, wood: 32, oil: 6, rawComb: 0, resin: 0, biomass: 0, biofuel: 0, juice: 0, mulch: 0 },
-      flowers: { wildflower: 3, clover: 0, tropical: 0 },
-      saplings: { oak: 2, birch: 2, jungle: 0, teak: 0, pine: 0 },
-      species: { bees: ["forest", "meadows"], trees: ["oak", "birch"], butterflies: ["azure"] },
-      analyzed: { bees: [], trees: [], butterflies: [] },
-      zoneVisits: { forest: 0, plains: 0, swamp: 0, desert: 0, tropic: 0, snow: 0, cave: 0, end: 0 },
-      energy: 60,
-      energyRemainder: 0,
-      apiaryProgress: 72,
-      apiaryReady: 0,
-      treeProgress: 64,
-      treeReady: 0,
-      treeHarvests: 0,
-      breeding: null,
-      treeBreeding: null,
-      machineCycles: 0,
-      contractsCompleted: 0,
-      guideStep: 0,
-      levels: { apiary: 1, arbor: 1, processing: 1, warehouse: 1, energyCore: 1 },
-      autoSurvey: null,
-      lastTickAt: Date.now()
-    };
-  }
-
-  function loadMapState() {
-    var base = createMapState();
-    try {
-      var saved = JSON.parse(window.localStorage.getItem(MAP_SAVE_KEY) || "null");
-      if (!saved || typeof saved !== "object") return base;
-      return Object.assign(base, saved, {
-        resources: Object.assign(base.resources, saved.resources || {}),
-        flowers: Object.assign(base.flowers, saved.flowers || {}),
-        saplings: Object.assign(base.saplings, saved.saplings || {}),
-        species: Object.assign(base.species, saved.species || {}),
-        analyzed: Object.assign(base.analyzed, saved.analyzed || {}),
-        zoneVisits: Object.assign(base.zoneVisits, saved.zoneVisits || {}),
-        levels: Object.assign(base.levels, saved.levels || {})
-      });
-    } catch (error) {
-      return base;
-    }
-  }
-
-  var mapState = loadMapState();
-  var mapSimulationTimer = null;
   var pendingConfirmAction = null;
   var pendingConfirmAutoAction = null;
+  var gameApi = null;
+  var mapState = null;
+
+  function ensureGameApi() {
+    gameApi = window.ForestryGame || null;
+    if (!gameApi) throw new Error("ForestryGame API missing — load app.js in map preview mode first.");
+    return gameApi;
+  }
+
+  function syncMapStateFromGame() {
+    var api = ensureGameApi();
+    var snap = api.getSnapshot();
+    mapState = snap;
+    // Keep ACTUAL_CONTENT energy/upgrade labels in sync for workspace templates.
+    ACTUAL_CONTENT.resources.emerald = snap.resources.emerald;
+    ACTUAL_CONTENT.resources.energy = snap.energy;
+    ACTUAL_CONTENT.resources.energyMax = snap.energyCapacity;
+    ACTUAL_CONTENT.resources.honey = snap.resources.honey;
+    ACTUAL_CONTENT.resources.wax = snap.resources.wax;
+    ACTUAL_CONTENT.resources.wood = snap.resources.wood;
+    ACTUAL_CONTENT.resources.oil = snap.resources.oil;
+    ACTUAL_CONTENT.resources.wildflower = snap.flowers.wildflower || 0;
+    ACTUAL_CONTENT.resources.regularTotal = snap.regularTotal;
+    ACTUAL_CONTENT.resources.regularCapacity = snap.regularCapacity;
+    ACTUAL_CONTENT.species.bees = snap.species.bees.length;
+    ACTUAL_CONTENT.species.trees = snap.species.trees.length;
+    ACTUAL_CONTENT.species.butterflies = snap.species.butterflies.length;
+    ACTUAL_CONTENT.guide.completed = snap.guideStep;
+    ACTUAL_CONTENT.guide.total = snap.guideTotal;
+    ACTUAL_CONTENT.energyCore.level = snap.levels.energyCore;
+    ACTUAL_CONTENT.energyCore.capacity = snap.energyCapacity;
+    ACTUAL_CONTENT.energyCore.recovery = snap.energyRecovery;
+    var nextCore = (api.energyCoreLevels || [])[snap.levels.energyCore];
+    if (nextCore) {
+      ACTUAL_CONTENT.energyCore.nextCapacity = nextCore.capacity;
+      ACTUAL_CONTENT.energyCore.cost = api.formatCost(nextCore.cost || {});
+    }
+    ["apiary", "arbor", "processing", "warehouse"].forEach(function (key) {
+      var level = snap.levels[key] || 1;
+      var upgradeKey = MAP_UPGRADE_TARGET[key];
+      var data = api.upgradeData[upgradeKey];
+      var cost = api.getUpgradeCost(upgradeKey);
+      ACTUAL_CONTENT.upgrades[key] = {
+        level: level,
+        next: cost ? ("LV" + (level + 1)) : "MAX",
+        cost: cost ? api.formatCost(cost) : "已满级"
+      };
+    });
+    ACTUAL_CONTENT.zones.forEach(function (zone) {
+      zone.unlocked = Boolean(snap.zoneUnlocked[zone.id]);
+      var real = api.zones[zone.id];
+      if (real) {
+        zone.manual = real.manualEnergy;
+        zone.auto = real.autoEnergy;
+        zone.duration = real.autoDuration;
+        zone.discovery = real.discoveryBase;
+        zone.desc = real.desc;
+      }
+    });
+    ACTUAL_CONTENT.shop = (api.shopBuyOffers || []).slice(0, 8).map(function (offer) {
+      return {
+        id: offer.id,
+        name: offer.name + (offer.output ? (" ×" + Object.values(offer.output)[0]) : ""),
+        note: "绿宝石 " + offer.price,
+        price: offer.price,
+        icon: offer.icon || "◆"
+      };
+    });
+    return mapState;
+  }
+
+  function saveMapState() {
+    try { ensureGameApi().actions.saveNow(); } catch (error) {}
+  }
+
 
   var BUILDINGS = [
     { id: "arbor", name: "树场 T-01", category: "ecology", categoryLabel: "ARBORETUM", baseWidth: 220, anchorY: "-94%", icon: "♣", state: "生长中", badge: "", badgeClass: "is-running", summary: "橡树苗正在树场中生长，基础木材链已准备。", output: "木材 8 · 树苗 0", progress: 64, primary: "进入树场 →", secondary: "查看环境", stages: generatedStages("arbor") },
@@ -488,68 +504,28 @@
   }
 
   function mapFormatResource(key, amount) {
-    var names = { emerald: "绿宝石", honey: "蜂蜜", wax: "蜂蜡", wood: "木材", oil: "种子油", rawComb: "蜂蜜脾", resin: "树脂", biomass: "生物质", biofuel: "生物燃料", wildflower: "野花", clover: "三叶草", oakSapling: "橡树苗", birchSapling: "白桦苗", jungleSapling: "丛林树苗", teakSapling: "柚木苗", pineSapling: "松树苗" };
-    return (names[key] || key) + " " + amount;
+    var api = window.ForestryGame;
+    var names = (api && api.resourceNames) || {};
+    var fallback = { emerald: "绿宝石", honey: "蜂蜜", wax: "蜂蜡", wood: "木材", oil: "种子油", rawComb: "蜂蜜脾", resin: "树脂", biomass: "生物质", biofuel: "生物燃料", wildflower: "野花", clover: "三叶草", oakSapling: "橡树苗", birchSapling: "白桦苗", jungleSapling: "丛林树苗", teakSapling: "柚木苗", pineSapling: "松树苗" };
+    return (names[key] || fallback[key] || key) + " " + amount;
   }
 
   function mapGetResource(key) {
+    if (!mapState) syncMapStateFromGame();
     if (Object.prototype.hasOwnProperty.call(mapState.flowers, key)) return Number(mapState.flowers[key]) || 0;
     if (key.endsWith("Sapling")) return Number(mapState.saplings[key.replace("Sapling", "")]) || 0;
     return Number(mapState.resources[key]) || 0;
   }
 
-  function mapAddResource(key, amount) {
-    var value = Math.max(0, Math.floor(Number(amount) || 0));
-    if (!value) return;
-    if (Object.prototype.hasOwnProperty.call(mapState.flowers, key)) mapState.flowers[key] = mapGetResource(key) + value;
-    else if (key.endsWith("Sapling")) {
-      var saplingId = key.replace("Sapling", "");
-      mapState.saplings[saplingId] = (mapState.saplings[saplingId] || 0) + value;
-      if (!mapState.species.trees.includes(saplingId)) mapState.species.trees.push(saplingId);
-    } else mapState.resources[key] = mapGetResource(key) + value;
-  }
-
-  function mapSpendCost(cost) {
-    var missing = Object.keys(cost).filter(function (key) { return mapGetResource(key) < cost[key]; });
-    if (missing.length) return missing;
-    Object.keys(cost).forEach(function (key) {
-      if (Object.prototype.hasOwnProperty.call(mapState.flowers, key)) mapState.flowers[key] -= cost[key];
-      else if (key.endsWith("Sapling")) mapState.saplings[key.replace("Sapling", "")] -= cost[key];
-      else mapState.resources[key] -= cost[key];
-    });
-    return [];
-  }
-
-  function mapFormatCost(cost) {
-    return Object.keys(cost).map(function (key) { return mapFormatResource(key, cost[key]); }).join(" · ");
-  }
-
-  function saveMapState() {
-    try {
-      window.localStorage.setItem(MAP_SAVE_KEY, JSON.stringify(mapState));
-    } catch (error) {
-      // The preview should remain playable even when storage is unavailable.
-    }
-  }
-
   function updateMapZoneUnlocks() {
-    var visits = mapState.zoneVisits;
-    var explorations = Object.keys(visits).reduce(function (sum, key) { return sum + (Number(visits[key]) || 0); }, 0);
-    var flowers = Object.keys(mapState.flowers).filter(function (key) { return mapGetResource(key) > 0; }).length;
-    var rules = {
-      forest: true,
-      plains: (visits.forest || 0) >= 1,
-      swamp: explorations >= 3 && mapState.machineCycles >= 1,
-      desert: mapGetResource("oil") > 0 && mapState.treeHarvests >= 1,
-      tropic: (visits.swamp || 0) >= 1 && mapState.species.trees.includes("jungle"),
-      snow: mapState.species.trees.includes("larch") && mapState.levels.apiary >= 2,
-      cave: mapState.analyzed.butterflies.length >= 3 && flowers >= 3,
-      end: mapState.levels.apiary >= 3 && mapState.species.bees.length >= 8 && (mapState.machineCycles >= 1 || mapGetResource("biofuel") > 0)
-    };
-    ACTUAL_CONTENT.zones.forEach(function (zone) { zone.unlocked = Boolean(rules[zone.id]); });
+    if (!mapState) syncMapStateFromGame();
+    ACTUAL_CONTENT.zones.forEach(function (zone) {
+      zone.unlocked = Boolean(mapState.zoneUnlocked[zone.id]);
+    });
   }
 
   function updateMapHud() {
+    if (!mapState) syncMapStateFromGame();
     var r = mapState.resources;
     var money = document.querySelector(".resource-cell.is-money strong");
     var energy = document.querySelector(".resource-cell.is-energy strong");
@@ -558,16 +534,29 @@
     var timber = document.querySelector(".resource-cell.is-timber strong");
     var queueBadge = document.querySelector('[data-nav="queue"] i');
     var contractBadge = document.querySelector('[data-nav="contracts"] i');
+    var saveStateEl = document.querySelector(".save-state");
+    var objectiveTitle = document.querySelector(".objective-copy strong");
+    var objectiveProgress = document.querySelector(".objective-progress b");
+    var objectiveBar = document.querySelector(".objective-progress i em");
+    var guideButton = document.querySelector('[data-action="guide"] span');
+    var brandSmall = document.querySelector(".brand-copy small");
     if (money) money.textContent = String(r.emerald);
-    if (energy) energy.textContent = mapState.energy + " / " + (ACTUAL_CONTENT.energyCore.capacity + (mapState.levels.energyCore - 1) * 25);
-    if (storage) storage.textContent = (r.honey + r.wax + r.wood + r.rawComb) + " / 999";
+    if (energy) energy.textContent = mapState.energy + " / " + mapState.energyCapacity;
+    if (storage) storage.textContent = mapState.regularTotal + " / " + mapState.regularCapacity;
     if (honey) honey.textContent = String(r.honey);
     if (timber) timber.textContent = String(r.wood);
-    if (queueBadge) queueBadge.textContent = String((mapState.breeding ? 1 : 0) + (mapState.treeBreeding ? 1 : 0) + (mapState.autoSurvey ? 1 : 0));
+    if (queueBadge) queueBadge.textContent = String((mapState.breeding ? 1 : 0) + (mapState.treeBreeding ? 1 : 0) + (mapState.autoSurvey ? 1 : 0) + (mapState.machineActive ? 1 : 0));
     if (contractBadge) contractBadge.textContent = String(mapState.contractsCompleted);
+    if (saveStateEl) saveStateEl.innerHTML = "<i></i>" + (mapState.saveLabel || "主游戏存档");
+    if (objectiveTitle) objectiveTitle.textContent = mapState.guideTitle || "建立生态工坊";
+    if (objectiveProgress) objectiveProgress.textContent = mapState.guideStep + " / " + mapState.guideTotal;
+    if (objectiveBar) objectiveBar.style.width = Math.round((mapState.guideStep / Math.max(1, mapState.guideTotal)) * 100) + "%";
+    if (guideButton) guideButton.textContent = mapState.guideStep + " / " + mapState.guideTotal + " 步";
+    if (brandSmall) brandSmall.textContent = (mapState.rank && mapState.rank.rank) ? ("林业谷地 · " + mapState.rank.rank) : ACTUAL_CONTENT.brand;
   }
 
   function updateMapBuildingCards() {
+    if (!mapState) syncMapStateFromGame();
     var r = mapState.resources;
     var apiary = BUILDINGS.find(function (item) { return item.id === "apiary"; });
     var arbor = BUILDINGS.find(function (item) { return item.id === "arbor"; });
@@ -575,35 +564,60 @@
     var market = BUILDINGS.find(function (item) { return item.id === "market"; });
     var archive = BUILDINGS.find(function (item) { return item.id === "archive"; });
     var warehouse = BUILDINGS.find(function (item) { return item.id === "warehouse"; });
+    var station = BUILDINGS.find(function (item) { return item.id === "station"; });
     if (apiary) {
       apiary.state = mapState.breeding ? "杂交中" : mapState.apiaryReady > 0 ? "可收取" : "生产中";
-      apiary.output = mapState.breeding ? "培育蜂 · 剩余 " + mapState.breeding.remaining + " 秒" : mapState.apiaryReady > 0 ? "蜂蜜脾 " + mapState.apiaryReady : "蜂蜜脾 1 · 进度 " + Math.round(mapState.apiaryProgress) + "%";
-      apiary.progress = mapState.breeding ? Math.round((1 - mapState.breeding.remaining / 8) * 100) : mapState.apiaryReady > 0 ? 100 : Math.round(mapState.apiaryProgress);
-      apiary.summary = mapState.breeding ? "森林蜂 × 草原蜂正在培育培育蜂，教程阶段成功率为 100%。" : mapState.apiaryReady > 0 ? "蜂蜜脾已准备完成，可以收入仓库。" : "森林蜂 × 草原蜂正在使用野花花源生产蜂蜜脾。";
+      apiary.output = mapState.breeding ? "培育中 · 剩余 " + mapState.breeding.remaining + " 秒" : mapState.apiaryReady > 0 ? "蜂蜜脾 " + mapState.apiaryReady : "蜂蜜脾 · 进度 " + Math.round(mapState.apiaryProgress) + "%";
+      apiary.progress = mapState.breeding ? Math.max(0, Math.round((1 - mapState.breeding.remaining / Math.max(1, mapState.breeding.remaining + 1)) * 100)) : mapState.apiaryReady > 0 ? 100 : Math.round(mapState.apiaryProgress);
+      if (mapState.breeding && mapState.breeding.remaining) {
+        var breedTotal = Math.max(mapState.breeding.remaining, 8);
+        apiary.progress = Math.round((1 - mapState.breeding.remaining / breedTotal) * 100);
+      }
+      apiary.summary = mapState.breeding ? "蜂群杂交进行中，结果将写入真实存档。" : mapState.apiaryReady > 0 ? "蜂蜜脾已准备完成，可以收入仓库。" : "真实蜂箱生产循环：消耗花源并推进 apiaryProgress。";
+      apiary.badge = mapState.apiaryReady > 0 ? "可收取" : mapState.breeding ? "杂交" : "";
+      apiary.badgeClass = mapState.apiaryReady > 0 ? "is-ready" : "is-running";
     }
     if (arbor) {
       arbor.state = mapState.treeBreeding ? "培育中" : mapState.treeReady > 0 ? "可收取" : "生长中";
-      arbor.output = mapState.treeBreeding ? "落叶松 · 剩余 " + mapState.treeBreeding.remaining + " 秒" : mapState.treeReady > 0 ? "木材 " + (8 + (mapState.levels.arbor - 1) * 2) : "木材 · 进度 " + Math.round(mapState.treeProgress) + "%";
-      arbor.progress = mapState.treeBreeding ? Math.round((1 - mapState.treeBreeding.remaining / 10) * 100) : mapState.treeReady > 0 ? 100 : Math.round(mapState.treeProgress);
-      arbor.summary = mapState.treeBreeding ? "橡树 × 白桦正在培育落叶松，教程阶段成功率为 100%。" : mapState.treeReady > 0 ? "树场木材已经成熟，可以收取并继续培育。" : "橡树苗正在树场中生长，基础木材链已准备。";
+      arbor.output = mapState.treeBreeding ? "培育中 · 剩余 " + mapState.treeBreeding.remaining + " 秒" : mapState.treeReady > 0 ? "木材可收取" : "木材 · 进度 " + Math.round(mapState.treeProgress) + "%";
+      arbor.progress = mapState.treeReady > 0 ? 100 : Math.round(mapState.treeProgress);
+      arbor.summary = mapState.treeBreeding ? "树苗培育进行中，结果将写入真实存档。" : mapState.treeReady > 0 ? "树场木材已经成熟，可以收取并继续培育。" : "真实树场生长循环已接入 app.js。";
+      arbor.badge = mapState.treeReady > 0 ? "可收取" : mapState.treeBreeding ? "培育" : "";
+      arbor.badgeClass = mapState.treeReady > 0 ? "is-ready" : "is-running";
     }
     if (processing) {
-      processing.state = mapState.machineCycles > 0 ? "离心机可用" : "离心机待命";
-      processing.output = "离心机 " + (mapState.machineCycles > 0 ? "已完成 " + mapState.machineCycles + " 次" : "待命");
+      processing.state = mapState.machineReady ? "可收取" : mapState.machineActive ? "离心中" : "离心机待命";
+      processing.output = mapState.machineReady ? (mapState.machineOutputLabel || "产物可收取") : mapState.machineActive ? ("进度 " + Math.round(mapState.machineProgress) + "%") : ("已完成 " + mapState.machineCycles + " 次");
+      processing.progress = mapState.machineReady ? 100 : Math.round(mapState.machineProgress || 0);
+      processing.summary = "离心机 C-01 使用真实配方、能源与仓库分区规则。";
+      processing.badge = mapState.machineReady ? "可收取" : mapState.machineActive ? "运行" : "";
+      processing.badgeClass = mapState.machineReady ? "is-ready" : mapState.machineActive ? "is-running" : "";
     }
-    if (market) market.output = "野花 ×8 · 售价 1 ◆ · 余额 " + r.emerald;
+    if (market) {
+      market.state = mapState.shopTierName || "村民货架";
+      market.output = "野花 ×8 · 售价 1 ◆ · 余额 " + r.emerald;
+      market.summary = "商店交易写入 forestry-lab-save-slot 存档，与主游戏共用。";
+    }
     if (archive) {
       var found = mapState.species.bees.length + mapState.species.trees.length + mapState.species.butterflies.length;
       archive.output = "蜂 " + mapState.species.bees.length + " / 11 · 树 " + mapState.species.trees.length + " / 14 · 蝶 " + mapState.species.butterflies.length + " / 6";
       archive.progress = Math.round(found / 31 * 100);
+      archive.summary = "图鉴数据来自主游戏 discovered / analyzed 状态。";
     }
     if (warehouse) {
-      warehouse.output = "常规 " + (r.honey + r.wax + r.wood + r.rawComb) + " / 999 · 能源 " + Math.round(mapState.energy / (ACTUAL_CONTENT.energyCore.capacity + (mapState.levels.energyCore - 1) * 25) * 100) + "%";
-      warehouse.progress = Math.round(mapState.energy / (ACTUAL_CONTENT.energyCore.capacity + (mapState.levels.energyCore - 1) * 25) * 100);
+      warehouse.output = "常规 " + mapState.regularTotal + " / " + mapState.regularCapacity + " · 能源 " + Math.round(mapState.energy / mapState.energyCapacity * 100) + "%";
+      warehouse.progress = Math.round(mapState.energy / mapState.energyCapacity * 100);
+      warehouse.summary = "仓库容量与能源核心等级读取真实升级状态。";
+    }
+    if (station) {
+      station.output = "主线委托 " + mapState.contractsCompleted + " / 15";
+      station.progress = Math.round(mapState.contractsCompleted / 15 * 100);
+      station.summary = mapState.guideComplete ? "教程完成，可继续主线委托与区域扩展。" : ("当前目标：" + mapState.guideTitle);
     }
   }
 
   function refreshMapGameplay(renderDeep) {
+    syncMapStateFromGame();
     updateMapZoneUnlocks();
     updateMapBuildingCards();
     updateMapHud();
@@ -611,123 +625,58 @@
     if (renderDeep !== false && document.getElementById("deepWorkspace").classList.contains("is-open")) renderWorkspace();
   }
 
-  function grantMapSurveyRewards(zone, mode) {
-    var rewards = MAP_ZONE_REWARDS[zone.id] || [];
-    var gained = [];
-    rewards.forEach(function (reward) {
-      var amount = mode === "auto" ? Math.max(reward.min, Math.round((reward.min + reward.max) / 2)) : mapRandomInt(reward.min, reward.max);
-      if (!amount) return;
-      mapAddResource(reward.key, amount);
-      gained.push(mapFormatResource(reward.key, amount));
-    });
-    mapState.zoneVisits[zone.id] = (mapState.zoneVisits[zone.id] || 0) + 1;
-    return gained;
-  }
-
-  function completeMapSurvey(zone, mode) {
-    var gained = grantMapSurveyRewards(zone, mode);
-    mapState.autoSurvey = null;
-    saveMapState();
-    refreshMapGameplay();
-    showToast(zone.name + "调查完成：" + (gained.join(" · ") || "获得生态线索"));
-  }
-
   function startMapBreeding(kind) {
-    if (kind === "tree") {
-      if (mapState.treeBreeding) return showToast("树苗培育正在进行中。");
-      if (!mapState.analyzed.trees.includes("oak") || !mapState.analyzed.trees.includes("birch")) return showToast("先分析橡树与白桦，再开始培育。");
-      if ((mapState.saplings.oak || 0) < 1 || (mapState.saplings.birch || 0) < 1) return showToast("橡树苗和白桦苗各需要 1 棵。");
-      if (mapGetResource("wood") < 4) return showToast("木材不足，需要 4 木材准备培育槽。");
-      mapSpendCost({ wood: 4 });
-      mapState.saplings.oak -= 1;
-      mapState.saplings.birch -= 1;
-      mapState.treeBreeding = { result: "larch", remaining: 10 };
-      saveMapState();
-      refreshMapGameplay();
-      return showToast("树苗培育开始：10 秒后获得落叶松结果。");
-    }
-    if (mapState.breeding) return showToast("蜜蜂杂交正在进行中。");
-    if (!mapState.analyzed.bees.includes("forest") || !mapState.analyzed.bees.includes("meadows")) return showToast("先分析森林蜂与草原蜂，再开始杂交。");
-    mapState.breeding = { result: "cultivated", remaining: 8, chance: 100 };
-    saveMapState();
+    var api = ensureGameApi();
+    if (kind === "tree") api.actions.startTreeBreeding();
+    else api.actions.startBreeding();
     refreshMapGameplay();
-    showToast("蜜蜂杂交开始：教程阶段保障成功，8 秒后获得培育蜂。");
-  }
-
-  function completeMapBreeding(kind) {
-    if (kind === "tree") {
-      mapState.treeBreeding = null;
-      if (!mapState.species.trees.includes("larch")) mapState.species.trees.push("larch");
-      mapState.saplings.larch = (mapState.saplings.larch || 0) + 1;
-      saveMapState();
-      refreshMapGameplay();
-      return showToast("树苗培育完成：获得落叶松树苗");
-    }
-    mapState.breeding = null;
-    if (!mapState.species.bees.includes("cultivated")) mapState.species.bees.push("cultivated");
-    saveMapState();
-    refreshMapGameplay();
-    showToast("蜜蜂杂交完成：发现培育蜂");
   }
 
   function startMapSurvey(zone, mode) {
-    var cost = mode === "auto" ? zone.auto : zone.manual;
-    if (!zone.unlocked) return showToast(zone.name + "尚未解锁。");
-    if (mapState.autoSurvey) return showToast("已有自动调查正在进行中。");
-    if (mapState.energy < cost) return showToast("能源不足，需要 " + cost + " 点。");
-    mapState.energy -= cost;
-    if (mode === "auto") {
-      mapState.autoSurvey = { zoneId: zone.id, remaining: zone.duration };
-      saveMapState();
-      refreshMapGameplay(false);
-      showToast("已开始自动调查：" + zone.name + "，" + zone.duration + " 秒后结算");
-    } else {
-      completeMapSurvey(zone, "manual");
-    }
+    var api = ensureGameApi();
+    if (!zone.unlocked && !api.isZoneUnlocked(zone.id)) return showToast(zone.name + "尚未解锁。");
+    if (mode === "auto") api.actions.startAutoSurvey(zone.id, 1);
+    else api.actions.completeInstantSurvey(zone.id);
+    refreshMapGameplay();
   }
 
-  function tickMapGameplay() {
-    var changed = false;
-    if (mapState.apiaryReady <= 0 && mapGetResource("wildflower") > 0 && mapState.apiaryProgress < 100) {
-      mapState.apiaryProgress = Math.min(100, mapState.apiaryProgress + .8);
-      changed = true;
-      if (mapState.apiaryProgress >= 100) { mapState.apiaryReady = 1; showToast("蜂蜜脾已准备完成"); }
+  function completeMapUpgrade(target) {
+    var api = ensureGameApi();
+    if (target === "energyCore") api.actions.upgradeEnergyCore();
+    else {
+      var upgradeKey = MAP_UPGRADE_TARGET[target] || target;
+      api.actions.upgradeFacility(upgradeKey);
     }
-    if (mapState.treeReady <= 0 && mapState.treeProgress < 100) {
-      mapState.treeProgress = Math.min(100, mapState.treeProgress + .65);
-      changed = true;
-      if (mapState.treeProgress >= 100) { mapState.treeReady = 1; showToast("树场木材已准备完成"); }
-    }
-    var capacity = ACTUAL_CONTENT.energyCore.capacity + (mapState.levels.energyCore - 1) * 25;
-    if (mapState.energy >= capacity) {
-      if (mapState.energyRemainder) { mapState.energyRemainder = 0; changed = true; }
+    refreshMapGameplay();
+  }
+
+  function collectMapProduct() {
+    var api = ensureGameApi();
+    if (workspaceState.id === "apiary") api.actions.collectApiary();
+    else if (workspaceState.id === "arbor") api.actions.collectTree();
+    else if (workspaceState.id === "processing") api.actions.machineAction();
+    else showToast("当前没有可收取的产物。");
+    refreshMapGameplay();
+  }
+
+  function analyzeMapCurrent() {
+    var api = ensureGameApi();
+    if (workspaceState.id === "apiary") {
+      api.actions.analyzeSpecies("forest");
+      api.actions.analyzeSpecies("meadows");
+    } else if (workspaceState.id === "arbor") {
+      api.actions.analyzeTree("oak");
+      api.actions.analyzeTree("birch");
     } else {
-      var recoveryPerMinute = ACTUAL_CONTENT.energyCore.recovery + Math.max(0, mapState.levels.energyCore - 1);
-      mapState.energyRemainder = (mapState.energyRemainder || 0) + recoveryPerMinute / 60;
-      if (mapState.energyRemainder >= 1) {
-        var recovered = Math.floor(mapState.energyRemainder);
-        mapState.energyRemainder -= recovered;
-        mapState.energy = Math.min(capacity, mapState.energy + recovered);
-        changed = true;
-      }
+      showToast("当前页面没有待分析样本。");
     }
-    if (mapState.autoSurvey) {
-      mapState.autoSurvey.remaining -= 1;
-      changed = true;
-      if (mapState.autoSurvey.remaining <= 0) completeMapSurvey(zoneById(mapState.autoSurvey.zoneId), "auto");
-    }
-    if (mapState.breeding) {
-      mapState.breeding.remaining -= 1;
-      changed = true;
-      if (mapState.breeding.remaining <= 0) completeMapBreeding("bee");
-    }
-    if (mapState.treeBreeding) {
-      mapState.treeBreeding.remaining -= 1;
-      changed = true;
-      if (mapState.treeBreeding.remaining <= 0) completeMapBreeding("tree");
-    }
-    if (changed) {
-      saveMapState();
+    refreshMapGameplay();
+  }
+
+  function claimPendingSurveyIfAny() {
+    var api = ensureGameApi();
+    if (api.getState().surveyResult) {
+      api.actions.claimSurveyResult();
       refreshMapGameplay();
     }
   }
@@ -807,7 +756,7 @@
             <div class="deep-action-row"><button class="deep-button is-primary" data-deep-action="collect">收取离心产物 →</button></div>
           </section>
           <section class="deep-section">
-            <div class="section-heading"><span><small>POWER & PRESSURE</small><strong>工坊负载</strong></span><output>能源 ${mapState.energy} / ${ACTUAL_CONTENT.energyCore.capacity + (mapState.levels.energyCore - 1) * 25}</output></div>
+            <div class="section-heading"><span><small>POWER & PRESSURE</small><strong>工坊负载</strong></span><output>能源 ${mapState.energy} / ${mapState.energyCapacity}</output></div>
             <div class="condition-list">${condition("总负载", "0%", 0, "is-cyan")}${condition("离心能耗", "2 / 次", 20, "")}${condition("发酵温度", "未启动", 0, "is-honey")}${condition("设备解锁", "1 / 4", 25, "")}</div>
           </section>
           <section class="deep-section is-span"><div class="section-heading"><span><small>CURRENT RECIPE</small><strong>蜂蜜脾分离</strong></span><output>加工时间 6.6 秒</output></div><div class="metric-grid">${metric("输入", "蜂蜜脾 1", "当前库存 " + mapState.resources.rawComb)}${metric("主要产物", "蜂蜜 1", "固定产出")}${metric("副产物", "蜂蜡 1", "固定产出")}</div></section>
@@ -874,7 +823,7 @@
           <div class="condition-list">${condition("生产条件", "基础", 52, "is-honey")}${condition("生态维护", "启用", 64, "")}${condition("研究记录", "跟踪", 44, "is-cyan")}</div>
           <div class="deep-action-row"><button class="deep-button" data-deep-action="preset">载入生态方案</button><button class="deep-button is-primary" data-deep-action="save-config">保存配置 →</button></div>
         </section>
-        <section class="deep-section is-span"><div class="section-heading"><span><small>INTERFERENCE MODEL</small><strong>系统相互影响</strong></span><output>实时计算</output></div><div class="metric-grid">${metric("蜂群 / 花源", "野花 " + mapGetResource("wildflower"), "影响蜂箱产速")}${metric("树场 / 环境", "森林边缘", "温度 52 · 湿度 58")}${metric("工业 / 能源", mapState.energy + " / " + (ACTUAL_CONTENT.energyCore.capacity + (mapState.levels.energyCore - 1) * 25), "设备启动时消耗能源")}</div></section>
+        <section class="deep-section is-span"><div class="section-heading"><span><small>INTERFERENCE MODEL</small><strong>系统相互影响</strong></span><output>实时计算</output></div><div class="metric-grid">${metric("蜂群 / 花源", "野花 " + mapGetResource("wildflower"), "影响蜂箱产速")}${metric("树场 / 环境", "森林边缘", "温度 52 · 湿度 58")}${metric("工业 / 能源", mapState.energy + " / " + (mapState.energyCapacity), "设备启动时消耗能源")}</div></section>
       </div>`;
   }
 
@@ -911,7 +860,7 @@
     return `
       <div class="deep-grid">
         <section class="deep-section">
-          <div class="section-heading"><span><small>WORLD SURVEY</small><strong>选择调查区域</strong></span><output>能源 ${mapState.energy} / ${ACTUAL_CONTENT.energyCore.capacity + (mapState.levels.energyCore - 1) * 25}</output></div>
+          <div class="section-heading"><span><small>WORLD SURVEY</small><strong>选择调查区域</strong></span><output>能源 ${mapState.energy} / ${mapState.energyCapacity}</output></div>
           <div class="region-grid">${regionMarkup}</div>
         </section>
         <section class="deep-section"><div class="section-heading"><span><small>SURVEY TEAM</small><strong>调查准备</strong></span><output>1 / 3 槽位</output></div><div class="queue-list"><div class="queue-row"><span>♟</span><div><strong>林地调查员</strong><small>初始调查队已准备</small></div><output>已准备</output></div><div class="queue-row"><span>▣</span><div><strong>样本箱</strong><small>捕获与样本容量由装备决定</small></div><output>基础</output></div><div class="queue-row"><span>＋</span><div><strong>装备槽位</strong><small>捕虫网、嫁接刀可在商店购买</small></div><output>未配置</output></div></div></section>
@@ -940,7 +889,7 @@
 
   function storageContent() {
     var r = mapState.resources;
-    var energyCapacity = ACTUAL_CONTENT.energyCore.capacity + (mapState.levels.energyCore - 1) * 25;
+    var energyCapacity = mapState.energyCapacity;
     var regularTotal = r.honey + r.wax + r.wood + r.rawComb;
     return `
       <div class="deep-grid">
@@ -976,72 +925,6 @@
     return queueContent();
   }
 
-  function completeMapUpgrade(target) {
-    var cost = MAP_UPGRADE_COSTS[target];
-    if (!cost) return showToast("该页面没有可升级设施。");
-    var missing = mapSpendCost(cost);
-    if (missing.length) return showToast("材料不足：" + missing.map(function (key) { return mapFormatResource(key, cost[key]); }).join(" · "));
-    mapState.levels[target] = (mapState.levels[target] || 1) + 1;
-    if (target === "energyCore") {
-      showToast("能源核心升级完成：LV" + mapState.levels[target]);
-    } else {
-      showToast("设施升级完成：LV" + mapState.levels[target]);
-    }
-    saveMapState();
-    refreshMapGameplay();
-  }
-
-  function collectMapProduct() {
-    if (workspaceState.id === "apiary") {
-      if (mapState.apiaryReady <= 0) return showToast("蜂箱还没有准备好产物。");
-      mapAddResource("rawComb", mapState.apiaryReady);
-      var beeAmount = mapState.apiaryReady;
-      mapState.apiaryReady = 0;
-      mapState.apiaryProgress = 0;
-      saveMapState();
-      refreshMapGameplay();
-      return showToast("收取成功：蜂蜜脾 " + beeAmount);
-    }
-    if (workspaceState.id === "arbor") {
-      if (mapState.treeReady <= 0) return showToast("树场还没有准备好木材。");
-      var woodAmount = 8 + (mapState.levels.arbor - 1) * 2;
-      mapAddResource("wood", woodAmount);
-      mapState.treeReady = 0;
-      mapState.treeProgress = 0;
-      mapState.treeHarvests += 1;
-      saveMapState();
-      refreshMapGameplay();
-      return showToast("收取成功：木材 " + woodAmount);
-    }
-    if (workspaceState.id === "processing") {
-      if (mapState.resources.rawComb <= 0) return showToast("离心机需要蜂蜜脾输入。");
-      mapState.resources.rawComb -= 1;
-      mapAddResource("honey", 1);
-      mapAddResource("wax", 1);
-      mapState.machineCycles += 1;
-      saveMapState();
-      refreshMapGameplay();
-      return showToast("离心完成：蜂蜜 1 · 蜂蜡 1");
-    }
-    showToast("当前没有可收取的产物。");
-  }
-
-  function analyzeMapCurrent() {
-    if (workspaceState.id === "apiary") {
-      ["forest", "meadows"].forEach(function (id) { if (!mapState.analyzed.bees.includes(id)) mapState.analyzed.bees.push(id); });
-      saveMapState();
-      refreshMapGameplay();
-      return showToast("已分析森林蜂与草原蜂");
-    }
-    if (workspaceState.id === "arbor") {
-      ["oak", "birch"].forEach(function (id) { if (!mapState.analyzed.trees.includes(id)) mapState.analyzed.trees.push(id); });
-      saveMapState();
-      refreshMapGameplay();
-      return showToast("已分析橡树：生长与木材属性已记录");
-    }
-    showToast("当前页面没有待分析样本。");
-  }
-
   function bindWorkspaceActions() {
     document.querySelectorAll("[data-deep-action]").forEach(function (button) {
       button.addEventListener("click", function () {
@@ -1058,21 +941,20 @@
             openConfirm("升级能源核心", "能源核心升级会提高上限，并需要先完成第一次离心。", [["目标等级", "LV2"], ["升级材料", ACTUAL_CONTENT.energyCore.cost]], "确认升级 →", "", function () { completeMapUpgrade("energyCore"); });
           }
         } else if (action === "trade") {
-          openConfirm("购买野花补给", "野花补给会直接进入仓库，可用于养蜂箱的基础花源。", [["野花", "+8"], ["绿宝石", "-1"]], "确认购买 →", "", function () {
-            if (mapState.resources.emerald < 1) return showToast("绿宝石不足，需要 1 个。");
-            mapState.resources.emerald -= 1;
-            mapAddResource("wildflower", 8);
-            saveMapState();
+          openConfirm("购买野花补给", "野花补给会写入主游戏仓库，可用于养蜂箱花源。", [["野花", "+8"], ["绿宝石", "-1"]], "确认购买 →", "", function () {
+            ensureGameApi().actions.executeShopTrade("buy", "wildflower", 1);
             refreshMapGameplay();
-            showToast("已购买野花补给 ×8");
           });
         } else if (action === "contract") {
-          showToast("先完成 14 步新手教程，解锁林地调查补给");
+          ensureGameApi().actions.completeContract();
+          refreshMapGameplay();
         } else if (action === "collect" || action === "collect-all") {
           if (action === "collect-all") {
-            if (mapState.apiaryReady > 0) { workspaceState.id = "apiary"; collectMapProduct(); }
-            else if (mapState.treeReady > 0) { workspaceState.id = "arbor"; collectMapProduct(); }
-            else if (mapState.resources.rawComb > 0) { workspaceState.id = "processing"; collectMapProduct(); }
+            var api = ensureGameApi();
+            var snap = api.getSnapshot();
+            if (snap.apiaryReady > 0) { workspaceState.id = "apiary"; collectMapProduct(); }
+            else if (snap.treeReady > 0) { workspaceState.id = "arbor"; collectMapProduct(); }
+            else if (snap.machineReady || snap.machineActive || snap.resources.rawComb > 0) { workspaceState.id = "processing"; collectMapProduct(); }
             else showToast("当前没有可收取的产物。");
           } else {
             collectMapProduct();
@@ -1084,9 +966,13 @@
         } else if (action === "tree-breed") {
           startMapBreeding("tree");
         } else if (action === "fuel") {
-          showToast("当前没有生物燃料；先完成发酵与蒸馏链");
+          ensureGameApi().actions.rechargeEnergyWithBiofuel();
+          refreshMapGameplay();
         } else if (action === "archive") {
-          showToast("当前已记录 5 / 31 个物种");
+          var snapArchive = ensureGameApi().getSnapshot();
+          showToast("当前已记录 " + (snapArchive.species.bees.length + snapArchive.species.trees.length + snapArchive.species.butterflies.length) + " / 31 个物种");
+        } else if (action === "claim-survey") {
+          claimPendingSurveyIfAny();
         } else {
           showToast("设置已在预览中更新");
         }
@@ -1179,7 +1065,13 @@
     updateCamera();
     refreshMapGameplay(true);
     selectBuilding(selectedBuildingId, false);
-    if (!mapSimulationTimer) mapSimulationTimer = window.setInterval(tickMapGameplay, 1000);
+    ensureGameApi().subscribe(function () { refreshMapGameplay(true); });
+    window.addEventListener("forestry-game-toast", function (event) {
+      if (event.detail && event.detail.message) showToast(event.detail.message);
+    });
+    window.addEventListener("forestry-game-update", function (event) {
+      if (event.detail && event.detail.reason === "survey-result") claimPendingSurveyIfAny();
+    });
     if (window.ResizeObserver) new ResizeObserver(function () { syncSpriteSizes(); updateCamera(); }).observe(mapCamera);
   }
 
@@ -1228,7 +1120,13 @@
       } else if (button.dataset.action === "event") {
         openWorkspace("survey", null, "regions");
       } else {
-        showToast("预览操作：" + button.textContent.trim().replace(/\s+/g, " "));
+        if (button.dataset.action === "save") {
+          ensureGameApi().actions.saveNow();
+          showToast("已写入主游戏存档槽");
+          refreshMapGameplay();
+        } else {
+          showToast("预览操作：" + button.textContent.trim().replace(/\s+/g, " "));
+        }
       }
     });
   });
@@ -1263,6 +1161,14 @@
   mapViewport.addEventListener("pointerup", endMapDrag);
   mapViewport.addEventListener("pointercancel", endMapDrag);
   document.addEventListener("keydown", function (event) { if (event.key === "Escape") closeTopLayer(); });
+
+  try {
+    ensureGameApi().actions.ensureStarted();
+    syncMapStateFromGame();
+    refreshMapGameplay(false);
+  } catch (error) {
+    showToast("无法连接主游戏运行时：" + error.message);
+  }
 
   fetch(LAYOUT_URL, { cache: "no-store" })
     .then(function (response) { if (!response.ok) throw new Error("HTTP " + response.status); return response.json(); })
