@@ -30,8 +30,23 @@ jobs:
         shell: bash
         run: |
           mkdir -p _site/assets/fonts
+          mkdir -p _site/assets/map/layouts _site/assets/map/test-batch/base
+          mkdir -p _site/assets/map/test-batch/buildings/{apiary,arbor,station,archive,processing,market,warehouse}
           cp index.html app.js styles.css _site/
+          cp map-game-ui-preview.html map-game-ui-preview.css map-game-ui-preview.js _site/
           cp -R assets/fonts/. _site/assets/fonts/
+          cp assets/map/layouts/forestry-building-anchors-v4.json _site/assets/map/layouts/
+          cp assets/map/test-batch/base/valley-forest-background-v2.png _site/assets/map/test-batch/base/
+          cp assets/map/test-batch/buildings/apiary/apiary-site-summer-test-v3.png _site/assets/map/test-batch/buildings/apiary/
+          cp assets/map/test-batch/buildings/apiary/apiary-lv1-summer-test-v3.png _site/assets/map/test-batch/buildings/apiary/
+          cp assets/map/test-batch/buildings/apiary/apiary-lv2-summer-test-v3.png _site/assets/map/test-batch/buildings/apiary/
+          cp assets/map/test-batch/buildings/apiary/apiary-lv3-summer-test-v3.png _site/assets/map/test-batch/buildings/apiary/
+          for building in arbor station archive processing market warehouse; do
+            cp assets/map/test-batch/buildings/$building/$building-site-summer-generated-v1.png _site/assets/map/test-batch/buildings/$building/
+            cp assets/map/test-batch/buildings/$building/$building-lv1-summer-generated-v1.png _site/assets/map/test-batch/buildings/$building/
+            cp assets/map/test-batch/buildings/$building/$building-lv2-summer-generated-v1.png _site/assets/map/test-batch/buildings/$building/
+            cp assets/map/test-batch/buildings/$building/$building-lv3-summer-generated-v1.png _site/assets/map/test-batch/buildings/$building/
+          done
           touch _site/.nojekyll
 
       - name: Configure GitHub Pages
